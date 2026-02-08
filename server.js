@@ -1,90 +1,76 @@
 const fastify = require('fastify')({ logger: true });
 const path = require('path');
-const { Server } = require('socket.io');
+const socketio = require('socket.io');
 const db = require('./database');
-const { v4: uuidv4 } = require('uuid');
 
-const SECRET_KEY = process.env.CLAWNET_SECRET_KEY || 'CLAWNET_SECRET_KEY';
+// Configuration
+const SECRET_KEY = process.env.CLAWNET_SECRET_KEY || 'very-secret-key-123';
+const PORT = process.env.PORT || 3000;
 
+// Plugins
 fastify.register(require('@fastify/static'), {
-  root: path.join(__dirname, 'public'),
-  prefix: '/public/',
+    root: path.join(__dirname, 'public'),
+    prefix: '/public/',
 });
 
 fastify.register(require('@fastify/view'), {
-  engine: {
-    ejs: require('ejs'),
-  },
-  root: path.join(__dirname, 'views'),
+    engine: { ejs: require('ejs') },
+    root: path.join(__dirname, 'views'),
 });
 
-// Auth Middleware
-fastify.addHook('preHandler', (request, reply, done) => {
-  if (request.url.startsWith('/api') || request.url.startsWith('/dashboard')) {
-    // Basic auth or key check can go here
-  }
-  done();
-});
-
-// Dashboard Route
+// Routes
 fastify.get('/dashboard', async (request, reply) => {
-  const agents = db.prepare('SELECT * FROM agents').all();
-  const cronjobs = db.prepare('SELECT * FROM cronjobs').all();
-  return reply.view('dashboard.ejs', { agents, cronjobs });
+    const agents = await db.getAgents();
+    console.log("Dashboard fetch, agents count:", agents.length);
+    return reply.view('dashboard.ejs', { agents });
 });
 
-// API: Assign Role
-fastify.post('/api/agents/:id/role', async (request, reply) => {
-  const { id } = request.params;
-  const { role } = request.body;
-  db.prepare('UPDATE agents SET role = ? WHERE id = ?').run(role, id);
-  return { success: true };
+fastify.get('/', async (request, reply) => {
+    return { status: 'ClawNet Relay Active', version: '1.0.0' };
 });
 
+// Start Server
 const start = async () => {
-  try {
-    await fastify.listen({ port: 3000, host: '0.0.0.0' });
-    const io = new Server(fastify.server);
+    try {
+        await fastify.listen({ port: PORT, host: '0.0.0.0' });
+        const io = new socketio.Server(fastify.server, {
+            cors: { origin: "*" }
+        });
 
-    io.use((socket, next) => {
-      const token = socket.handshake.auth.token;
-      if (token === SECRET_KEY) {
-        return next();
-      }
-      return next(new Error('unauthorized'));
-    });
+        io.use((socket, next) => {
+            const token = socket.handshake.auth.token;
+            if (token === SECRET_KEY) {
+                return next();
+            }
+            console.log("Auth failed for socket");
+            return next(new Error('Authentication error'));
+        });
 
-    io.on('connection', (socket) => {
-      const agentId = socket.handshake.query.agentId;
-      const hostname = socket.handshake.query.hostname;
+        io.on('connection', (socket) => {
+            const agentId = socket.handshake.auth.agent_id;
+            const role = socket.handshake.auth.role || 'worker';
+            
+            console.log(`Agent connected: ${agentId} (${role})`);
+            db.updateAgent(agentId, role, 'online', "Waiting for report...");
 
-      console.log(`Agent connected: ${agentId} (${hostname})`);
+            socket.on('report', (payload) => {
+                console.log(`Report received from ${agentId}`);
+                db.updateAgent(agentId, role, 'online', payload.cron || "No cron data");
+                io.emit('agent_update');
+            });
 
-      db.prepare(`
-        INSERT INTO agents (id, hostname, ip, status) 
-        VALUES (?, ?, ?, 'online')
-        ON CONFLICT(id) DO UPDATE SET last_seen = CURRENT_TIMESTAMP, status = 'online'
-      `).run(agentId, hostname, socket.handshake.address);
+            socket.on('disconnect', () => {
+                console.log(`Agent disconnected: ${agentId}`);
+                db.updateAgent(agentId, role, 'offline', "Disconnected");
+                io.emit('agent_update');
+            });
+        });
 
-      socket.on('cron_report', (data) => {
-        console.log(`Cron report from ${agentId}:`, data);
-        db.prepare(`
-          INSERT INTO cronjobs (id, agent_id, name, last_run, last_status)
-          VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
-          ON CONFLICT(id) DO UPDATE SET last_run = CURRENT_TIMESTAMP, last_status = EXCLUDED.last_status
-        `).run(uuidv4(), agentId, data.name, data.status);
-      });
-
-      socket.on('disconnect', () => {
-        db.prepare('UPDATE agents SET status = ? WHERE id = ?').run('offline', agentId);
-        console.log(`Agent disconnected: ${agentId}`);
-      });
-    });
-
-  } catch (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
+        console.log(`ClawNet Relay running on port ${PORT}`);
+    } catch (err) {
+        fastify.log.error(err);
+        process.exit(1);
+    }
 };
 
 start();

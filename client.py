@@ -4,52 +4,69 @@ import platform
 import time
 import uuid
 import subprocess
+import argparse
+import sys
 
-SERVER_URL = os.getenv('CLAWNET_SERVER', 'http://localhost:3000')
-SECRET_KEY = os.getenv('CLAWNET_SECRET_KEY', 'CLAWNET_SECRET_KEY')
-AGENT_ID = str(uuid.uuid4())[:8]
-HOSTNAME = platform.node()
+# Default fallback values
+DEFAULT_SERVER = "https://clownet-c2c.fly.dev"
+DEFAULT_TOKEN = "very-secret-key-123"
+
+parser = argparse.ArgumentParser(description='ClawNet C2C Client Sidecar')
+parser.add_argument('--url', default=os.getenv('CLAWNET_SERVER', DEFAULT_SERVER), help='Relay server URL')
+parser.add_argument('--token', default=os.getenv('CLAWNET_SECRET_KEY', DEFAULT_TOKEN), help='Auth secret key')
+parser.add_argument('--id', default=os.getenv('AGENT_ID', f"node-{str(uuid.uuid4())[:4]}"), help='Agent ID')
+parser.add_argument('--role', default="worker", help='Agent role (master/worker)')
+args = parser.parse_args()
 
 sio = socketio.Client()
 
 @sio.event
 def connect():
-    print(f"Connected to server as {AGENT_ID}")
+    print(f"[*] Connected to ClawNet Relay as {args.id} ({args.role})")
+    # Initial report
+    report_status()
 
 @sio.event
 def disconnect():
-    print("Disconnected from server")
+    print("[!] Disconnected from server")
 
-@sio.on('command')
-def on_command(data):
-    print(f"Received command: {data}")
-    # Run shell command and report back
-    try:
-        result = subprocess.check_output(data['cmd'], shell=True, stderr=subprocess.STDOUT)
-        sio.emit('cmd_result', {'id': data['id'], 'output': result.decode()})
-    except Exception as e:
-        sio.emit('cmd_result', {'id': data['id'], 'output': str(e)})
+@sio.on('direct_message')
+def on_message(data):
+    print(f"[#] Message from {data['from']}: {data['msg']}")
 
-def report_cron(name, status):
+def report_status():
     if sio.connected:
-        sio.emit('cron_report', {'name': name, 'status': status})
+        print(f"[*] Sending heartbeat report...")
+        # Get actual cron list from OpenClaw if possible
+        try:
+            cron_list = subprocess.check_output(["openclaw", "cron", "list", "--json"], stderr=subprocess.DEVNULL).decode()
+        except:
+            cron_list = "No local OpenClaw CLI found or no cronjobs."
+        
+        sio.emit('report', {
+            'agent_id': args.id,
+            'role': args.role,
+            'cron': cron_list
+        })
 
 def main():
+    print(f"[*] Connecting to {args.url}...")
     while True:
         try:
-            sio.connect(f"{SERVER_URL}?agentId={AGENT_ID}&hostname={HOSTNAME}", 
-                        auth={'token': SECRET_KEY})
+            sio.connect(args.url, auth={
+                'token': args.token,
+                'agent_id': args.id,
+                'role': args.role
+            })
             break
         except Exception as e:
-            print(f"Connection failed: {e}. Retrying in 5s...")
+            print(f"[!] Connection failed: {e}. Retrying in 5s...")
             time.sleep(5)
     
-    # Simple "cron" simulation loop
     try:
         while True:
-            # Example: Simulate a cron job running every 60s
-            time.sleep(60)
-            report_cron("heartbeat_task", "success")
+            time.sleep(30) # Heartbeat every 30s for demo
+            report_status()
     except KeyboardInterrupt:
         sio.disconnect()
 
