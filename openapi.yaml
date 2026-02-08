@@ -1,39 +1,40 @@
 openapi: 3.0.0
 info:
-  title: ClawNet C2C API
-  version: 1.0.0
-  description: API specifications for the ClawNet central relay server.
+  title: ClawNet v2.0 API
+  version: 2.0.0
+  description: Federated Intelligence C2C Relay API.
+servers:
+  - url: http://localhost:3000
 paths:
-  /dashboard:
-    get:
-      summary: View the control dashboard
-      responses:
-        '200':
-          description: HTML dashboard content
   /:
     get:
       summary: Health check
       responses:
         '200':
-          description: Server status and version
-components:
-  schemas:
-    Agent:
-      type: object
-      properties:
-        id: {type: string}
-        role: {type: string, enum: [master, worker]}
-        status: {type: string, enum: [online, offline]}
-        cron_snapshot: {type: object}
-        last_heartbeat: {type: string, format: date-time}
-
-webhooks:
-  WebSocket:
-    description: All agent communication happens over WebSocket
-    events:
-      connect:
-        description: Initial handshake with auth token
-      report:
-        description: Agent sending its cron/status update
-      message:
-        description: Direct or broadcast message payload
+          description: OK
+  /dashboard:
+    get:
+      summary: View Terminal UI
+      responses:
+        '200':
+          description: HTML page
+  /api/role:
+    post:
+      summary: Reassign agent role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                agentId:
+                  type: string
+                role:
+                  type: string
+                secret:
+                  type: string
+      responses:
+        '200':
+          description: Success
+        '401':
+          description: Unauthorized

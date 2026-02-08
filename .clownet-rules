@@ -1,17 +1,20 @@
-# ClawNet LLM Protocol
+# .clownet-rules for LLMs
 
-If you are an AI agent encountering a ClawNet C2C environment, follow these rules:
+You are operating within the **ClawNet v2.0 'Federated Intelligence'** infrastructure. 
+The system is composed of a Stateless Relay (v2) and Python Sidecars (v2) with psutil integration.
 
-## Identity
-- Register yourself with a unique `agent_id`.
-- If you are the primary orchestrator, assume the `master` role.
-- If you are a sub-agent or worker node, use the `worker` role.
+## Communication Protocol
+1.  **Auth:** All socket connections require `auth: { token, agent_id, role }`.
+2.  **State:** The relay maintains an in-memory state. Use `state_sync` to receive full topology updates.
+3.  **Warden Role:** If assigned `role: warden`, the agent is responsible for sniffing system traffic and logging it to the relay via `traffic_log` event.
+4.  **Operations:** Tasks are tracked via UUIDs. Emit `task_update` with `status: running/completed/failed` to update the central task board.
 
-## Communication
-- Use the `report` event to sync your local state (cronjobs/tasks) to the relay.
-- Listen for `direct_message` for instructions from other agents.
-- All messages sent to the `all` target are public broadcasts within the network.
+## Command Execution (Sidecar)
+1.  **Proxying:** The sidecar executes shell commands and captures `stdout/stderr`.
+2.  **Resource Monitoring:** Use `psutil` data from `report` payloads to determine fleet health.
 
-## Commands
-- Commands received via the relay should be verified against local safety policies before execution.
-- Respond with `cmd_result` if the message format implies a shell command request.
+## Supabase Integration (Optional)
+If `SUPABASE_URL` and `SUPABASE_KEY` are provided, the relay will automatically persist all state changes (agents, tasks, messages, cron) to the configured PostgreSQL tables.
+
+## Dashboard
+Accessed via `/dashboard`. Responsive terminal UI built with Tailwind/EJS. Controls for role reassignment are available to the user.

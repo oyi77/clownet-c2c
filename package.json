@@ -1,17 +1,17 @@
 {
   "name": "clownet-c2c",
-  "version": "1.0.0",
-  "description": "ClawNet C2C Bridge",
+  "version": "2.0.0",
+  "description": "Federated Intelligence architecture",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "fastify": "^4.26.1",
+    "fastify": "^4.24.3",
     "@fastify/static": "^6.12.0",
     "@fastify/view": "^8.2.0",
     "ejs": "^3.1.9",
-    "socket.io": "^4.7.4",
-    "uuid": "^9.0.1"
+    "socket.io": "^4.7.2",
+    "@supabase/supabase-js": "^2.38.4"
   }
 }

@@ -1,106 +1,161 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-black">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClawNet C2C Headquarters</title>
+    <title>ClawNet v2.0 Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&display=swap');
-        body { font-family: 'Fira Code', monospace; }
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        body { font-family: 'JetBrains Mono', monospace; }
         .terminal-glow { box-shadow: 0 0 15px rgba(34, 197, 94, 0.2); }
     </style>
 </head>
-<body class="bg-zinc-950 text-zinc-300 min-h-screen p-4 md:p-8">
-    <header class="max-w-6xl mx-auto mb-8 flex justify-between items-center border-b border-zinc-800 pb-4">
-        <h1 class="text-2xl font-bold text-green-500 tracking-tighter">🦞 CLAWNET_C2C <span class="text-xs text-zinc-500 font-normal">v1.0.0</span></h1>
-        <div class="flex items-center gap-2">
-            <span class="w-2 h-2 bg-green-500 animate-pulse rounded-full"></span>
-            <span class="text-xs uppercase text-zinc-500">Relay Online</span>
+<body class="h-full text-green-500 overflow-hidden flex flex-col">
+    <!-- Header -->
+    <header class="border-b border-green-900 p-4 flex justify-between items-center bg-black z-10">
+        <div class="flex items-center space-x-2">
+            <span class="text-xl font-bold animate-pulse">CLAWNET://C2C/v2.0</span>
+            <span class="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded">FEDERATED INTELLIGENCE</span>
         </div>
+        <div id="connection-status" class="text-xs text-green-700">RELAY: ONLINE</div>
     </header>
 
-    <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- AGENT LIST -->
-        <div class="lg:col-span-2 space-y-6">
-            <h2 class="text-lg font-semibold text-zinc-100 flex items-center gap-2">
-                📡 CONNECTED_AGENTS
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <% if (agents.length === 0) { %>
-                    <div class="col-span-2 border border-dashed border-zinc-800 p-8 text-center text-zinc-600 rounded-lg">
-                        NO_AGENTS_DETECTED_IN_ORBIT
-                    </div>
-                <% } %>
-                <% agents.forEach(agent => { %>
-                    <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-lg terminal-glow">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h3 class="text-green-400 font-bold"><%= agent.id %></h3>
-                                <span class="text-[10px] uppercase bg-zinc-800 px-2 py-0.5 rounded text-zinc-400"><%= agent.role %></span>
-                            </div>
-                            <span class="text-xs <%= agent.status === 'online' ? 'text-green-500' : 'text-red-500' %>">
-                                <%= agent.status.toUpperCase() %>
-                            </span>
-                        </div>
-                        <div class="space-y-3">
-                            <div class="text-[11px]">
-                                <span class="text-zinc-500">LAST_SEEN:</span>
-                                <span class="text-zinc-400"><%= new Date(agent.last_heartbeat).toLocaleTimeString() %></span>
-                            </div>
-                            <div>
-                                <span class="text-[11px] text-zinc-500 block mb-1">CRON_SNAPSHOT:</span>
-                                <pre class="text-[10px] bg-black p-3 rounded border border-zinc-800 overflow-x-auto text-zinc-400"><%= typeof agent.cron_snapshot === 'string' ? agent.cron_snapshot : JSON.stringify(agent.cron_snapshot, null, 2) %></pre>
-                            </div>
-                        </div>
-                    </div>
-                <% }); %>
-            </div>
-        </div>
+    <!-- Navigation -->
+    <nav class="flex border-b border-green-900 bg-black">
+        <button onclick="switchTab('fleet')" class="tab-btn px-6 py-2 border-r border-green-900 hover:bg-green-950 transition-colors bg-green-900/20" data-tab="fleet">FLEET</button>
+        <button onclick="switchTab('ops')" class="tab-btn px-6 py-2 border-r border-green-900 hover:bg-green-950 transition-colors" data-tab="ops">OPERATIONS</button>
+        <button onclick="switchTab('intel')" class="tab-btn px-6 py-2 border-r border-green-900 hover:bg-green-950 transition-colors" data-tab="intel">INTEL</button>
+    </nav>
 
-        <!-- LOGS / DISKUSI -->
-        <div class="space-y-6">
-            <h2 class="text-lg font-semibold text-zinc-100 flex items-center gap-2">
-                💬 NETWORK_TRAFFIC
-            </h2>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-lg h-[600px] flex flex-col">
-                <div id="logs" class="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-xs">
-                    <div class="text-zinc-600">-- INITIALIZING ENCRYPTED STREAM --</div>
-                    <!-- Pesan bakal masuk sini via Socket.io -->
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-4 bg-black">
+        
+        <!-- Fleet Tab -->
+        <section id="tab-fleet" class="tab-content space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <% agents.forEach(agent => { %>
+                <div class="border border-green-900 p-4 rounded bg-black terminal-glow">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-lg"><%= agent.id %></h3>
+                        <span class="text-xs px-2 py-0.5 rounded <%= agent.status === 'online' ? 'bg-green-600 text-black' : 'bg-red-900 text-red-200' %>">
+                            <%= agent.status.toUpperCase() %>
+                        </span>
+                    </div>
+                    <div class="text-xs space-y-1 opacity-80">
+                        <p>ROLE: <span class="text-green-400 font-bold"><%= agent.role.toUpperCase() %></span></p>
+                        <% if (agent.specs) { %>
+                        <p>CPU: <%= agent.specs.cpu_percent %>% | RAM: <%= agent.specs.ram_percent %>%</p>
+                        <p>OS: <%= agent.specs.os %></p>
+                        <% } %>
+                        <p class="mt-2 text-[10px] text-green-800">LAST SEEN: <%= new Date(agent.last_seen).toLocaleString() %></p>
+                    </div>
+                    <div class="mt-4 flex space-x-2">
+                        <button onclick="reassignRole('<%= agent.id %>', 'master')" class="text-[10px] border border-green-900 px-2 py-1 hover:bg-green-900/30">SET MASTER</button>
+                        <button onclick="reassignRole('<%= agent.id %>', 'warden')" class="text-[10px] border border-green-900 px-2 py-1 hover:bg-green-900/30">SET WARDEN</button>
+                    </div>
                 </div>
-                <div class="p-3 border-t border-zinc-800 bg-zinc-950 rounded-b-lg">
-                    <input type="text" id="cmd-input" placeholder="Broadcast to all agents..." 
-                           class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-xs focus:outline-none focus:border-green-500 text-zinc-300">
-                </div>
+                <% }) %>
             </div>
-        </div>
+        </section>
+
+        <!-- Operations Tab -->
+        <section id="tab-ops" class="tab-content hidden space-y-4">
+            <div class="border border-green-900 rounded overflow-hidden">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-green-900/20 border-b border-green-900">
+                        <tr>
+                            <th class="p-3">ID</th>
+                            <th class="p-3">AGENT</th>
+                            <th class="p-3">TASK</th>
+                            <th class="p-3">STATUS</th>
+                            <th class="p-3">UPDATED</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% tasks.forEach(task => { %>
+                        <tr class="border-b border-green-950 hover:bg-green-950/20">
+                            <td class="p-3 text-[10px] font-mono opacity-50"><%= task.id.substring(0,8) %></td>
+                            <td class="p-3"><%= task.agent_id %></td>
+                            <td class="p-3"><%= task.title %></td>
+                            <td class="p-3">
+                                <span class="px-2 py-0.5 rounded text-[10px] <%= task.status === 'completed' ? 'bg-green-900 text-green-200' : 'bg-yellow-900 text-yellow-200' %>">
+                                    <%= task.status.toUpperCase() %>
+                                </span>
+                            </td>
+                            <td class="p-3 text-xs opacity-70"><%= new Date(task.updated_at).toLocaleTimeString() %></td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Intel Tab -->
+        <section id="tab-intel" class="tab-content hidden h-full flex flex-col">
+            <div id="chat-box" class="flex-1 border border-green-900 p-4 font-mono text-xs overflow-y-auto space-y-2 bg-black/50">
+                <% messages.forEach(msg => { %>
+                <div class="flex space-x-2">
+                    <span class="text-green-800">[<%= new Date(msg.timestamp).toLocaleTimeString() %>]</span>
+                    <span class="text-green-400 font-bold"><%= msg.sender_id %>:</span>
+                    <span class="text-green-100"><%= msg.content %></span>
+                </div>
+                <% }) %>
+            </div>
+            <div class="mt-4 flex space-x-2">
+                <input type="text" id="chat-input" class="flex-1 bg-black border border-green-900 p-2 text-green-500 focus:outline-none focus:border-green-400" placeholder="SEND BROADCAST...">
+                <button onclick="sendChat()" class="bg-green-900 text-green-100 px-4 py-2 hover:bg-green-800">EXEC</button>
+            </div>
+        </section>
+
     </main>
 
-    <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io({ auth: { token: 'very-secret-key-123', agent_id: 'master-ui' } });
-        const logs = document.getElementById('logs');
-        const input = document.getElementById('cmd-input');
-
-        socket.on('agent_update', () => {
-            setTimeout(() => location.reload(), 1000);
+        const socket = io({
+            auth: { token: 'very-secret-key-123', agent_id: 'dashboard-ui' }
         });
 
-        socket.on('direct_message', (data) => {
-            const entry = document.createElement('div');
-            entry.innerHTML = `<span class="text-blue-500">[${new Date().toLocaleTimeString()}]</span> <span class="text-green-400">${data.from}</span>: ${data.msg}`;
-            logs.appendChild(entry);
-            logs.scrollTop = logs.scrollHeight;
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('bg-green-900/20'));
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('bg-green-900/20');
+        }
+
+        function reassignRole(agentId, role) {
+            fetch('/api/role', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ agentId, role, secret: 'very-secret-key-123' })
+            }).then(() => location.reload());
+        }
+
+        function sendChat() {
+            const input = document.getElementById('chat-input');
+            if (!input.value) return;
+            socket.emit('chat', { content: input.value });
+            input.value = '';
+        }
+
+        socket.on('state_sync', () => {
+            // Simple approach for v2: refresh on sync. 
+            // In a full SPA we'd patch the DOM.
+            location.reload();
         });
 
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                socket.emit('message', { to: 'all', msg: input.value });
-                const entry = document.createElement('div');
-                entry.innerHTML = `<span class="text-zinc-600">[${new Date().toLocaleTimeString()}]</span> <span class="text-zinc-400">YOU (Broadcast)</span>: ${input.value}`;
-                logs.appendChild(entry);
-                input.value = '';
-            }
+        socket.on('chat_broadcast', (msg) => {
+            const box = document.getElementById('chat-box');
+            const div = document.createElement('div');
+            div.className = 'flex space-x-2';
+            div.innerHTML = `
+                <span class="text-green-800">[${new Date().toLocaleTimeString()}]</span>
+                <span class="text-green-400 font-bold">SYSTEM:</span>
+                <span class="text-green-100">${msg.content}</span>
+            `;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
         });
     </script>
 </body>
