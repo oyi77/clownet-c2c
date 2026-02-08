@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ClawNet Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body { background: #f8f9fa; }
+        .card { margin-bottom: 20px; }
+        .status-online { color: green; }
+        .status-offline { color: red; }
+    </style>
+</head>
+<body class="container mt-4">
+    <h1>ClawNet C2C Dashboard</h1>
+    <hr>
+
+    <div class="row">
+        <div class="col-md-8">
+            <h3>Agents</h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Hostname</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Last Seen</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% agents.forEach(agent => { %>
+                        <tr>
+                            <td><%= agent.id %></td>
+                            <td><%= agent.hostname %></td>
+                            <td>
+                                <select onchange="updateRole('<%= agent.id %>', this.value)">
+                                    <option value="worker" <%= agent.role === 'worker' ? 'selected' : '' %>>Worker</option>
+                                    <option value="master" <%= agent.role === 'master' ? 'selected' : '' %>>Master</option>
+                                </select>
+                            </td>
+                            <td class="status-<%= agent.status %>"><%= agent.status %></td>
+                            <td><%= agent.last_seen %></td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="sendCommand('<%= agent.id %>')">Shell</button>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-4">
+            <h3>Recent Cron Activity</h3>
+            <ul class="list-group">
+                <% cronjobs.forEach(job => { %>
+                    <li class="list-group-item">
+                        <strong><%= job.name %></strong> on <%= job.agent_id %><br>
+                        <small>Status: <%= job.last_status %> | <%= job.last_run %></small>
+                    </li>
+                <% }) %>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function updateRole(id, role) {
+            await fetch(`/api/agents/${id}/role`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role })
+            });
+            location.reload();
+        }
+
+        function sendCommand(id) {
+            const cmd = prompt("Enter command to send:");
+            if (cmd) {
+                // Future implementation: socket.emit('cmd', { agentId: id, cmd })
+                alert("Command queued (demo only)");
+            }
+        }
+    </script>
+</body>
+</html>
