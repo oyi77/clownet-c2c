@@ -21,7 +21,8 @@ fastify.get('/dashboard', async (request, reply) => {
     return reply.view('dashboard.ejs', { 
         agents: state.getAgents(),
         tasks: state.getTasks(),
-        messages: state.getMessages()
+        messages: state.getMessages(),
+        settings: state.getSettings()
     });
 });
 
@@ -32,6 +33,14 @@ fastify.post('/api/role', async (request, reply) => {
     const { agentId, role, secret } = request.body;
     if (secret !== SECRET_KEY) return reply.status(401).send({ error: 'Unauthorized' });
     await state.reassignRole(agentId, role);
+    return { success: true };
+});
+
+// Settings API
+fastify.post('/api/settings', async (request, reply) => {
+    const { settings, secret } = request.body;
+    if (secret !== SECRET_KEY) return reply.status(401).send({ error: 'Unauthorized' });
+    state.updateSettings(settings);
     return { success: true };
 });
 
@@ -50,10 +59,12 @@ const start = async () => {
             const agentId = socket.handshake.auth.agent_id;
             const initialRole = socket.handshake.auth.role || 'worker';
             
-            console.log(`Agent v2 connected: ${agentId}`);
+            console.log(`Agent connected: ${agentId} (${initialRole})`);
             state.updateAgent(agentId, { id: agentId, status: 'online', role: initialRole });
 
-            // Data Warden Logic: Any agent can be a warden
+            // Broadcast to everyone that a new agent joined
+            io.emit('state_sync', { agents: state.getAgents() });
+
             socket.on('traffic_log', (log) => {
                 const currentAgent = state.getAgents().find(a => a.id === agentId);
                 if (currentAgent && currentAgent.role === 'warden') {
@@ -72,8 +83,6 @@ const start = async () => {
                     specs: payload.specs,
                     metadata: payload.metadata
                 });
-                
-                // Broadcast updates to dashboard listeners
                 io.emit('state_sync', { agents: state.getAgents() });
             });
 
@@ -83,12 +92,35 @@ const start = async () => {
             });
 
             socket.on('chat', (msg) => {
-                state.saveMessage({
-                    sender_id: agentId,
-                    target_id: msg.target || 'all',
-                    content: msg.content
-                });
-                io.emit('chat_broadcast', msg);
+                // If it's a command broadcast from a Master
+                if (msg.content.startsWith('/') || msg.type === 'command') {
+                    const task = {
+                        agent_id: msg.target || 'all',
+                        title: msg.content,
+                        status: 'pending'
+                    };
+                    state.saveTask(task).then(savedTask => {
+                        // Emit to ALL agents
+                        io.emit('message', {
+                            sender_id: agentId,
+                            content: msg.content,
+                            task_id: savedTask.id,
+                            type: 'command'
+                        });
+                        io.emit('state_sync', { tasks: state.getTasks() });
+                    });
+                } else {
+                    state.saveMessage({
+                        sender_id: agentId,
+                        target_id: msg.target || 'all',
+                        content: msg.content
+                    });
+                    io.emit('chat_broadcast', {
+                        sender_id: agentId,
+                        content: msg.content,
+                        timestamp: new Date().toISOString()
+                    });
+                }
             });
 
             socket.on('disconnect', () => {
