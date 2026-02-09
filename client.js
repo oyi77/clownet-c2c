@@ -50,21 +50,51 @@ function isDeniedExec(cmd) {
 }
 
 function isAllowedExec(cmd) {
-    if (EXEC_ALLOWLIST.length === 0) return true;
+    if (EXEC_ALLOWLIST.length === 0) return true; 
     return EXEC_ALLOWLIST.some(token => cmd.startsWith(token));
+}
+
+// Better CPU Usage Calculation
+let lastCpus = os.cpus();
+function getCpuUsage() {
+    const cpus = os.cpus();
+    let user = 0, nice = 0, sys = 0, idle = 0, irq = 0;
+    
+    for (let i = 0; i < cpus.length; i++) {
+        const cpu = cpus[i];
+        const last = lastCpus[i];
+        user += cpu.times.user - last.times.user;
+        nice += cpu.times.nice - last.times.nice;
+        sys += cpu.times.sys - last.times.sys;
+        idle += cpu.times.idle - last.times.idle;
+        irq += cpu.times.irq - last.times.irq;
+    }
+    
+    lastCpus = cpus;
+    const total = user + nice + sys + idle + irq;
+    return total > 0 ? ((total - idle) / total) * 100 : 0;
 }
 
 function reportStatus() {
     if (!sio.connected) return;
     try {
+        const cpu = parseFloat(getCpuUsage().toFixed(1));
+        const ram = parseFloat(((1 - os.freemem() / os.totalmem()) * 100).toFixed(1));
+        
         const specs = {
-            cpu_percent: os.cpus().length > 0 ? os.loadavg()[0] * 100 : 0,
-            ram_percent: (1 - os.freemem() / os.totalmem()) * 100
+            cpu_percent: cpu,
+            ram_percent: ram
         };
         sio.emit('report', { agent_id: args.id, role: args.role, specs });
     } catch (e) {
-    console.error('[!] Specs report failed:', e.message);
+        console.error('[!] Specs report failed:', e.message);
     }
+}
+
+function startHeartbeat() {
+    setInterval(() => {
+        reportStatus();
+    }, 5000); 
 }
 
 function handleExecCommand(shellCmd, replyTo, taskId) {
@@ -88,7 +118,7 @@ function handleExecCommand(shellCmd, replyTo, taskId) {
 
         child.on('close', (code) => {
             if (code === 0) {
-                response = `EXEC_RESULT:\n\`\`\n${stdout}\n\`\`\``;
+                response = `EXEC_RESULT:\n\`\`\`\n${stdout}\n\`\`\``;
             } else {
                 response = `EXEC_ERROR (Code ${code}): ${stderr || 'Unknown error'}`;
             }
@@ -125,36 +155,11 @@ function processInstruction(msg, replyTo, taskId = null) {
         } else if (msg.startsWith('/join ')) {
             const parts = msg.split(' ', 2);
             if (parts.length < 2) {
-                const response = 'ERROR: /join requires a room name. Usage: /join #room-name';
-                console.log(`[!] ${response}`);
-                sendReply(response, replyTo, taskId);
+                sendReply('Usage: /join #room', replyTo, taskId);
                 return;
             }
-            const room = parts[1].trim();
-            if (!room.startsWith('#')) {
-                const response = `ERROR: Room name must start with '#'. Got: ${room}`;
-                console.log(`[!] ${response}`);
-                sendReply(response, replyTo, taskId);
-                return;
-            }
-            sio.emit('join_room', { room });
-            const response = `Joining room ${room}...`;
-            console.log(`[*] Emitted join_room for ${room}`);
-            sendReply(response, replyTo, taskId);
-        } else if (msg.startsWith('/relay ')) {
-            const parts = msg.split(' ', 3);
-            if (parts.length < 3) {
-                const response = 'ERROR: /relay requires target and message. Usage: /relay <target> <message>';
-                console.log(`[!] ${response}`);
-                sendReply(response, replyTo, taskId);
-                return;
-            }
-            const target = parts[1].trim();
-            const relayMsg = parts[2].trim();
-            sio.emit('chat', { to: target, msg: relayMsg });
-            const response = `Relayed message to ${target}: ${relayMsg}`;
-            console.log(`[*] Emitted chat to ${target}: ${relayMsg}`);
-            sendReply(response, replyTo, taskId);
+            sio.emit('join_room', { room: parts[1].trim() });
+            sendReply(`Joining ${parts[1]}...`, replyTo, taskId);
         } else {
             const child = spawn(OPENCLAW_BIN, [
                 'agent',
@@ -166,9 +171,7 @@ function processInstruction(msg, replyTo, taskId = null) {
 
             let stdout = '';
             child.stdout.on('data', (data) => { stdout += data.toString(); });
-
-            let stderr = '';
-            child.stderr.on('data', (data) => { stderr += data.toString(); });
+            child.stderr.on('data', (data) => { /* Ignore stderr logs */ });
 
             child.on('close', (code) => {
                 let response = '';
@@ -186,21 +189,13 @@ function processInstruction(msg, replyTo, taskId = null) {
                         response = stdout.trim();
                     }
                 } else {
-                    response = `BRAIN_ERROR (Code ${code}): ${stderr}`;
+                    response = `BRAIN_ERROR (Code ${code})`;
                 }
                 sendReply(response, replyTo, taskId);
             });
-
-            child.on('error', (err) => {
-                const error = `Sidecar Error: ${err.message}`;
-                console.error(error);
-                sendError(error, replyTo, taskId);
-            });
         }
     } catch (e) {
-        const error = `Sidecar Error: ${e.message}`;
-        console.error(error);
-        sendError(error, replyTo, taskId);
+        sendError(`Sidecar Error: ${e.message}`, replyTo, taskId);
     }
 }
 
@@ -208,6 +203,7 @@ function registerHandlers() {
     sio.on('connect', () => {
         console.log(`[*] Connected to HQ as ${args.id}`);
         reportStatus();
+        startHeartbeat(); 
     });
 
     sio.on('disconnect', () => {
@@ -225,44 +221,19 @@ function registerHandlers() {
 
     sio.on('command', (data) => {
         const cmdId = data.id;
-        const traceId = data.trace_id;
-        console.log(`[CMD] Broadcast ID ${cmdId}: ${data.cmd}`);
-
         if (cmdId) {
-            if (!rememberCommand(cmdId)) {
-                sio.emit('command_ack', { id: cmdId, trace_id: traceId });
-                console.log(`[CMD] Duplicate command ignored: ${cmdId}`);
-                return;
-            }
-            sio.emit('command_ack', { id: cmdId, trace_id: traceId });
+            if (!rememberCommand(cmdId)) return;
+            sio.emit('command_ack', { id: cmdId });
         }
         processInstruction(data.cmd, 'master-ui', cmdId);
-    });
-
-    sio.on('traffic', (data) => {
-        if (args.role === 'warden') {
-            try {
-                const line = JSON.stringify(data) + '\n';
-                const fs = require('fs');
-                fs.appendFileSync('warden.log', line);
-                const eventName = data.type || data.event || 'unknown';
-                console.log(`[WARDEN] Traffic logged: ${eventName}`);
-            } catch (e) {
-                console.error(`[!] Warden log error: ${e.message}`);
-            }
-        }
     });
 }
 
 function main() {
-    console.log(`[*] ClawNet Sidecar v3.8 (Node) launching for ${args.id}...`);
+    console.log(`[*] ClawNet Sidecar v3.9 (Node+Metrics) launching for ${args.id}...`);
     registerHandlers();
-
     const authPayload = { token: args.token, agent_id: args.id, role: args.role };
-    if (args.tenant) {
-        authPayload.tenant_id = args.tenant;
-    }
-
+    if (args.tenant) authPayload.tenant_id = args.tenant;
     sio.connect(args.url, { auth: authPayload });
 }
 
