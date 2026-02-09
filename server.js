@@ -11,6 +11,7 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const DB_PATH = path.join(DATA_DIR, 'clownet_v3.json');
 const SETTINGS_PATH = path.join(DATA_DIR, 'settings.json');
+const SERVER_LOG_PATH = path.join(DATA_DIR, 'server.log');
 
 // Real-time State
 let state = {
@@ -50,14 +51,42 @@ function saveSettings() {
     } catch (e) { console.error("Settings Save Error", e); }
 }
 
+function logEvent(message) {
+    const line = `[${new Date().toISOString()}] ${message}\n`;
+    try {
+        fs.appendFileSync(SERVER_LOG_PATH, line);
+    } catch (e) {
+        console.error("Log Write Error", e);
+    }
+}
+
+function readLastLines(filePath, limit) {
+    try {
+        if (!fs.existsSync(filePath)) return [];
+        const content = fs.readFileSync(filePath, 'utf8');
+        const lines = content.split(/\r?\n/).filter(Boolean);
+        return lines.slice(-limit);
+    } catch (e) {
+        console.error("Log Read Error", e);
+        return [];
+    }
+}
+
 loadState();
 
 fastify.register(require('@fastify/static'), { root: path.join(__dirname, 'public'), prefix: '/public/' });
 fastify.register(require('@fastify/view'), { engine: { ejs: require('ejs') }, root: path.join(__dirname, 'views') });
 fastify.register(require('@fastify/formbody'));
 
-// Dashboard Route (v3.2.1 Fix)
+// Dashboard Route (v3.2.1 Fix) - Protected
 fastify.get('/dashboard', async (req, reply) => {
+    // Basic auth protection for dashboard
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.substring(7) !== SECRET_KEY) {
+        reply.header('WWW-Authenticate', 'Bearer realm="ClawNet Dashboard"');
+        return reply.code(401).send({ error: 'Unauthorized' });
+    }
+    
     return reply.view('dashboard.ejs', { 
         agents: Object.values(state.agents),
         tasks: state.tasks.slice(-20),
@@ -74,7 +103,25 @@ fastify.post('/api/settings', async (req, reply) => {
     return reply.redirect('/dashboard');
 });
 
-fastify.get('/', async () => ({ status: 'ClawNet v3.2 Command Center', online: true }));
+fastify.get('/api/docs', async (req, reply) => {
+    const docsPath = path.join(__dirname, 'openapi.yaml');
+    if (!fs.existsSync(docsPath)) {
+        return reply.code(404).send({ error: 'OpenAPI spec not found' });
+    }
+    reply.type('text/yaml').send(fs.readFileSync(docsPath, 'utf8'));
+});
+
+fastify.get('/api/logs/server', async (req, reply) => {
+    const limit = Math.min(parseInt(req.query.limit || '200', 10), 1000);
+    return reply.send({ lines: readLastLines(SERVER_LOG_PATH, limit) });
+});
+
+fastify.get('/api/logs/tasks', async (req, reply) => {
+    const limit = Math.min(parseInt(req.query.limit || '50', 10), 200);
+    return reply.send({ tasks: state.tasks.slice(-limit) });
+});
+
+fastify.get('/', async () => ({ status: 'ClawNet v3.2.0 Command Center', online: true }));
 
 const start = async () => {
     try {
@@ -102,10 +149,12 @@ const start = async () => {
                     sid: sid
                 };
                 console.log(`[+] Agent ${agent_id} joined as ${role}`);
+                logEvent(`Agent connected: ${agent_id} role=${role || 'worker'} sid=${sid}`);
                 io.emit('fleet_update', Object.values(state.agents));
             }
 
             socket.on('report', (data) => {
+                if (!data || typeof data !== 'object') return;
                 if (state.agents[agent_id]) {
                     state.agents[agent_id].last_seen = new Date().toISOString();
                     state.agents[agent_id].specs = data.specs || state.agents[agent_id].specs;
@@ -116,6 +165,7 @@ const start = async () => {
             });
 
             socket.on('dispatch', (payload) => {
+                if (!payload || !payload.to || !payload.cmd) return;
                 const task = {
                     id: uuidv4(),
                     agent_id: payload.to === 'all' ? 'BROADCAST' : payload.to,
@@ -127,6 +177,7 @@ const start = async () => {
                 state.tasks.push(task);
                 saveState();
                 io.emit('task_update', state.tasks.slice(-20));
+                logEvent(`Dispatch: task=${task.id} to=${task.agent_id} cmd=${payload.cmd}`);
                 
                 if (payload.to === 'all') {
                     socket.broadcast.emit('command', { id: task.id, cmd: payload.cmd });
@@ -137,27 +188,45 @@ const start = async () => {
             });
 
             socket.on('task_result', (payload) => {
+                if (!payload || !payload.id) return;
                 const task = state.tasks.find(t => t.id === payload.id);
                 if (task) {
-                    task.status = payload.status; 
-                    task.result = payload.output;
+                    task.status = (payload.status || 'UNKNOWN').toUpperCase();
+                    task.result = payload.output || '';
+                    if (payload.agent_id) task.agent_id = payload.agent_id;
                     saveState();
                     io.emit('task_update', state.tasks.slice(-20));
+                    io.emit('intel_update', { type: 'task', task });
+                    logEvent(`Task result: ${task.id} status=${task.status} agent=${task.agent_id}`);
                 }
             });
 
             socket.on('chat', (payload) => {
+                if (!payload || !payload.msg) return;
                 const msg = { from: agent_id || 'master-ui', msg: payload.msg, ts: new Date().toISOString() };
                 state.messages.push(msg);
                 if (state.messages.length > 100) state.messages.shift();
                 saveState();
                 io.emit('chat_update', msg);
+                io.emit('intel_update', { type: 'chat', message: msg });
+                logEvent(`Chat: ${msg.from} ${msg.msg}`);
+            });
+
+            socket.on('reassign_role', (payload) => {
+                if (!payload || !payload.agent_id || !payload.role) return;
+                if (role !== 'master') return;
+                if (state.agents[payload.agent_id]) {
+                    state.agents[payload.agent_id].role = payload.role;
+                    io.emit('fleet_update', Object.values(state.agents));
+                    logEvent(`Role change: ${payload.agent_id} -> ${payload.role}`);
+                }
             });
 
             socket.on('disconnect', () => {
                 if (agent_id && state.agents[agent_id]) {
                     state.agents[agent_id].status = 'offline';
                     io.emit('fleet_update', Object.values(state.agents));
+                    logEvent(`Agent disconnected: ${agent_id}`);
                 }
             });
         });

@@ -1,6 +1,6 @@
 {
   "name": "clownet-c2c",
-  "version": "2.1.0",
+  "version": "3.2.0",
   "description": "ClawNet C2C Federated Control",
   "main": "server.js",
   "scripts": {
