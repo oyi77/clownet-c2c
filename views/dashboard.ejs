@@ -141,6 +141,7 @@
                             <th class="p-4">Command</th>
                             <th class="p-4">Status</th>
                             <th class="p-4">Output</th>
+                            <th class="p-4">Action</th>
                         </tr>
                     </thead>
                     <tbody id="ops-body">
@@ -152,6 +153,7 @@
                                     <td class="p-4 font-mono text-zinc-500"><%= task.cmd %></td>
                                     <td class="p-4"><span class="text-[9px] font-bold <%= task.status === 'SUCCESS' ? 'text-green-500' : task.status === 'FAIL' ? 'text-red-500' : 'text-zinc-500' %>"><%= task.status %></span></td>
                                     <td class="p-4 text-[10px] text-zinc-500 font-mono"><%= task.result && task.result.stdout ? task.result.stdout.substring(0,60) : (typeof task.result === 'string' ? task.result.substring(0,60) : '') %></td>
+                                    <td class="p-4"><button onclick="showTaskOutput('<%= task.id %>')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold px-2 py-1 rounded">View</button></td>
                                 </tr>
                             <% }); %>
                         <% } %>
@@ -217,6 +219,39 @@
         </section>
     </main>
 
+    <!-- TASK OUTPUT MODAL -->
+    <div id="task-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4">
+        <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-2xl p-5 max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between mb-4 border-b border-zinc-800 pb-3">
+                <div class="text-zinc-100 font-bold">TASK OUTPUT</div>
+                <button id="task-modal-close" class="text-zinc-500 text-xs">CLOSE</button>
+            </div>
+            <div class="space-y-2 text-xs mb-3">
+                <div class="flex justify-between"><span class="text-zinc-500">Task ID</span><span id="task-modal-id" class="text-zinc-200 font-mono"></span></div>
+                <div class="flex justify-between"><span class="text-zinc-500">Agent</span><span id="task-modal-agent" class="text-zinc-200 font-bold"></span></div>
+                <div class="flex justify-between"><span class="text-zinc-500">Command</span><span id="task-modal-cmd" class="text-zinc-200 font-mono"></span></div>
+                <div class="flex justify-between"><span class="text-zinc-500">Status</span><span id="task-modal-status" class="text-zinc-200"></span></div>
+            </div>
+            <div class="flex-1 overflow-y-auto">
+                <div id="task-modal-output" class="bg-black/50 border border-zinc-800 rounded p-4 text-[10px] font-mono text-zinc-300 whitespace-pre-wrap break-all"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AGENT LOGS MODAL -->
+    <div id="agent-logs-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4">
+        <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-2xl p-5 max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between mb-4 border-b border-zinc-800 pb-3">
+                <div>
+                    <span class="text-zinc-100 font-bold text-xs uppercase tracking-widest">Agent Logs</span>
+                    <span class="text-zinc-500 text-[10px] ml-2"><span id="agent-logs-agent-id"></span></span>
+                </div>
+                <button id="agent-logs-close" class="text-zinc-500 text-xs">CLOSE</button>
+            </div>
+            <div id="agent-logs-content" class="flex-1 overflow-y-auto space-y-1 text-xs"></div>
+        </div>
+    </div>
+
     <!-- AGENT MODAL -->
     <div id="agent-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4">
         <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-lg p-5">
@@ -234,6 +269,11 @@
                 <div id="agent-modal-sessions" class="flex flex-wrap gap-2"></div>
             </div>
             <div class="mt-5 space-y-3">
+                <div class="flex gap-2 mb-2">
+                    <button id="agent-modal-logs" class="flex-1 bg-zinc-800 hover:bg-zinc-700 px-3 py-2 rounded text-[10px] font-bold text-zinc-200 uppercase tracking-wider transition-colors">
+                        LOGS
+                    </button>
+                </div>
                 <div class="text-[10px] uppercase tracking-widest text-zinc-500">Dispatch Command</div>
                 <div class="flex gap-2">
                     <input id="agent-modal-command" type="text" placeholder="/status | /sessions list" class="flex-1 bg-black border border-zinc-800 rounded px-3 py-2 text-xs outline-none focus:border-green-600 text-zinc-100 font-mono">
@@ -264,8 +304,9 @@
         
         let currentRoom = 'all';
         let agentsCache = [];
+        let tasksCache = [];
         const agentCache = {};
-        const chatHistory = {}; // Persistent chat history
+        const chatHistory = {};
         const seenMessageKeys = new Set();
         const seenMessageQueue = [];
         const MAX_SEEN_MESSAGES = 200;
@@ -273,6 +314,17 @@
         const TYPING_TTL_MS = 2000;
         const TYPING_THROTTLE_MS = 800;
         let currentAgentId = null;
+
+        // Initialize tasks cache from server data
+        <%
+        if (tasks && tasks.length > 0) {
+            tasks.forEach(task => {
+        %>
+                tasksCache.push({ id: '<%= task.id %>', agent_id: '<%= task.agent_id %>', cmd: '<%= task.cmd %>', status: '<%= task.status %>', result: <%= JSON.stringify(task.result) %> });
+        <%
+            });
+        }
+        %>
 
         // --- 2. AUTHENTICATION LOGIC ---
         const secret = '<%= secret %>';
@@ -438,6 +490,7 @@
         }
 
         function handleTaskUpdate(tasks) {
+            tasksCache = tasks || [];
             renderOps(tasks);
             refreshLogs();
         }
@@ -499,7 +552,7 @@
         function renderOps(tasks) {
             const body = document.getElementById('ops-body');
             if (!tasks || tasks.length === 0) {
-                body.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-zinc-600 text-xs">NO TASKS</td></tr>';
+                body.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-zinc-600 text-xs">NO TASKS</td></tr>';
                 return;
             }
             body.innerHTML = tasks.slice().reverse().map(t => {
@@ -513,6 +566,7 @@
                         <td class="p-4 font-mono text-zinc-500">${t.cmd}</td>
                         <td class="p-4"><span class="text-[9px] font-bold ${statusClass}">${status}</span></td>
                         <td class="p-4 text-[10px] text-zinc-500 font-mono">${output}</td>
+                        <td class="p-4"><button onclick="showTaskOutput('${t.id}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold px-2 py-1 rounded">View</button></td>
                     </tr>
                 `;
             }).join('');
@@ -841,6 +895,90 @@
                 const newRole = document.getElementById('agent-modal-role-select').value;
                 if (!currentAgentId) return;
                 socket.emit('reassign_role', { agent_id: currentAgentId, role: newRole });
+            });
+        }
+
+        // Task Output Modal Functions
+        const taskModalClose = document.getElementById('task-modal-close');
+
+        function showTaskOutput(taskId) {
+            const task = tasksCache.find(t => t.id === taskId);
+            if (!task) return;
+
+            document.getElementById('task-modal').classList.remove('hidden');
+            document.getElementById('task-modal').classList.add('flex');
+            document.getElementById('task-modal-id').textContent = '#' + task.id.substring(0, 8);
+            document.getElementById('task-modal-agent').textContent = task.agent_id;
+            document.getElementById('task-modal-cmd').textContent = task.cmd;
+            document.getElementById('task-modal-status').textContent = task.status || 'UNKNOWN';
+            document.getElementById('task-modal-status').className = 'text-zinc-200 ' + (task.status === 'SUCCESS' ? 'text-green-500' : task.status === 'FAIL' ? 'text-red-500' : 'text-zinc-500');
+
+            let output = '';
+            if (task.result) {
+                if (typeof task.result === 'string') {
+                    output = task.result;
+                } else if (task.result.stdout) {
+                    output = task.result.stdout;
+                    if (task.result.stderr) output += '\n\nSTDERR:\n' + task.result.stderr;
+                }
+            }
+            document.getElementById('task-modal-output').textContent = output || 'No output available.';
+        }
+
+        if (taskModalClose) {
+            taskModalClose.addEventListener('click', () => {
+                document.getElementById('task-modal').classList.add('hidden');
+                document.getElementById('task-modal').classList.remove('flex');
+            });
+        }
+
+        // Agent Logs Modal
+        const agentLogsModal = document.getElementById('agent-logs-modal');
+        const agentLogsClose = document.getElementById('agent-logs-close');
+        const agentLogsButton = document.getElementById('agent-modal-logs');
+
+        function showAgentLogs(agentId) {
+            const agentTasks = tasksCache.filter(t => t.agent_id === agentId);
+
+            document.getElementById('agent-logs-agent-id').textContent = agentId;
+            const logsBox = document.getElementById('agent-logs-content');
+            if (agentTasks.length === 0) {
+                logsBox.innerHTML = '<div class="text-zinc-600 text-[10px] italic">No task logs for this agent.</div>';
+            } else {
+                logsBox.innerHTML = agentTasks.map(t => {
+                    const status = (t.status || 'UNKNOWN').toUpperCase();
+                    const statusClass = status === 'SUCCESS' ? 'text-green-500' : status === 'FAIL' ? 'text-red-500' : 'text-zinc-500';
+                    const output = t.result && t.result.stdout ? t.result.stdout.substring(0, 200) : (typeof t.result === 'string' ? t.result.substring(0, 200) : '');
+                    return `
+                        <div class="border-b border-zinc-800/50 py-2">
+                            <div class="flex gap-2 text-[10px] mb-1">
+                                <span class="text-zinc-500">${new Date(t.ts).toLocaleTimeString()}</span>
+                                <span class="${statusClass} font-bold">${status}</span>
+                                <span class="text-zinc-600 font-mono">#${t.id.substring(0,8)}</span>
+                            </div>
+                            <div class="text-zinc-400 text-[10px] font-mono bg-black/30 rounded p-2">${t.cmd}</div>
+                            ${output ? `<div class="text-zinc-500 text-[10px] font-mono mt-1 whitespace-pre-wrap">${output}</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            agentLogsModal.classList.remove('hidden');
+            agentLogsModal.classList.add('flex');
+        }
+
+        if (agentLogsButton) {
+            agentLogsButton.addEventListener('click', () => {
+                if (currentAgentId) {
+                    showAgentLogs(currentAgentId);
+                }
+            });
+        }
+
+        if (agentLogsClose) {
+            agentLogsClose.addEventListener('click', () => {
+                agentLogsModal.classList.add('hidden');
+                agentLogsModal.classList.remove('flex');
             });
         }
     </script>
