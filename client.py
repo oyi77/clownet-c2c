@@ -1,13 +1,15 @@
 import socketio
-import psutil
-import platform
 import os
+import platform
 import time
+import uuid
 import subprocess
+import argparse
+import sys
 import json
 import logging
 from datetime import datetime
-import random
+import psutil
 
 # Setup logging
 LOG_FILE = "client.log"
@@ -17,20 +19,33 @@ logging.basicConfig(
     handlers=[logging.FileHandler(LOG_FILE), logging.StreamHandler()],
 )
 
-SECRET_KEY = os.environ.get("CLAWNET_SECRET_KEY", "very-secret-key-123")
-RELAY_URL = os.environ.get("CLAWNET_RELAY_URL", "wss://clownet-c2c.fly.dev")
-AGENT_ID = os.environ.get("CLAWNET_AGENT_ID", platform.node())
-ROLE = os.environ.get("CLAWNET_ROLE", "worker")
+# Configuration
+DEFAULT_SERVER = "wss://clownet-c2c.fly.dev"
+DEFAULT_TOKEN = "very-secret-key-123"
+
+parser = argparse.ArgumentParser(description='ClawNet C2C Sidecar v3.3')
+parser.add_argument('--url', default=os.getenv('CLAWNET_SERVER', DEFAULT_SERVER))
+parser.add_argument('--token', default=os.getenv('CLAWNET_SECRET_KEY', DEFAULT_TOKEN))
+parser.add_argument('--id', default=os.getenv('AGENT_ID', f"node-{str(uuid.uuid4())[:4]}"))
+parser.add_argument('--role', default="worker")
+args = parser.parse_args()
+
+AGENT_ID = args.id
+ROLE = args.role
+RELAY_URL = args.url
+SECRET_KEY = args.token
 
 # Requirement: Absolute path for 'openclaw'
 OPENCLAW_PATH = os.environ.get("OPENCLAW_BIN_PATH", "openclaw")
 
 logging.info(f"Using OpenClaw path: {OPENCLAW_PATH}")
 
+# Robust Socket Client (Upstream + Stashed retry logic)
 sio = socketio.Client(
-    reconnection=True, reconnection_delay=5, reconnection_delay_max=30
+    reconnection=True, 
+    reconnection_delay=5, 
+    reconnection_delay_max=30
 )
-
 
 def get_system_specs():
     return {
@@ -39,7 +54,6 @@ def get_system_specs():
         "os": f"{platform.system()} {platform.release()}",
         "boot_time": datetime.fromtimestamp(psutil.boot_time()).isoformat(),
     }
-
 
 def get_active_sessions():
     try:
@@ -53,22 +67,18 @@ def get_active_sessions():
         # logging.warning(f"Failed to get active sessions: {e}")
         return []
 
-
 @sio.event
 def connect():
-    logging.info(f"Connected to relay at {RELAY_URL}")
+    print(f"[*] Connected to HQ as {args.id}")
     send_report()
-
 
 @sio.event
 def disconnect():
-    logging.warning("Disconnected from relay")
-
+    print("[!] Disconnected from HQ")
 
 @sio.on("state_sync")
 def on_state_sync(data):
     logging.debug(f"State sync received")
-
 
 @sio.on("command")
 def on_command(data):
@@ -87,6 +97,7 @@ def on_command(data):
         )
 
     try:
+        # Execute via OpenClaw CLI
         full_cmd = f"{OPENCLAW_PATH} {cmd_text}"
         logging.info(f"Executing: {full_cmd}")
 
@@ -139,6 +150,12 @@ def on_command(data):
                 },
             )
 
+@sio.on('chat_update')
+def on_chat_update(data):
+    # Support for receiving DMs or Broadcasts
+    sender = data.get('from', 'unknown')
+    msg = data.get('msg', '')
+    logging.info(f"[CHAT] {sender}: {msg}")
 
 def send_report():
     try:
@@ -153,15 +170,8 @@ def send_report():
         }
         sio.emit("report", payload)
 
-        if ROLE == "warden":
-            sio.emit(
-                "traffic_log",
-                {"type": "heartbeat", "agent_id": AGENT_ID, "timestamp": time.time()},
-            )
-
     except Exception as e:
         logging.error(f"Failed to send report: {e}")
-
 
 def main_loop():
     retry_delay = 5
@@ -169,7 +179,7 @@ def main_loop():
 
     while True:
         try:
-            logging.info(f"Starting ClawNet Sidecar v3.2 for Agent: {AGENT_ID}")
+            logging.info(f"Starting ClawNet Sidecar v3.3 for Agent: {AGENT_ID}")
             if not sio.connected:
                 sio.connect(
                     RELAY_URL,
@@ -193,9 +203,5 @@ def main_loop():
         time.sleep(retry_delay)
         retry_delay = min(retry_delay * 2, max_delay)
 
-
 if __name__ == "__main__":
-    try:
-        main_loop()
-    except KeyboardInterrupt:
-        logging.info("Stopping Sidecar...")
+    main_loop()

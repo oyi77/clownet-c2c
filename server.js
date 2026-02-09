@@ -1,4 +1,4 @@
-const fastify = require('fastify')({ logger: false });
+const fastify = require('fastify')({ logger: true });
 const path = require('path');
 const socketio = require('socket.io');
 const fs = require('fs');
@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const SECRET_KEY = process.env.CLAWNET_SECRET_KEY || 'very-secret-key-123';
 const PORT = process.env.PORT || 3000;
-const DATA_DIR = fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data');
+const DATA_DIR = path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const DB_PATH = path.join(DATA_DIR, 'clownet_v3.json');
@@ -20,7 +20,6 @@ let state = {
     messages: []
 };
 
-// Settings (Separate persistence)
 let settings = { supabase_url: '', supabase_key: '' };
 
 function loadState() {
@@ -92,7 +91,7 @@ fastify.get('/dashboard', async (req, reply) => {
         tasks: state.tasks.slice(-20),
         messages: state.messages.slice(-50),
         secret: SECRET_KEY,
-        settings: settings // Ensure this is passed
+        settings: settings
     });
 });
 
@@ -121,12 +120,16 @@ fastify.get('/api/logs/tasks', async (req, reply) => {
     return reply.send({ tasks: state.tasks.slice(-limit) });
 });
 
-fastify.get('/', async () => ({ status: 'ClawNet v3.2.0 Command Center', online: true }));
+fastify.get('/', async () => ({ status: 'ClawNet v3.3 War Room', online: true }));
 
 const start = async () => {
     try {
         await fastify.listen({ port: PORT, host: '0.0.0.0' });
-        const io = new socketio.Server(fastify.server, { cors: { origin: "*" } });
+        // ALLOW POLLING FOR ROBUSTNESS
+        const io = new socketio.Server(fastify.server, { 
+            cors: { origin: "*" },
+            transports: ['websocket', 'polling'] 
+        });
 
         io.use((socket, next) => {
             const token = socket.handshake.auth.token;
@@ -144,11 +147,11 @@ const start = async () => {
                     role: role || 'worker',
                     status: 'online',
                     specs: specs || {},
-                    sessions: [], // Initialize sessions array
+                    sessions: [],
                     last_seen: new Date().toISOString(),
                     sid: sid
                 };
-                console.log(`[+] Agent ${agent_id} joined as ${role}`);
+                console.log(`[+] Agent ${agent_id} joined as ${role} (${socket.conn.transport.name})`);
                 logEvent(`Agent connected: ${agent_id} role=${role || 'worker'} sid=${sid}`);
                 io.emit('fleet_update', Object.values(state.agents));
             }
@@ -159,7 +162,7 @@ const start = async () => {
                     state.agents[agent_id].last_seen = new Date().toISOString();
                     state.agents[agent_id].specs = data.specs || state.agents[agent_id].specs;
                     state.agents[agent_id].cron = data.cron || [];
-                    state.agents[agent_id].sessions = data.sessions || []; // Update active sessions
+                    state.agents[agent_id].sessions = data.sessions || [];
                     io.emit('fleet_update', Object.values(state.agents));
                 }
             });
@@ -201,15 +204,50 @@ const start = async () => {
                 }
             });
 
+            // Unified Chat/Message Handler
             socket.on('chat', (payload) => {
-                if (!payload || !payload.msg) return;
-                const msg = { from: agent_id || 'master-ui', msg: payload.msg, ts: new Date().toISOString() };
+                // Support both 'msg' (old) and 'to/msg' (new) formats
+                // Fallback to 'all' if 'to' is missing (Global Chat)
+                const to = payload.to || 'all';
+                const messageText = payload.msg || payload.message;
+                
+                if (!messageText) return;
+
+                const msg = { 
+                    from: agent_id || 'master-ui', 
+                    to: to,
+                    msg: messageText, 
+                    ts: new Date().toISOString() 
+                };
+
                 state.messages.push(msg);
                 if (state.messages.length > 100) state.messages.shift();
                 saveState();
-                io.emit('chat_update', msg);
-                io.emit('intel_update', { type: 'chat', message: msg });
-                logEvent(`Chat: ${msg.from} ${msg.msg}`);
+
+                // Emit to relevant parties
+                if (to === 'all') {
+                     io.emit('chat_update', msg);
+                     io.emit('intel_update', { type: 'chat', message: msg });
+                } else {
+                    // Direct Message
+                    const target = state.agents[to];
+                    if (target) io.to(target.sid).emit('chat_update', msg);
+                    // Also send back to sender (if not me)
+                    socket.emit('chat_update', msg);
+                    // And to master UI
+                     io.emit('intel_update', { type: 'chat', message: msg });
+                }
+
+                logEvent(`Chat: ${msg.from} -> ${msg.to}: ${msg.msg}`);
+            });
+            
+            // Legacy/Sidecar support alias
+            socket.on('message', (payload) => {
+                if (socket.listeners('chat').length > 0) {
+                     // trigger the chat listener
+                     const chatHandler = socket.listeners('chat')[0];
+                     chatHandler(payload);
+                }
             });
 
             socket.on('reassign_role', (payload) => {

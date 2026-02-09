@@ -10,11 +10,12 @@
         body { font-family: 'Fira Code', monospace; scrollbar-width: thin; scrollbar-color: #27272a #09090b; overflow: hidden; }
         .terminal-glow { box-shadow: 0 0 20px rgba(34, 197, 94, 0.1); }
         .tab-btn.active { border-bottom-color: #22c55e; color: #f4f4f5; background: #18181b; }
+        .chat-room.active { background: #18181b; border-left: 2px solid #22c55e; }
     </style>
 </head>
 <body class="bg-[#09090b] text-zinc-400 min-h-screen flex flex-col">
     <header class="border-b border-zinc-800 p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-[#09090b]">
-        <h1 class="text-green-500 font-bold tracking-tighter text-xl italic">🦞 CLAWNET_C2C <span class="text-zinc-600 text-xs font-mono not-italic">v3.2.0</span></h1>
+        <h1 class="text-green-500 font-bold tracking-tighter text-xl italic">🦞 CLAWNET_C2C <span class="text-zinc-600 text-xs font-mono not-italic">v3.3_WAR_ROOM</span></h1>
         <div id="connection-status" class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500">
             <span id="status-dot" class="w-2 h-2 bg-red-500 rounded-full"></span> <span id="status-text">CONNECTING...</span>
         </div>
@@ -23,7 +24,7 @@
     <nav class="flex border-b border-zinc-800 bg-[#0c0c0e] overflow-x-auto whitespace-nowrap">
         <button onclick="showTab('fleet')" class="tab-btn active px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all" data-tab="fleet">01_FLEET</button>
         <button onclick="showTab('ops')" class="tab-btn px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all" data-tab="ops">02_OPERATIONS</button>
-        <button onclick="showTab('intel')" class="tab-btn px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all" data-tab="intel">03_INTEL</button>
+        <button onclick="showTab('intel')" class="tab-btn px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all" data-tab="intel">03_INTEL (WAR ROOM)</button>
         <button onclick="showTab('settings')" class="tab-btn px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all" data-tab="settings">04_SETTINGS</button>
         <button onclick="showTab('logs')" class="tab-btn px-6 py-3 text-xs font-bold hover:bg-zinc-900 transition-all" data-tab="logs">05_LOGS</button>
     </nav>
@@ -114,35 +115,28 @@
             </div>
         </section>
 
-        <!-- INTEL TAB -->
-        <section id="intel" class="tab-content h-full p-6 flex flex-col gap-4 hidden">
-            <div id="intel-feed" class="flex-1 bg-black/40 border border-zinc-800 rounded p-4 font-mono text-[11px] overflow-y-auto space-y-2">
-                <% if (messages && messages.length > 0) { %>
-                    <% messages.forEach(msg => { %>
-                        <div class="flex gap-4">
-                            <span class="text-zinc-700">[<%= new Date(msg.ts).toLocaleTimeString() %>]</span>
-                            <span class="<%= msg.from === 'master-ui' ? 'text-blue-500' : 'text-green-500' %> font-bold uppercase"><%= msg.from %>:</span>
-                            <span class="text-zinc-400"><%= msg.msg %></span>
-                        </div>
-                    <% }); %>
-                <% } %>
-            </div>
-            <div class="bg-zinc-950/60 border border-zinc-800 rounded p-4 flex flex-col gap-3">
-                <div class="text-[10px] uppercase tracking-widest text-zinc-500">Chat</div>
-                <div class="flex flex-col md:flex-row gap-2">
-                    <input type="text" id="intel-chat-input" placeholder="Enter message..." 
-                           class="flex-1 bg-zinc-900 border border-zinc-800 rounded px-4 py-2 text-xs outline-none focus:border-green-600 text-zinc-100 font-mono">
-                    <button id="intel-chat-send" class="bg-green-600 px-4 py-2 rounded text-[10px] font-bold text-black uppercase">Send</button>
+        <!-- INTEL TAB (WAR ROOM) -->
+        <section id="intel" class="tab-content h-full hidden flex">
+            <!-- Sidebar: Agent List / Room List -->
+            <div class="w-64 border-r border-zinc-800 bg-[#0c0c0e] flex flex-col">
+                <div class="p-3 border-b border-zinc-800 text-[10px] uppercase font-bold text-zinc-500">Comms_Channels</div>
+                <div id="room-list" class="flex-1 overflow-y-auto">
+                    <button onclick="selectRoom('all')" class="chat-room active w-full text-left px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-zinc-800/50">
+                        # BROADCAST_ALL
+                    </button>
+                    <!-- Agent DMs injected here -->
                 </div>
             </div>
-            <div class="bg-zinc-950/60 border border-zinc-800 rounded p-4 flex flex-col gap-3">
-                <div class="text-[10px] uppercase tracking-widest text-zinc-500">Command</div>
-                <div class="flex flex-col md:flex-row gap-2">
-                    <select id="intel-target" class="bg-black border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200">
-                        <option value="all">Broadcast (all)</option>
-                    </select>
-                    <input type="text" id="intel-command" placeholder="/status | /sessions list | /help" class="flex-1 bg-zinc-900 border border-zinc-800 rounded px-4 py-2 text-xs outline-none focus:border-green-600 text-zinc-100 font-mono">
-                    <button id="intel-dispatch" class="bg-green-600 px-4 py-2 rounded text-[10px] font-bold text-black uppercase">Dispatch</button>
+
+            <!-- Main Chat Area -->
+            <div class="flex-1 flex flex-col bg-[#09090b]">
+                <div id="chat-header" class="p-3 border-b border-zinc-800 text-xs font-bold text-green-500 bg-zinc-900/50">
+                    # BROADCAST_ALL
+                </div>
+                <div id="chat-box" class="flex-1 p-4 font-mono text-[11px] overflow-y-auto space-y-2"></div>
+                <div class="p-3 border-t border-zinc-800 bg-[#0c0c0e]">
+                    <input type="text" id="master-input" placeholder="Broadcast message (or /exec command)..." 
+                           class="w-full bg-black border border-zinc-800 rounded px-4 py-2 text-xs outline-none focus:border-green-600 text-zinc-100 font-mono">
                 </div>
             </div>
         </section>
@@ -224,34 +218,36 @@
             reconnectionAttempts: 10
         });
         
+        let currentRoom = 'all';
+        let agentsCache = [];
+        const agentCache = {};
+
         socket.on('connect', () => {
             console.log("✅ Socket connected via " + socket.io.engine.transport.name);
             document.getElementById('status-dot').className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
             document.getElementById('status-text').innerText = 'ONLINE (' + socket.io.engine.transport.name.toUpperCase() + ')';
         });
 
-        socket.io.engine.on("upgrade", () => {
-            document.getElementById('status-text').innerText = 'ONLINE (' + socket.io.engine.transport.name.toUpperCase() + ')';
-        });
-
         socket.on('connect_error', (err) => {
-            console.error("❌ Connection Error:", err.message);
             document.getElementById('status-text').innerText = 'ERROR: ' + err.message;
             document.getElementById('status-dot').className = 'w-2 h-2 bg-red-600 rounded-full';
         });
 
-        const agentCache = {};
-
         function showTab(id) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('flex')); // Remove flex from Intel
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(id).classList.remove('hidden');
+            
+            const tab = document.getElementById(id);
+            tab.classList.remove('hidden');
+            if (id === 'intel') tab.classList.add('flex'); // Intel needs flex
+
             document.querySelector(`[data-tab="${id}"]`).classList.add('active');
             if (id === 'logs') refreshLogs();
         }
 
         function updateTargetOptions(agents) {
-            const targets = [document.getElementById('ops-target'), document.getElementById('intel-target')].filter(Boolean);
+            const targets = [document.getElementById('ops-target')].filter(Boolean);
             targets.forEach(select => {
                 const current = select.value;
                 select.innerHTML = '<option value="all">Broadcast (all)</option>';
@@ -271,7 +267,7 @@
                 body.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-zinc-600 text-xs">NO TASKS</td></tr>';
                 return;
             }
-            body.innerHTML = tasks.map(t => {
+            body.innerHTML = tasks.slice().reverse().map(t => {
                 const status = (t.status || 'UNKNOWN').toUpperCase();
                 const statusClass = status === 'SUCCESS' ? 'text-green-500' : status === 'FAIL' ? 'text-red-500' : 'text-zinc-500';
                 const output = t.result && t.result.stdout ? t.result.stdout.substring(0, 60) : (typeof t.result === 'string' ? t.result.substring(0, 60) : '');
@@ -288,19 +284,26 @@
         }
 
         function appendIntel(entry) {
-            const feed = document.getElementById('intel-feed');
-            if (!feed) return;
-            const div = document.createElement('div');
-            div.className = "flex gap-4";
-            if (entry.type === 'chat') {
+            // Used by server-side update, but we are using Chat Box now
+             if (entry.type === 'chat') {
                 const msg = entry.message;
-                div.innerHTML = `<span class="text-zinc-700">[${new Date(msg.ts).toLocaleTimeString()}]</span> <span class="${msg.from === 'master-ui' ? 'text-blue-500' : 'text-green-500'} font-bold uppercase">${msg.from}:</span> <span class="text-zinc-400">${msg.msg}</span>`;
-            } else if (entry.type === 'task') {
-                const task = entry.task;
-                div.innerHTML = `<span class="text-zinc-700">[${new Date(task.ts).toLocaleTimeString()}]</span> <span class="text-yellow-500 font-bold uppercase">TASK</span> <span class="text-zinc-400">${task.agent_id} ${task.cmd} → ${task.status}</span>`;
+                 // Only show if broadcast or relevant to current room
+                if (msg.to === 'all' || msg.to === currentRoom || msg.from === currentRoom) {
+                    addLog(msg.from, msg.msg, msg.from === 'master-ui');
+                }
             }
-            feed.appendChild(div);
-            feed.scrollTop = feed.scrollHeight;
+        }
+        
+        function addLog(sender, text, isMe) {
+            const box = document.getElementById('chat-box');
+            if (!box) return;
+            const div = document.createElement('div');
+            div.className = "flex gap-4 animate-in fade-in slide-in-from-bottom-1 duration-200";
+            div.innerHTML = `<span class="text-zinc-700 min-w-[60px]">[${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}]</span> 
+                             <span class="${isMe ? 'text-blue-500' : 'text-green-500'} font-bold uppercase min-w-[80px] text-right">${sender}:</span> 
+                             <span class="text-zinc-300 flex-1 break-words">${text}</span>`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
         }
 
         function refreshLogs() {
@@ -323,53 +326,85 @@
                 });
         }
 
+        function selectRoom(target) {
+            currentRoom = target;
+            document.querySelectorAll('.chat-room').forEach(r => r.classList.remove('active'));
+            const btn = document.querySelector(`button[onclick="selectRoom('${target}')"]`);
+            if(btn) btn.classList.add('active');
+            
+            const label = target === 'all' ? '# BROADCAST_ALL' : `@ ${target.toUpperCase()}`;
+            document.getElementById('chat-header').innerText = label;
+            document.getElementById('master-input').placeholder = target === 'all' ? "Broadcast message..." : `Message ${target}...`;
+            
+            // Clear chat for visual switch (in real app, load history)
+            document.getElementById('chat-box').innerHTML = '<div class="text-zinc-600 italic mb-4">-- CHANNEL SWITCHED --</div>';
+        }
+
         socket.on('fleet_update', (agents) => {
-            console.log("Received fleet update:", agents.length);
+            agentsCache = agents;
             const grid = document.getElementById('fleet-grid');
             agents.forEach(a => { agentCache[a.id] = a; });
             updateTargetOptions(agents);
+            
+            // Update Fleet Grid
             if (agents.length === 0) {
                 grid.innerHTML = '<div class="col-span-3 text-center py-20 text-zinc-600">NO AGENTS ONLINE</div>';
-                return;
-            }
-            grid.innerHTML = agents.map(a => `
-                <div class="bg-zinc-900 border border-zinc-800 p-5 rounded terminal-glow relative group" data-agent-id="${a.id}">
-                    <div class="absolute top-4 right-4 text-[10px] ${a.status === 'online' ? 'text-green-500' : 'text-red-500'}">
-                        ● ${a.status.toUpperCase()}
-                    </div>
-                    <button class="agent-actions absolute top-4 left-4 text-[9px] text-zinc-500 border border-zinc-800 px-2 py-1 rounded hover:text-zinc-200">ACTIONS</button>
-                    <h3 class="text-zinc-100 font-bold mb-1">${a.id}</h3>
-                    <div class="text-[10px] text-zinc-500 mb-4 tracking-tighter">ROLE: ${a.role.toUpperCase()}</div>
-                    <div class="space-y-3">
-                        <div class="flex justify-between text-[10px]">
-                            <span class="text-zinc-600">LAST_HEARTBEAT</span>
-                            <span>${new Date(a.last_seen).toLocaleTimeString()}</span>
+            } else {
+                grid.innerHTML = agents.map(a => `
+                    <div class="bg-zinc-900 border border-zinc-800 p-5 rounded terminal-glow relative group" data-agent-id="${a.id}">
+                        <div class="absolute top-4 right-4 text-[10px] ${a.status === 'online' ? 'text-green-500' : 'text-red-500'}">
+                            ● ${a.status.toUpperCase()}
                         </div>
-                        <div class="bg-black/50 p-2 rounded border border-zinc-800">
-                            <div class="text-[9px] text-zinc-600 mb-1">SYSTEM_RESOURCES</div>
-                            <div class="grid grid-cols-2 gap-2 text-[10px]">
-                                <div>CPU: <span class="text-zinc-300">${(a.specs && a.specs.cpu_percent) || 0}%</span></div>
-                                <div>RAM: <span class="text-zinc-300">${(a.specs && a.specs.ram_percent) || 0}%</span></div>
+                        <button class="agent-actions absolute top-4 left-4 text-[9px] text-zinc-500 border border-zinc-800 px-2 py-1 rounded hover:text-zinc-200">ACTIONS</button>
+                        <h3 class="text-zinc-100 font-bold mb-1">${a.id}</h3>
+                        <div class="text-[10px] text-zinc-500 mb-4 tracking-tighter">ROLE: ${a.role.toUpperCase()}</div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-[10px]">
+                                <span class="text-zinc-600">LAST_HEARTBEAT</span>
+                                <span>${new Date(a.last_seen).toLocaleTimeString()}</span>
                             </div>
+                            <div class="bg-black/50 p-2 rounded border border-zinc-800">
+                                <div class="text-[9px] text-zinc-600 mb-1">SYSTEM_RESOURCES</div>
+                                <div class="grid grid-cols-2 gap-2 text-[10px]">
+                                    <div>CPU: <span class="text-zinc-300">${(a.specs && a.specs.cpu_percent) || 0}%</span></div>
+                                    <div>RAM: <span class="text-zinc-300">${(a.specs && a.specs.ram_percent) || 0}%</span></div>
+                                </div>
+                            </div>
+                            ${(a.sessions && a.sessions.length > 0) ? `
+                                <div class="mt-2 pt-2 border-t border-zinc-800">
+                                    <div class="text-[9px] text-zinc-500 mb-1">ACTIVE SESSIONS</div>
+                                    ${a.sessions.map(s => `<div class="text-[9px] text-zinc-400 bg-zinc-950 p-1 rounded mb-1 truncate">${s.id || s}</div>`).join('')}
+                                </div>
+                            ` : ''}
                         </div>
-                        ${a.sessions && a.sessions.length > 0 ? `
-                        <div class="mt-2 pt-2 border-t border-zinc-800">
-                            <div class="text-[9px] text-zinc-500 mb-1">ACTIVE SESSIONS</div>
-                            ${a.sessions.map(s => `<div class="text-[9px] text-zinc-400 bg-zinc-950 p-1 rounded mb-1 truncate">${s.id}</div>`).join('')}
-                        </div>` : ''}
                     </div>
-                </div>
-            `).join('');
-
-            document.querySelectorAll('.agent-actions').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const card = e.target.closest('[data-agent-id]');
-                    if (!card) return;
-                    const agent = agentCache[card.dataset.agentId];
-                    if (!agent) return;
-                    openAgentModal(agent);
+                `).join('');
+                
+                // Add event listeners for new buttons
+                document.querySelectorAll('.agent-actions').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const card = e.target.closest('[data-agent-id]');
+                        if (!card) return;
+                        const agent = agentCache[card.dataset.agentId];
+                        if (!agent) return;
+                        openAgentModal(agent);
+                    });
                 });
+            }
+
+            // Update Chat Rooms list
+            const roomList = document.getElementById('room-list');
+             let roomsHtml = `<button onclick="selectRoom('all')" class="chat-room ${currentRoom === 'all' ? 'active' : ''} w-full text-left px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-zinc-800/50"># BROADCAST_ALL</button>`;
+            
+            agents.forEach(a => {
+                if (a.id !== 'master-ui') {
+                    roomsHtml += `<button onclick="selectRoom('${a.id}')" class="chat-room ${currentRoom === a.id ? 'active' : ''} w-full text-left px-4 py-3 text-xs text-zinc-400 hover:bg-zinc-800 border-b border-zinc-800/50 flex justify-between">
+                        <span>@ ${a.id}</span>
+                        <span class="w-1.5 h-1.5 rounded-full ${a.status === 'online' ? 'bg-green-500' : 'bg-zinc-600'}"></span>
+                    </button>`;
+                }
             });
+            roomList.innerHTML = roomsHtml;
         });
 
         socket.on('task_update', (tasks) => {
@@ -378,7 +413,10 @@
         });
 
         socket.on('chat_update', (msg) => {
-            appendIntel({ type: 'chat', message: msg });
+             // Only show if broadcast or relevant to current room
+             if (msg.to === 'all' || msg.to === currentRoom || msg.from === currentRoom) {
+                addLog(msg.from, msg.msg, msg.from === 'master-ui');
+            }
         });
 
         socket.on('intel_update', (entry) => {
@@ -398,31 +436,27 @@
                 if (e.key === 'Enter') opsDispatch.click();
             });
         }
+        
+        // Master Chat Input
+        const masterInput = document.getElementById('master-input');
+        if (masterInput) {
+            masterInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const msg = masterInput.value.trim();
+                    if (!msg) return;
 
-        const intelChatSend = document.getElementById('intel-chat-send');
-        if (intelChatSend) {
-            intelChatSend.addEventListener('click', () => {
-                const msg = document.getElementById('intel-chat-input').value.trim();
-                if (!msg) return;
-                socket.emit('chat', { msg });
-                document.getElementById('intel-chat-input').value = '';
-            });
-            document.getElementById('intel-chat-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') intelChatSend.click();
-            });
-        }
-
-        const intelDispatch = document.getElementById('intel-dispatch');
-        if (intelDispatch) {
-            intelDispatch.addEventListener('click', () => {
-                const target = document.getElementById('intel-target').value;
-                const cmd = document.getElementById('intel-command').value.trim();
-                if (!cmd) return;
-                socket.emit('dispatch', { to: target, cmd: cmd });
-                document.getElementById('intel-command').value = '';
-            });
-            document.getElementById('intel-command').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') intelDispatch.click();
+                    if (msg.startsWith('/exec ')) {
+                        const cmd = msg.replace('/exec ', '');
+                        socket.emit('dispatch', { to: currentRoom === 'all' ? 'all' : currentRoom, cmd: cmd });
+                        addLog('SYSTEM', `Dispatching command to ${currentRoom}: ${cmd}`, true);
+                    } else {
+                        socket.emit('chat', { to: currentRoom, msg: msg });
+                        // Optimistic update
+                        // addLog('YOU', msg, true); // Server sends back confirmation so wait for that or do optimistic
+                        // Actually server sends back to sender, so let's rely on that to avoid dupes
+                    }
+                    masterInput.value = '';
+                }
             });
         }
 
