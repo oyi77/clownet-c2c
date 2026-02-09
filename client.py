@@ -7,201 +7,112 @@ import subprocess
 import argparse
 import sys
 import json
-import logging
-from datetime import datetime
-import psutil
-
-# Setup logging
-LOG_FILE = "client.log"
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.FileHandler(LOG_FILE), logging.StreamHandler()],
-)
 
 # Configuration
 DEFAULT_SERVER = "wss://clownet-c2c.fly.dev"
 DEFAULT_TOKEN = "very-secret-key-123"
+OPENCLAW_BIN = "/Users/paijo/.nvm/versions/node/v22.18.0/bin/openclaw"
 
-parser = argparse.ArgumentParser(description='ClawNet C2C Sidecar v3.3')
+parser = argparse.ArgumentParser(description='ClawNet C2C Sidecar v3.7 (Clean Chat)')
 parser.add_argument('--url', default=os.getenv('CLAWNET_SERVER', DEFAULT_SERVER))
 parser.add_argument('--token', default=os.getenv('CLAWNET_SECRET_KEY', DEFAULT_TOKEN))
 parser.add_argument('--id', default=os.getenv('AGENT_ID', f"node-{str(uuid.uuid4())[:4]}"))
 parser.add_argument('--role', default="worker")
 args = parser.parse_args()
 
-AGENT_ID = args.id
-ROLE = args.role
-RELAY_URL = args.url
-SECRET_KEY = args.token
-
-# Requirement: Absolute path for 'openclaw'
-OPENCLAW_PATH = os.environ.get("OPENCLAW_BIN_PATH", "openclaw")
-
-logging.info(f"Using OpenClaw path: {OPENCLAW_PATH}")
-
-# Robust Socket Client (Upstream + Stashed retry logic)
-sio = socketio.Client(
-    reconnection=True, 
-    reconnection_delay=5, 
-    reconnection_delay_max=30
-)
-
-def get_system_specs():
-    return {
-        "cpu_percent": psutil.cpu_percent(),
-        "ram_percent": psutil.virtual_memory().percent,
-        "os": f"{platform.system()} {platform.release()}",
-        "boot_time": datetime.fromtimestamp(psutil.boot_time()).isoformat(),
-    }
-
-def get_active_sessions():
-    try:
-        # Run 'openclaw sessions list --json'
-        cmd = f"{OPENCLAW_PATH} sessions list --json"
-        result = subprocess.check_output(cmd, shell=True, text=True)
-        sessions = json.loads(result)
-        return sessions
-    except Exception as e:
-        # Only log warning if not just command not found, to avoid spam
-        # logging.warning(f"Failed to get active sessions: {e}")
-        return []
+sio = socketio.Client(reconnection=True, reconnection_attempts=0, reconnection_delay=5)
 
 @sio.event
 def connect():
     print(f"[*] Connected to HQ as {args.id}")
-    send_report()
+    report_status()
 
 @sio.event
 def disconnect():
     print("[!] Disconnected from HQ")
 
-@sio.on("state_sync")
-def on_state_sync(data):
-    logging.debug(f"State sync received")
-
-@sio.on("command")
-def on_command(data):
-    if not data or "cmd" not in data:
-        return
-
-    cmd_text = data.get("cmd", "")
-    task_id = data.get("id")
-    if cmd_text.startswith("/"):
-        cmd_text = cmd_text[1:]
-
-    logging.info(f"Proxying command to OpenClaw: {cmd_text}")
-    if task_id:
-        sio.emit(
-            "task_result", {"id": task_id, "status": "RUNNING", "agent_id": AGENT_ID}
-        )
-
-    try:
-        # Execute via OpenClaw CLI
-        full_cmd = f"{OPENCLAW_PATH} {cmd_text}"
-        logging.info(f"Executing: {full_cmd}")
-
-        process = subprocess.Popen(
-            full_cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        stdout, stderr = process.communicate(timeout=120)
-
-        status = "SUCCESS" if process.returncode == 0 else "FAIL"
-        result = {"stdout": stdout, "stderr": stderr, "code": process.returncode}
-
-        logging.info(f"Command {status} with code {process.returncode}")
-        if task_id:
-            sio.emit(
-                "task_result",
-                {
-                    "id": task_id,
-                    "status": status,
-                    "agent_id": AGENT_ID,
-                    "output": result,
-                },
-            )
-
-    except subprocess.TimeoutExpired:
-        logging.error("Command timed out")
-        if task_id:
-            sio.emit(
-                "task_result",
-                {
-                    "id": task_id,
-                    "status": "FAIL",
-                    "agent_id": AGENT_ID,
-                    "output": "Timeout",
-                },
-            )
-    except Exception as e:
-        logging.error(f"Execution error: {str(e)}")
-        if task_id:
-            sio.emit(
-                "task_result",
-                {
-                    "id": task_id,
-                    "status": "FAIL",
-                    "agent_id": AGENT_ID,
-                    "output": str(e),
-                },
-            )
-
-@sio.on('chat_update')
-def on_chat_update(data):
-    # Support for receiving DMs or Broadcasts
+@sio.on('direct_message')
+def on_direct_message(data):
     sender = data.get('from', 'unknown')
     msg = data.get('msg', '')
-    logging.info(f"[CHAT] {sender}: {msg}")
+    print(f"[DM] From {sender}: {msg}")
+    
+    if sender == 'master-ui':
+        process_instruction(msg, sender)
 
-def send_report():
+@sio.on('command')
+def on_command(data):
+    print(f"[CMD] Broadcast ID {data.get('id')}: {data.get('cmd')}")
+    process_instruction(data.get('cmd'), 'master-ui', data.get('id'))
+
+def process_instruction(msg, reply_to, task_id=None):
+    response = ""
     try:
-        payload = {
-            "specs": get_system_specs(),
-            "metadata": {
-                "python_version": platform.python_version(),
-                "pid": os.getpid(),
-                "openclaw_path": OPENCLAW_PATH,
-            },
-            "sessions": get_active_sessions(),
-        }
-        sio.emit("report", payload)
+        if msg.startswith('/exec '):
+            shell_cmd = msg.replace('/exec ', '')
+            output = subprocess.check_output(shell_cmd, shell=True, stderr=subprocess.STDOUT).decode().strip()
+            response = f"EXEC_RESULT:\n```\n{output}\n```"
+        else:
+            # Use ISOLATED session to avoid locking the main agent
+            cmd = [
+                OPENCLAW_BIN, "agent", 
+                "--session-id", "clownet-sidecar", 
+                "--message", msg, 
+                "--local", 
+                "--json"
+            ]
+            
+            print(f"[*] Asking Isolated Brain: {msg}")
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                try:
+                    data = json.loads(result.stdout)
+                    # Extract CLEAN text from OpenClaw JSON response
+                    if 'payloads' in data and len(data['payloads']) > 0:
+                        response = data['payloads'][0].get('text', 'No text response.')
+                    elif 'result' in data:
+                        response = data['result']
+                    else:
+                        response = "Thinking..." # Fallback
+                except:
+                    # If parsing fails, clean up raw output
+                    response = result.stdout.strip()
+            else:
+                response = f"BRAIN_ERROR (Code {result.returncode}): {result.stderr}"
+
+        # Reply
+        payload = {'to': reply_to, 'msg': response}
+        sio.emit('message', payload)
+        
+        if task_id:
+            sio.emit('task_result', {'id': task_id, 'status': 'SUCCESS', 'output': response})
 
     except Exception as e:
-        logging.error(f"Failed to send report: {e}")
+        error_msg = f"Sidecar Error: {str(e)}"
+        print(error_msg)
+        sio.emit('message', {'to': reply_to, 'msg': error_msg})
+        if task_id:
+            sio.emit('task_result', {'id': task_id, 'status': 'FAIL', 'output': error_msg})
 
-def main_loop():
-    retry_delay = 5
-    max_delay = 60
+def report_status():
+    if sio.connected:
+        try:
+            import psutil
+            specs = {'cpu': psutil.cpu_percent(), 'ram': psutil.virtual_memory().percent}
+            sio.emit('report', {'agent_id': args.id, 'role': args.role, 'specs': specs})
+        except:
+            pass
 
+def main():
+    print(f"[*] ClawNet Sidecar v3.7 (Clean Chat) launching for {args.id}...")
     while True:
         try:
-            logging.info(f"Starting ClawNet Sidecar v3.3 for Agent: {AGENT_ID}")
-            if not sio.connected:
-                sio.connect(
-                    RELAY_URL,
-                    auth={"token": SECRET_KEY, "agent_id": AGENT_ID, "role": ROLE},
-                    wait_timeout=10,
-                )
-
-            # Main heartbeat loop
-            while True:
-                if not sio.connected:
-                    break  # Break inner loop to trigger reconnection logic
-
-                send_report()
-                time.sleep(30)
-
+            sio.connect(args.url, auth={'token': args.token, 'agent_id': args.id, 'role': args.role})
+            sio.wait()
         except Exception as e:
-            logging.error(f"Crash in main loop: {e}")
-
-        # Exponential backoff for reconnection/restart
-        logging.info(f"Restarting in {retry_delay} seconds...")
-        time.sleep(retry_delay)
-        retry_delay = min(retry_delay * 2, max_delay)
+            print(f"[!] Connection failed: {e}. Retrying...")
+            time.sleep(5)
 
 if __name__ == "__main__":
-    main_loop()
+    main()
