@@ -16,5 +16,8 @@
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "cheerio": "^1.2.0"
   }
 }
