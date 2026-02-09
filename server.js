@@ -193,16 +193,15 @@ const start = async () => {
             });
 
             socket.on('chat', (payload) => {
-                const msg = { 
-                    from: agent_id || 'master-ui', 
+                const msg = {
+                    from: agent_id || 'master-ui',
                     to: payload.to || 'all',
-                    msg: payload.msg || payload.message, 
-                    ts: new Date().toISOString() 
+                    msg: payload.msg || payload.message,
+                    ts: new Date().toISOString()
                 };
                 state.messages.push(msg);
                 saveState();
                 io.emit('chat_update', msg);
-                io.emit('intel_update', { type: 'chat', message: msg });
                 logEvent(`Chat: ${msg.from} -> ${msg.to}: ${msg.msg}`);
             });
 
