@@ -14,24 +14,61 @@
 </head>
 <body class="bg-[#09090b] text-zinc-400 h-screen flex flex-col">
     <header class="border-b border-zinc-800 p-4 flex justify-between items-center bg-[#09090b]">
-        <h1 class="text-green-500 font-bold tracking-tighter text-xl italic">🦞 CLAWNET_C2C <span class="text-zinc-600 text-xs font-mono not-italic">v3.1_ATOMIC</span></h1>
+        <h1 class="text-green-500 font-bold tracking-tighter text-xl italic">🦞 CLAWNET_C2C <span class="text-zinc-600 text-xs font-mono not-italic">v3.2.1_HOTFIX</span></h1>
         <div id="connection-status" class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500">
-            <span id="status-dot" class="w-2 h-2 bg-red-500 rounded-full"></span> <span id="status-text">OFFLINE</span>
+            <span id="status-dot" class="w-2 h-2 bg-red-500 rounded-full"></span> <span id="status-text">CONNECTING...</span>
         </div>
     </header>
 
     <nav class="flex border-b border-zinc-800 bg-[#0c0c0e]">
-        <button onclick="showTab('fleet')" class="tab-btn active px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all">01_FLEET</button>
-        <button onclick="showTab('ops')" class="tab-btn px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all">02_OPERATIONS</button>
-        <button onclick="showTab('intel')" class="tab-btn px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all">03_INTEL</button>
-        <button onclick="showTab('settings')" class="tab-btn px-6 py-3 text-xs font-bold hover:bg-zinc-900 transition-all">04_SETTINGS</button>
+        <button onclick="showTab('fleet')" class="tab-btn active px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all" data-tab="fleet">01_FLEET</button>
+        <button onclick="showTab('ops')" class="tab-btn px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all" data-tab="ops">02_OPERATIONS</button>
+        <button onclick="showTab('intel')" class="tab-btn px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all" data-tab="intel">03_INTEL</button>
+        <button onclick="showTab('settings')" class="tab-btn px-6 py-3 text-xs font-bold hover:bg-zinc-900 transition-all" data-tab="settings">04_SETTINGS</button>
     </nav>
 
     <main class="flex-1 relative overflow-hidden bg-black/20">
         <!-- FLEET TAB -->
         <section id="fleet" class="tab-content h-full p-6 overflow-y-auto">
             <div id="fleet-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Dynamic Content -->
+                <!-- Initial render from server -->
+                <% if (agents && agents.length > 0) { %>
+                    <% agents.forEach(agent => { %>
+                        <div class="bg-zinc-900 border border-zinc-800 p-5 rounded terminal-glow relative group">
+                            <div class="absolute top-4 right-4 text-[10px] <%= agent.status === 'online' ? 'text-green-500' : 'text-red-500' %>">
+                                ● <%= agent.status.toUpperCase() %>
+                            </div>
+                            <h3 class="text-zinc-100 font-bold mb-1"><%= agent.id %></h3>
+                            <div class="text-[10px] text-zinc-500 mb-4 tracking-tighter">ROLE: <%= agent.role.toUpperCase() %></div>
+                            <div class="space-y-3">
+                                <div class="flex justify-between text-[10px]">
+                                    <span class="text-zinc-600">LAST_HEARTBEAT</span>
+                                    <span><%= new Date(agent.last_seen).toLocaleTimeString() %></span>
+                                </div>
+                                <div class="bg-black/50 p-2 rounded border border-zinc-800">
+                                    <div class="text-[9px] text-zinc-600 mb-1">SYSTEM_RESOURCES</div>
+                                    <div class="grid grid-cols-2 gap-2 text-[10px]">
+                                        <div>CPU: <span class="text-zinc-300"><%= (agent.specs && agent.specs.cpu) || 0 %>%</span></div>
+                                        <div>RAM: <span class="text-zinc-300"><%= (agent.specs && agent.specs.ram) || 0 %>%</span></div>
+                                    </div>
+                                </div>
+                                <% if (agent.sessions && agent.sessions.length > 0) { %>
+                                    <div class="mt-2 pt-2 border-t border-zinc-800">
+                                        <div class="text-[9px] text-zinc-500 mb-1">ACTIVE SESSIONS</div>
+                                        <% agent.sessions.forEach(s => { %>
+                                            <div class="text-[9px] text-zinc-400 bg-zinc-950 p-1 rounded mb-1 truncate"><%= s.id %></div>
+                                        <% }); %>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="col-span-3 text-center py-20 text-zinc-600">
+                        <div class="animate-pulse">SCANNING_NETWORK_FREQUENCIES...</div>
+                        <div class="text-xs mt-2">Waiting for agents to report in.</div>
+                    </div>
+                <% } %>
             </div>
         </section>
 
@@ -47,14 +84,35 @@
                             <th class="p-4">Status</th>
                         </tr>
                     </thead>
-                    <tbody id="ops-body"></tbody>
+                    <tbody id="ops-body">
+                        <% if (tasks && tasks.length > 0) { %>
+                            <% tasks.forEach(task => { %>
+                                <tr class="border-b border-zinc-800/50">
+                                    <td class="p-4 font-mono text-zinc-600">#<%= task.id.substring(0,8) %></td>
+                                    <td class="p-4 font-bold text-zinc-300"><%= task.agent_id %></td>
+                                    <td class="p-4 font-mono text-zinc-500"><%= task.cmd %></td>
+                                    <td class="p-4"><span class="text-[9px] font-bold <%= task.status === 'SUCCESS' ? 'text-green-500' : 'text-zinc-500' %>"><%= task.status %></span></td>
+                                </tr>
+                            <% }); %>
+                        <% } %>
+                    </tbody>
                 </table>
             </div>
         </section>
 
         <!-- INTEL TAB -->
         <section id="intel" class="tab-content h-full p-6 flex flex-col gap-4 hidden">
-            <div id="chat-box" class="flex-1 bg-black/40 border border-zinc-800 rounded p-4 font-mono text-[11px] overflow-y-auto space-y-2"></div>
+            <div id="chat-box" class="flex-1 bg-black/40 border border-zinc-800 rounded p-4 font-mono text-[11px] overflow-y-auto space-y-2">
+                <% if (messages && messages.length > 0) { %>
+                    <% messages.forEach(msg => { %>
+                        <div class="flex gap-4">
+                            <span class="text-zinc-700">[<%= new Date(msg.ts).toLocaleTimeString() %>]</span>
+                            <span class="<%= msg.from === 'master-ui' ? 'text-blue-500' : 'text-green-500' %> font-bold uppercase"><%= msg.from %>:</span>
+                            <span class="text-zinc-400"><%= msg.msg %></span>
+                        </div>
+                    <% }); %>
+                <% } %>
+            </div>
             <div class="flex gap-2">
                 <input type="text" id="master-input" placeholder="Enter command or message..." 
                        class="flex-1 bg-zinc-900 border border-zinc-800 rounded px-4 py-2 text-xs outline-none focus:border-green-600 text-zinc-100 font-mono">
@@ -66,8 +124,8 @@
             <div class="max-w-md bg-zinc-900 border border-zinc-800 p-6 rounded">
                 <h3 class="text-zinc-100 font-bold mb-4 uppercase text-sm tracking-widest">Database_Config</h3>
                 <div class="space-y-4">
-                    <input type="text" placeholder="Supabase URL" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none">
-                    <input type="password" placeholder="Service Key" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none">
+                    <input type="text" placeholder="Supabase URL" value="<%= settings.supabase_url || '' %>" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none">
+                    <input type="password" placeholder="Service Key" value="<%= settings.supabase_key || '' %>" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none">
                     <button class="w-full bg-green-600 py-2 rounded text-[10px] font-bold text-black uppercase">Save_State</button>
                 </div>
             </div>
@@ -76,11 +134,30 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io({ auth: { token: '<%= secret %>', agent_id: 'master-ui' }, transports: ['websocket'] });
+        const secret = '<%= secret %>';
+        console.log("Connecting with secret:", secret ? "PRESENT" : "MISSING");
+        
+        const socket = io({ 
+            auth: { token: secret, agent_id: 'master-ui', role: 'master' }, 
+            transports: ['websocket', 'polling'], // Allow polling fallback
+            reconnection: true,
+            reconnectionAttempts: 10
+        });
         
         socket.on('connect', () => {
+            console.log("✅ Socket connected via " + socket.io.engine.transport.name);
             document.getElementById('status-dot').className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
-            document.getElementById('status-text').innerText = 'ONLINE';
+            document.getElementById('status-text').innerText = 'ONLINE (' + socket.io.engine.transport.name.toUpperCase() + ')';
+        });
+
+        socket.io.engine.on("upgrade", () => {
+            document.getElementById('status-text').innerText = 'ONLINE (' + socket.io.engine.transport.name.toUpperCase() + ')';
+        });
+
+        socket.on('connect_error', (err) => {
+            console.error("❌ Connection Error:", err.message);
+            document.getElementById('status-text').innerText = 'ERROR: ' + err.message;
+            document.getElementById('status-dot').className = 'w-2 h-2 bg-red-600 rounded-full';
         });
 
         function showTab(id) {
@@ -91,13 +168,36 @@
         }
 
         socket.on('fleet_update', (agents) => {
+            console.log("Received fleet update:", agents.length);
             const grid = document.getElementById('fleet-grid');
+            if (agents.length === 0) {
+                grid.innerHTML = '<div class="col-span-3 text-center py-20 text-zinc-600">NO AGENTS ONLINE</div>';
+                return;
+            }
             grid.innerHTML = agents.map(a => `
-                <div class="bg-zinc-900 border border-zinc-800 p-5 rounded">
-                    <h3 class="text-green-500 font-bold mb-1">${a.id}</h3>
-                    <div class="text-[10px] text-zinc-600 uppercase mb-4">${a.role}</div>
-                    <div class="text-[10px] grid grid-cols-2 gap-2 bg-black/30 p-2 rounded border border-zinc-800">
-                        <div>CPU: ${a.specs.cpu}%</div><div>RAM: ${a.specs.ram}%</div>
+                <div class="bg-zinc-900 border border-zinc-800 p-5 rounded terminal-glow relative group">
+                    <div class="absolute top-4 right-4 text-[10px] ${a.status === 'online' ? 'text-green-500' : 'text-red-500'}">
+                        ● ${a.status.toUpperCase()}
+                    </div>
+                    <h3 class="text-zinc-100 font-bold mb-1">${a.id}</h3>
+                    <div class="text-[10px] text-zinc-500 mb-4 tracking-tighter">ROLE: ${a.role.toUpperCase()}</div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-[10px]">
+                            <span class="text-zinc-600">LAST_HEARTBEAT</span>
+                            <span>${new Date(a.last_seen).toLocaleTimeString()}</span>
+                        </div>
+                        <div class="bg-black/50 p-2 rounded border border-zinc-800">
+                            <div class="text-[9px] text-zinc-600 mb-1">SYSTEM_RESOURCES</div>
+                            <div class="grid grid-cols-2 gap-2 text-[10px]">
+                                <div>CPU: <span class="text-zinc-300">${(a.specs && a.specs.cpu) || 0}%</span></div>
+                                <div>RAM: <span class="text-zinc-300">${(a.specs && a.specs.ram) || 0}%</span></div>
+                            </div>
+                        </div>
+                        ${a.sessions && a.sessions.length > 0 ? `
+                        <div class="mt-2 pt-2 border-t border-zinc-800">
+                            <div class="text-[9px] text-zinc-500 mb-1">ACTIVE SESSIONS</div>
+                            ${a.sessions.map(s => `<div class="text-[9px] text-zinc-400 bg-zinc-950 p-1 rounded mb-1 truncate">${s.id}</div>`).join('')}
+                        </div>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -116,22 +216,26 @@
         });
 
         const input = document.getElementById('master-input');
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const cmd = input.value;
-                if (cmd.startsWith('/')) socket.emit('dispatch', { to: 'all', cmd: cmd });
-                else socket.emit('chat', { msg: cmd });
-                input.value = '';
-            }
-        });
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const cmd = input.value;
+                    if (cmd.startsWith('/')) socket.emit('dispatch', { to: 'all', cmd: cmd });
+                    else socket.emit('chat', { msg: cmd });
+                    input.value = '';
+                }
+            });
+        }
 
         socket.on('chat_update', (msg) => {
             const box = document.getElementById('chat-box');
-            const div = document.createElement('div');
-            div.className = "flex gap-4";
-            div.innerHTML = `<span class="text-zinc-700">[${new Date(msg.ts).toLocaleTimeString()}]</span> <span class="text-blue-500 font-bold uppercase">${msg.from}:</span> <span class="text-zinc-400">${msg.msg}</span>`;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
+            if (box) {
+                const div = document.createElement('div');
+                div.className = "flex gap-4";
+                div.innerHTML = `<span class="text-zinc-700">[${new Date(msg.ts).toLocaleTimeString()}]</span> <span class="${msg.from === 'master-ui' ? 'text-blue-500' : 'text-green-500'} font-bold uppercase">${msg.from}:</span> <span class="text-zinc-400">${msg.msg}</span>`;
+                box.appendChild(div);
+                box.scrollTop = box.scrollHeight;
+            }
         });
     </script>
 </body>

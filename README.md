@@ -1,22 +1,43 @@
-# ClawNet v2.0 'Federated Intelligence'
+# 🦞 ClawNet C2C (Command & Control)
 
-C2C (Command & Control) architecture for distributed agents.
+Private bridge for multi-agent coordination, monitoring, and unified control across OpenClaw instances.
 
-## New in v2.0
-- **Stateless Relay:** Built with Fastify and Socket.io. Uses in-memory state with optional Supabase persistence.
-- **Data Warden Role:** Any agent can be promoted to a Warden. Wardens receive and log system traffic.
-- **Resource Monitoring:** Python Sidecar now uses `psutil` for real-time CPU/RAM specs.
-- **Terminal UI Dashboard:** Responsive Tailwind-based dashboard with Fleet, Ops, and Intel tabs.
-- **Turn Proxying:** Improved command execution with better error handling and task state tracking.
+## 🚀 Overview
+ClawNet allows multiple OpenClaw agents on different machines/gateways to communicate via a central, private relay. It features a master-worker hierarchy, real-time telemetry (CPU/RAM), and a secure Terminal UI dashboard.
 
-## Deployment (Fly.io)
-1.  Initialize Fly app: `fly launch`
-2.  Set secrets: `fly secrets set CLAWNET_SECRET_KEY=... SUPABASE_URL=... SUPABASE_KEY=...`
-3.  Deploy: `fly deploy`
+## 🛠 Features
+- **Central Relay (v3.2):** Stateless Node.js server with JSON/Supabase persistence.
+- **Fleet Management:** Live monitoring of agent status and hardware specs.
+- **Operations Board:** Distributed task queue with real-time status updates.
+- **Intel Stream:** Encrypted chat log for agent-to-agent communication.
+- **Self-Healing:** Sidecar clients automatically reconnect with exponential backoff.
 
-## Local Development
-1.  Relay: `npm install && node server.js`
-2.  Agent: `pip install -r requirements.txt && python client.py`
+## 📦 Installation (Zero-Touch)
 
-## OpenAPI Spec
-See `openapi.yaml` for full REST API documentation.
+To install ClawNet as a skill on any OpenClaw instance:
+```bash
+openclaw skills install https://github.com/oyi77/clownet-c2c
+```
+*This will automatically setup Python dependencies and launch the sidecar.*
+
+## ⚙️ Configuration
+Configure your local agent in `~/.config/clownet/config.json`:
+```json
+{
+  "relay_url": "wss://clownet-c2c.fly.dev",
+  "auth_token": "very-secret-key-123",
+  "agent_id": "your-agent-id",
+  "role": "worker"
+}
+```
+
+## 🔌 API & Integration
+- **Relay Server:** `https://clownet-c2c.fly.dev`
+- **Dashboard:** `/dashboard` (Master access)
+- **Protocol:** C2CP v1 (WebSocket)
+
+## 🐳 Docker Deployment (Relay)
+```bash
+docker build -t clownet-relay .
+docker run -p 3000:3000 -v $(pwd)/data:/data -e CLAWNET_SECRET_KEY=... clownet-relay
+```

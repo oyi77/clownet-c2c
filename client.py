@@ -7,6 +7,7 @@ import subprocess
 import json
 import logging
 from datetime import datetime
+import random
 
 # Setup logging
 LOG_FILE = "client.log"
@@ -22,17 +23,11 @@ AGENT_ID = os.environ.get("CLAWNET_AGENT_ID", platform.node())
 ROLE = os.environ.get("CLAWNET_ROLE", "worker")
 
 # Requirement: Absolute path for 'openclaw'
-OPENCLAW_PATH = os.path.expanduser("~/.openclaw/bin/openclaw")
-if not os.path.exists(OPENCLAW_PATH):
-    # Fallback to which
-    try:
-        OPENCLAW_PATH = subprocess.check_output(["which", "openclaw"], text=True).strip()
-    except:
-        OPENCLAW_PATH = "openclaw"
+OPENCLAW_PATH = os.environ.get("OPENCLAW_BIN_PATH", "openclaw")
 
 logging.info(f"Using OpenClaw path: {OPENCLAW_PATH}")
 
-sio = socketio.Client(reconnection_delay=5, reconnection_delay_max=30)
+sio = socketio.Client(reconnection=True, reconnection_delay=5, reconnection_delay_max=30)
 
 def get_system_specs():
     return {
@@ -41,6 +36,18 @@ def get_system_specs():
         "os": f"{platform.system()} {platform.release()}",
         "boot_time": datetime.fromtimestamp(psutil.boot_time()).isoformat()
     }
+
+def get_active_sessions():
+    try:
+        # Run 'openclaw sessions list --json'
+        cmd = f"{OPENCLAW_PATH} sessions list --json"
+        result = subprocess.check_output(cmd, shell=True, text=True)
+        sessions = json.loads(result)
+        return sessions
+    except Exception as e:
+        # Only log warning if not just command not found, to avoid spam
+        # logging.warning(f"Failed to get active sessions: {e}")
+        return []
 
 @sio.event
 def connect():
@@ -74,7 +81,8 @@ def on_message(data):
             cmd_text = cmd_text[1:]
         
         logging.info(f"Proxying command to OpenClaw: {cmd_text}")
-        sio.emit('task_update', {"id": task_id, "status": "running", "agent_id": AGENT_ID})
+        if task_id:
+            sio.emit('task_update', {"id": task_id, "status": "running", "agent_id": AGENT_ID})
         
         try:
             # Construct command: openclaw <cmd>
@@ -93,19 +101,22 @@ def on_message(data):
             result = {"stdout": stdout, "stderr": stderr, "code": process.returncode}
             
             logging.info(f"Command {status} with code {process.returncode}")
-            sio.emit('task_update', {
-                "id": task_id, 
-                "status": status, 
-                "agent_id": AGENT_ID,
-                "result": result
-            })
+            if task_id:
+                sio.emit('task_update', {
+                    "id": task_id, 
+                    "status": status, 
+                    "agent_id": AGENT_ID,
+                    "result": result
+                })
             
         except subprocess.TimeoutExpired:
             logging.error("Command timed out")
-            sio.emit('task_update', {"id": task_id, "status": "fail", "agent_id": AGENT_ID, "result": "Timeout"})
+            if task_id:
+                sio.emit('task_update', {"id": task_id, "status": "fail", "agent_id": AGENT_ID, "result": "Timeout"})
         except Exception as e:
             logging.error(f"Execution error: {str(e)}")
-            sio.emit('task_update', {"id": task_id, "status": "fail", "agent_id": AGENT_ID, "result": str(e)})
+            if task_id:
+                sio.emit('task_update', {"id": task_id, "status": "fail", "agent_id": AGENT_ID, "result": str(e)})
 
 def send_report():
     try:
@@ -115,7 +126,8 @@ def send_report():
                 "python_version": platform.python_version(),
                 "pid": os.getpid(),
                 "openclaw_path": OPENCLAW_PATH
-            }
+            },
+            "sessions": get_active_sessions()
         }
         sio.emit('report', payload)
         
@@ -125,11 +137,13 @@ def send_report():
     except Exception as e:
         logging.error(f"Failed to send report: {e}")
 
-if __name__ == "__main__":
-    logging.info(f"Starting ClawNet Sidecar v2.1 for Agent: {AGENT_ID}")
+def main_loop():
+    retry_delay = 5
+    max_delay = 60
     
     while True:
         try:
+            logging.info(f"Starting ClawNet Sidecar v3.2 for Agent: {AGENT_ID}")
             if not sio.connected:
                 sio.connect(
                     RELAY_URL, 
@@ -137,9 +151,24 @@ if __name__ == "__main__":
                     wait_timeout=10
                 )
             
-            send_report()
-            time.sleep(30)
-            
+            # Main heartbeat loop
+            while True:
+                if not sio.connected:
+                    break # Break inner loop to trigger reconnection logic
+                
+                send_report()
+                time.sleep(30)
+                
         except Exception as e:
-            logging.error(f"Connection error: {e}. Retrying in 10s...")
-            time.sleep(10)
+            logging.error(f"Crash in main loop: {e}")
+        
+        # Exponential backoff for reconnection/restart
+        logging.info(f"Restarting in {retry_delay} seconds...")
+        time.sleep(retry_delay)
+        retry_delay = min(retry_delay * 2, max_delay)
+
+if __name__ == "__main__":
+    try:
+        main_loop()
+    except KeyboardInterrupt:
+        logging.info("Stopping Sidecar...")

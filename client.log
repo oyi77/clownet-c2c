@@ -1,0 +1,415 @@
+2026-02-09 07:50:11,251 [INFO] Using OpenClaw path: openclaw
+2026-02-09 07:50:11,252 [INFO] Starting ClawNet Sidecar v3.2 for Agent: MacBook-Air.local
+2026-02-09 07:50:17,701 [INFO] Connected to relay at wss://clownet-c2c.fly.dev
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+2026-02-09 08:12:53,516 [WARNING] Disconnected from relay
+2026-02-09 08:12:55,915 [INFO] Restarting in 5 seconds...
+2026-02-09 08:13:00,038 [INFO] Connected to relay at wss://clownet-c2c.fly.dev
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+2026-02-09 08:13:01,035 [INFO] Starting ClawNet Sidecar v3.2 for Agent: MacBook-Air.local
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0
+file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32
+  throw new Error("openclaw: missing dist/entry.(m)js (build output).");
+        ^
+
+Error: openclaw: missing dist/entry.(m)js (build output).
+    at file:///Users/paijo/.openclaw/workspace/fly-agent-official/openclaw.mjs:32:9
+
+Node.js v22.16.0

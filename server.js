@@ -10,6 +10,7 @@ const DATA_DIR = fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data')
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const DB_PATH = path.join(DATA_DIR, 'clownet_v3.json');
+const SETTINGS_PATH = path.join(DATA_DIR, 'settings.json');
 
 // Real-time State
 let state = {
@@ -18,15 +19,20 @@ let state = {
     messages: []
 };
 
+// Settings (Separate persistence)
+let settings = { supabase_url: '', supabase_key: '' };
+
 function loadState() {
-    if (fs.existsSync(DB_PATH)) {
-        try {
+    try {
+        if (fs.existsSync(DB_PATH)) {
             const data = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
             state.tasks = data.tasks || [];
             state.messages = data.messages || [];
-            // Agents are volatile/discovered on connect
-        } catch (e) { console.error("DB Load Error", e); }
-    }
+        }
+        if (fs.existsSync(SETTINGS_PATH)) {
+            settings = JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
+        }
+    } catch (e) { console.error("Persistence Load Error", e); }
 }
 
 function saveState() {
@@ -38,23 +44,37 @@ function saveState() {
     } catch (e) { console.error("DB Save Error", e); }
 }
 
+function saveSettings() {
+    try {
+        fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings));
+    } catch (e) { console.error("Settings Save Error", e); }
+}
+
 loadState();
 
 fastify.register(require('@fastify/static'), { root: path.join(__dirname, 'public'), prefix: '/public/' });
 fastify.register(require('@fastify/view'), { engine: { ejs: require('ejs') }, root: path.join(__dirname, 'views') });
 fastify.register(require('@fastify/formbody'));
 
-// Dashboard with full state
+// Dashboard Route (v3.2.1 Fix)
 fastify.get('/dashboard', async (req, reply) => {
     return reply.view('dashboard.ejs', { 
         agents: Object.values(state.agents),
         tasks: state.tasks.slice(-20),
         messages: state.messages.slice(-50),
-        secret: SECRET_KEY
+        secret: SECRET_KEY,
+        settings: settings // Ensure this is passed
     });
 });
 
-fastify.get('/', async () => ({ status: 'ClawNet v3.0 Sovereign Relay', online: true }));
+fastify.post('/api/settings', async (req, reply) => {
+    const { supabase_url, supabase_key } = req.body;
+    settings = { supabase_url, supabase_key };
+    saveSettings();
+    return reply.redirect('/dashboard');
+});
+
+fastify.get('/', async () => ({ status: 'ClawNet v3.2 Command Center', online: true }));
 
 const start = async () => {
     try {
@@ -77,6 +97,7 @@ const start = async () => {
                     role: role || 'worker',
                     status: 'online',
                     specs: specs || {},
+                    sessions: [], // Initialize sessions array
                     last_seen: new Date().toISOString(),
                     sid: sid
                 };
@@ -89,12 +110,12 @@ const start = async () => {
                     state.agents[agent_id].last_seen = new Date().toISOString();
                     state.agents[agent_id].specs = data.specs || state.agents[agent_id].specs;
                     state.agents[agent_id].cron = data.cron || [];
+                    state.agents[agent_id].sessions = data.sessions || []; // Update active sessions
                     io.emit('fleet_update', Object.values(state.agents));
                 }
             });
 
             socket.on('dispatch', (payload) => {
-                // Command from Master
                 const task = {
                     id: uuidv4(),
                     agent_id: payload.to === 'all' ? 'BROADCAST' : payload.to,
@@ -107,7 +128,6 @@ const start = async () => {
                 saveState();
                 io.emit('task_update', state.tasks.slice(-20));
                 
-                // Forward to specific agent or broadcast
                 if (payload.to === 'all') {
                     socket.broadcast.emit('command', { id: task.id, cmd: payload.cmd });
                 } else {
@@ -119,7 +139,7 @@ const start = async () => {
             socket.on('task_result', (payload) => {
                 const task = state.tasks.find(t => t.id === payload.id);
                 if (task) {
-                    task.status = payload.status; // SUCCESS / FAIL
+                    task.status = payload.status; 
                     task.result = payload.output;
                     saveState();
                     io.emit('task_update', state.tasks.slice(-20));
