@@ -7,128 +7,68 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&display=swap');
-        body { font-family: 'Fira Code', monospace; scrollbar-width: thin; scrollbar-color: #27272a #09090b; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        body { font-family: 'Fira Code', monospace; scrollbar-width: thin; scrollbar-color: #27272a #09090b; overflow: hidden; }
         .terminal-glow { box-shadow: 0 0 20px rgba(34, 197, 94, 0.1); }
+        .tab-btn.active { border-bottom-color: #22c55e; color: #f4f4f5; background: #18181b; }
     </style>
 </head>
-<body class="bg-[#09090b] text-zinc-400 min-h-screen flex flex-col">
-    <header class="border-b border-zinc-800 p-4 flex justify-between items-center bg-[#09090b] sticky top-0 z-50">
-        <h1 class="text-green-500 font-bold tracking-tighter text-xl">🦞 CLAWNET_C2C <span class="text-zinc-600 text-xs font-mono">v3.0_SOVEREIGN</span></h1>
+<body class="bg-[#09090b] text-zinc-400 h-screen flex flex-col">
+    <header class="border-b border-zinc-800 p-4 flex justify-between items-center bg-[#09090b]">
+        <h1 class="text-green-500 font-bold tracking-tighter text-xl italic">🦞 CLAWNET_C2C <span class="text-zinc-600 text-xs font-mono not-italic">v3.1_ATOMIC</span></h1>
         <div id="connection-status" class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500">
-            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Relay_Connected
+            <span id="status-dot" class="w-2 h-2 bg-red-500 rounded-full"></span> <span id="status-text">OFFLINE</span>
         </div>
     </header>
 
     <nav class="flex border-b border-zinc-800 bg-[#0c0c0e]">
-        <button onclick="showTab('fleet')" class="tab-btn px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all text-zinc-100 border-b-2 border-green-500" data-tab="fleet">01_FLEET</button>
-        <button onclick="showTab('ops')" class="tab-btn px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all" data-tab="ops">02_OPERATIONS</button>
-        <button onclick="showTab('intel')" class="tab-btn px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all" data-tab="intel">03_INTEL</button>
-        <button onclick="showTab('settings')" class="tab-btn px-6 py-3 text-xs font-bold hover:bg-zinc-900 transition-all" data-tab="settings">04_SETTINGS</button>
+        <button onclick="showTab('fleet')" class="tab-btn active px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all">01_FLEET</button>
+        <button onclick="showTab('ops')" class="tab-btn px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all">02_OPERATIONS</button>
+        <button onclick="showTab('intel')" class="tab-btn px-6 py-3 text-xs font-bold border-r border-zinc-800 hover:bg-zinc-900 transition-all">03_INTEL</button>
+        <button onclick="showTab('settings')" class="tab-btn px-6 py-3 text-xs font-bold hover:bg-zinc-900 transition-all">04_SETTINGS</button>
     </nav>
 
-    <main class="flex-1 overflow-hidden relative">
+    <main class="flex-1 relative overflow-hidden bg-black/20">
         <!-- FLEET TAB -->
-        <section id="fleet" class="tab-content active p-6 h-full overflow-y-auto">
+        <section id="fleet" class="tab-content h-full p-6 overflow-y-auto">
             <div id="fleet-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <% agents.forEach(agent => { %>
-                    <div class="bg-zinc-900 border border-zinc-800 p-5 rounded terminal-glow relative group">
-                        <div class="absolute top-4 right-4 text-[10px] <%= agent.status === 'online' ? 'text-green-500' : 'text-red-500' %>">
-                            ● <%= agent.status.toUpperCase() %>
-                        </div>
-                        <h3 class="text-zinc-100 font-bold mb-1"><%= agent.id %></h3>
-                        <div class="text-[10px] text-zinc-500 mb-4 tracking-tighter">ROLE: <%= agent.role.toUpperCase() %></div>
-                        <div class="space-y-3">
-                            <div class="flex justify-between text-[10px]">
-                                <span class="text-zinc-600">LAST_HEARTBEAT</span>
-                                <span><%= new Date(agent.last_seen).toLocaleTimeString() %></span>
-                            </div>
-                            <div class="bg-black/50 p-2 rounded border border-zinc-800">
-                                <div class="text-[9px] text-zinc-600 mb-1">SYSTEM_RESOURCES</div>
-                                <div class="grid grid-cols-2 gap-2 text-[10px]">
-                                    <div>CPU: <span class="text-zinc-300"><%= agent.specs.cpu || 0 %>%</span></div>
-                                    <div>RAM: <span class="text-zinc-300"><%= agent.specs.ram || 0 %>%</span></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                <% }); %>
+                <!-- Dynamic Content -->
             </div>
         </section>
 
         <!-- OPERATIONS TAB -->
-        <section id="ops" class="tab-content p-6 h-full overflow-y-auto">
-            <div class="bg-zinc-900 border border-zinc-800 rounded overflow-hidden">
+        <section id="ops" class="tab-content h-full p-6 overflow-y-auto hidden">
+            <div class="bg-zinc-900/50 border border-zinc-800 rounded">
                 <table class="w-full text-left text-xs">
-                    <thead class="bg-zinc-950 text-zinc-500 border-b border-zinc-800 uppercase text-[10px]">
+                    <thead class="bg-zinc-950 text-zinc-600 uppercase text-[10px] border-b border-zinc-800">
                         <tr>
-                            <th class="p-4 font-normal">Task_ID</th>
-                            <th class="p-4 font-normal">Assignee</th>
-                            <th class="p-4 font-normal">Command</th>
-                            <th class="p-4 font-normal">Status</th>
-                            <th class="p-4 font-normal text-right">Updated</th>
+                            <th class="p-4">Task_ID</th>
+                            <th class="p-4">Agent</th>
+                            <th class="p-4">Command</th>
+                            <th class="p-4">Status</th>
                         </tr>
                     </thead>
-                    <tbody id="ops-body">
-                        <% tasks.forEach(task => { %>
-                            <tr class="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-all">
-                                <td class="p-4 font-mono text-zinc-600">#<%= task.id.substring(0,8) %></td>
-                                <td class="p-4 font-bold text-zinc-300"><%= task.agent_id %></td>
-                                <td class="p-4 font-mono text-green-700/80"><%= task.cmd %></td>
-                                <td class="p-4">
-                                    <span class="px-2 py-0.5 rounded text-[9px] font-bold 
-                                        <%= task.status === 'SUCCESS' ? 'bg-green-900/30 text-green-500' : 
-                                            task.status === 'PENDING' ? 'bg-zinc-800 text-zinc-500' : 'bg-red-900/30 text-red-500' %>">
-                                        <%= task.status %>
-                                    </span>
-                                </td>
-                                <td class="p-4 text-right text-zinc-600"><%= new Date(task.ts).toLocaleTimeString() %></td>
-                            </tr>
-                        <% }); %>
-                    </tbody>
+                    <tbody id="ops-body"></tbody>
                 </table>
             </div>
         </section>
 
         <!-- INTEL TAB -->
-        <section id="intel" class="tab-content p-6 h-full flex flex-col gap-4">
-            <div id="chat-box" class="flex-1 bg-black border border-zinc-800 rounded p-4 font-mono text-[11px] overflow-y-auto space-y-2">
-                <div class="text-zinc-700 italic border-b border-zinc-900 pb-2 mb-4">-- [NETWORK_INTEL_STREAM_ACTIVE] --</div>
-                <% messages.forEach(msg => { %>
-                    <div class="flex gap-4">
-                        <span class="text-zinc-700">[<%= new Date(msg.ts).toLocaleTimeString() %>]</span>
-                        <span class="<%= msg.from === 'master-ui' ? 'text-blue-500' : 'text-green-500' %> font-bold"><%= msg.from.toUpperCase() %>:</span>
-                        <span class="text-zinc-400"><%= msg.msg %></span>
-                    </div>
-                <% }); %>
-            </div>
+        <section id="intel" class="tab-content h-full p-6 flex flex-col gap-4 hidden">
+            <div id="chat-box" class="flex-1 bg-black/40 border border-zinc-800 rounded p-4 font-mono text-[11px] overflow-y-auto space-y-2"></div>
             <div class="flex gap-2">
-                <select id="target-agent" class="bg-zinc-900 border border-zinc-800 rounded px-3 text-[10px] text-zinc-400 outline-none">
-                    <option value="all">BROADCAST_ALL</option>
-                    <% agents.forEach(a => { %> <option value="<%= a.id %>"><%= a.id %></option> <% }); %>
-                </select>
-                <input type="text" id="master-input" placeholder="Execute command or send message..." 
+                <input type="text" id="master-input" placeholder="Enter command or message..." 
                        class="flex-1 bg-zinc-900 border border-zinc-800 rounded px-4 py-2 text-xs outline-none focus:border-green-600 text-zinc-100 font-mono">
             </div>
         </section>
 
         <!-- SETTINGS TAB -->
-        <section id="settings" class="tab-content p-6 h-full overflow-y-auto">
-            <div class="max-w-xl space-y-8">
-                <div class="bg-zinc-900 border border-zinc-800 p-6 rounded">
-                    <h3 class="text-zinc-100 font-bold mb-4 flex items-center gap-2">📂 DATA_WARDEN_BACKEND</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="text-[10px] text-zinc-600 block mb-1 uppercase tracking-widest">Supabase_URL</label>
-                            <input type="text" placeholder="https://xyz.supabase.co" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none focus:border-zinc-600 transition-all">
-                        </div>
-                        <div>
-                            <label class="text-[10px] text-zinc-600 block mb-1 uppercase tracking-widest">Service_Key</label>
-                            <input type="password" placeholder="••••••••••••••••" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none focus:border-zinc-600 transition-all">
-                        </div>
-                        <button class="bg-green-600 hover:bg-green-700 text-black px-4 py-2 rounded text-[10px] font-bold uppercase transition-all">Commit_Settings</button>
-                    </div>
+        <section id="settings" class="tab-content h-full p-6 overflow-y-auto hidden">
+            <div class="max-w-md bg-zinc-900 border border-zinc-800 p-6 rounded">
+                <h3 class="text-zinc-100 font-bold mb-4 uppercase text-sm tracking-widest">Database_Config</h3>
+                <div class="space-y-4">
+                    <input type="text" placeholder="Supabase URL" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none">
+                    <input type="password" placeholder="Service Key" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none">
+                    <button class="w-full bg-green-600 py-2 rounded text-[10px] font-bold text-black uppercase">Save_State</button>
                 </div>
             </div>
         </section>
@@ -136,39 +76,60 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const secret = '<%= secret %>';
-        const socket = io({ auth: { token: secret, agent_id: 'master-ui' }, transports: ['websocket'] });
+        const socket = io({ auth: { token: '<%= secret %>', agent_id: 'master-ui' }, transports: ['websocket'] });
         
+        socket.on('connect', () => {
+            document.getElementById('status-dot').className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
+            document.getElementById('status-text').innerText = 'ONLINE';
+        });
+
         function showTab(id) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('text-zinc-100', 'border-b-2', 'border-green-500'));
-            
-            document.getElementById(id).classList.add('active');
-            const activeBtn = document.querySelector(`[data-tab="${id}"]`);
-            activeBtn.classList.add('text-zinc-100', 'border-b-2', 'border-green-500');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.remove('hidden');
+            document.querySelector(`[data-tab="${id}"]`).classList.add('active');
         }
+
+        socket.on('fleet_update', (agents) => {
+            const grid = document.getElementById('fleet-grid');
+            grid.innerHTML = agents.map(a => `
+                <div class="bg-zinc-900 border border-zinc-800 p-5 rounded">
+                    <h3 class="text-green-500 font-bold mb-1">${a.id}</h3>
+                    <div class="text-[10px] text-zinc-600 uppercase mb-4">${a.role}</div>
+                    <div class="text-[10px] grid grid-cols-2 gap-2 bg-black/30 p-2 rounded border border-zinc-800">
+                        <div>CPU: ${a.specs.cpu}%</div><div>RAM: ${a.specs.ram}%</div>
+                    </div>
+                </div>
+            `).join('');
+        });
+
+        socket.on('task_update', (tasks) => {
+            const body = document.getElementById('ops-body');
+            body.innerHTML = tasks.map(t => `
+                <tr class="border-b border-zinc-800/50">
+                    <td class="p-4 font-mono text-zinc-600">#${t.id.substring(0,8)}</td>
+                    <td class="p-4 font-bold text-zinc-300">${t.agent_id}</td>
+                    <td class="p-4 font-mono text-zinc-500">${t.cmd}</td>
+                    <td class="p-4"><span class="text-[9px] font-bold ${t.status === 'SUCCESS' ? 'text-green-500' : 'text-zinc-500'}">${t.status}</span></td>
+                </tr>
+            `).join('');
+        });
 
         const input = document.getElementById('master-input');
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                const target = document.getElementById('target-agent').value;
                 const cmd = input.value;
-                if (cmd.startsWith('/')) {
-                    socket.emit('dispatch', { to: target, cmd: cmd });
-                } else {
-                    socket.emit('chat', { msg: cmd });
-                }
+                if (cmd.startsWith('/')) socket.emit('dispatch', { to: 'all', cmd: cmd });
+                else socket.emit('chat', { msg: cmd });
                 input.value = '';
             }
         });
 
-        socket.on('fleet_update', (agents) => { location.reload(); });
-        socket.on('task_update', (tasks) => { location.reload(); });
         socket.on('chat_update', (msg) => {
             const box = document.getElementById('chat-box');
             const div = document.createElement('div');
             div.className = "flex gap-4";
-            div.innerHTML = `<span class="text-zinc-700">[${new Date(msg.ts).toLocaleTimeString()}]</span> <span class="${msg.from === 'master-ui' ? 'text-blue-500' : 'text-green-500'} font-bold">${msg.from.toUpperCase()}:</span> <span class="text-zinc-400">${msg.msg}</span>`;
+            div.innerHTML = `<span class="text-zinc-700">[${new Date(msg.ts).toLocaleTimeString()}]</span> <span class="text-blue-500 font-bold uppercase">${msg.from}:</span> <span class="text-zinc-400">${msg.msg}</span>`;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         });
