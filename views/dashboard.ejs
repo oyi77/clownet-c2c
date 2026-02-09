@@ -19,72 +19,36 @@
          .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
          @keyframes message-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
          @keyframes caret-blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0; } }
-         @keyframes dot-pulse { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-1px); }
+         @keyframes dot-pulse { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-1px); } }
      </style>
 </head>
 <body class="bg-[#09090b] text-zinc-400 min-h-screen flex flex-col">
 
-    <!-- LOGIN FORM (Access Code) -->
-    <% if (accessCodeRequired && !isAccessCode) { %>
-    <div id="login-overlay" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-        <div class="terminal-glow bg-[#0c0c0e] border border-zinc-700 rounded-lg p-8 max-w-md w-full mx-4">
-            <h2 class="text-green-500 text-2xl font-bold mb-6 tracking-tighter">🔒 CLAWNET ACCESS REQUIRED</h2>
-            <div class="space-y-4 text-sm">
-                <p class="text-zinc-300">Enter access code to continue:</p>
+    <!-- BLOCKING LOGIN MODAL -->
+    <div id="login-overlay" class="fixed inset-0 bg-black/95 flex items-center justify-center z-[9999] hidden">
+        <div class="terminal-glow bg-[#0c0c0e] border border-zinc-700 rounded-lg p-8 max-w-md w-full mx-4 relative overflow-hidden">
+            <!-- Scanline effect -->
+            <div class="absolute inset-0 pointer-events-none opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiAvPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSIxIiBmaWxsPSIjMzMzIiAvPgo8L3N2Zz4=')]"></div>
+            
+            <h2 class="text-green-500 text-2xl font-bold mb-6 tracking-tighter flex items-center gap-3">
+                <span class="text-red-500 animate-pulse">🔒</span> ACCESS_CONTROL
+            </h2>
+            <div class="space-y-4 text-sm relative z-10">
+                <p id="login-message" class="text-zinc-400 font-mono text-xs uppercase tracking-wider">Authentication Required</p>
                 <form id="login-form" class="space-y-4">
-                    <input type="text" id="access-code-input" placeholder="Access Code" 
-                           class="w-full bg-black border border-zinc-800 rounded p-3 text-xs text-zinc-100 font-mono uppercase tracking-widest focus:border-green-600 outline-none"
-                           autocomplete="off" autocapitalize="off" spellcheck="false">
-                    <div class="flex gap-2">
-                        <button type="submit" id="login-submit" class="flex-1 bg-green-600 py-3 rounded text-black font-bold uppercase hover:bg-green-700 transition-colors">
-                            Authenticate
-                        </button>
-                        <button type="button" id="login-cancel" class="px-4 py-3 rounded border border-zinc-800 text-zinc-400 uppercase hover:bg-zinc-900 transition-colors">
-                            Cancel
-                        </button>
-                    </div>
+                    <input type="password" id="access-code-input" placeholder="ENTER_ACCESS_CODE" 
+                           class="w-full bg-black/50 border border-zinc-800 rounded p-4 text-center text-green-500 font-mono text-lg tracking-[0.2em] focus:border-green-600 outline-none transition-all focus:ring-1 focus:ring-green-900 placeholder:text-zinc-700"
+                           autocomplete="off" autocapitalize="off">
+                    <button type="submit" id="login-submit" class="w-full bg-green-600/90 hover:bg-green-500 py-3 rounded text-black font-bold uppercase tracking-widest transition-all transform active:scale-95 shadow-[0_0_15px_rgba(34,197,94,0.3)] hover:shadow-[0_0_25px_rgba(34,197,94,0.5)]">
+                        AUTHENTICATE
+                    </button>
                 </form>
+                <div class="text-[10px] text-zinc-600 text-center font-mono mt-4">
+                    SECURE CONNECTION // CLAWNET_V3.3
+                </div>
             </div>
         </div>
     </div>
-    <% } %>
-
-    <!-- DASHBOARD CONTENT (Hidden if not authenticated) -->
-    <div id="dashboard-content" class="<%= (accessCodeRequired && !isAccessCode) ? 'hidden' : 'flex' %> flex-col min-h-0">
-
-    <!-- LOGIN FORM HANDLING -->
-    <script>
-        // Access code login handling
-        const accessCodeRequired = <%= accessCodeRequired %>;
-        const isAccessCode = <%= isAccessCode %>;
-
-        if (accessCodeRequired) {
-            const loginForm = document.getElementById('login-form');
-            const accessCodeInput = document.getElementById('access-code-input');
-            const loginSubmit = document.getElementById('login-submit');
-            const loginCancel = document.getElementById('login-cancel');
-
-            loginForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const code = accessCodeInput.value.trim().toUpperCase();
-                if (code) {
-                    // Reload with access code in URL
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('access_code', code);
-                    window.location.href = url.toString();
-                }
-            });
-
-            loginCancel.addEventListener('click', () => {
-                accessCodeInput.value = '';
-            });
-
-            // Auto-focus input
-            setTimeout(() => {
-                accessCodeInput.focus();
-            }, 100);
-        }
-    </script>
 
     <header class="border-b border-zinc-800 p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-[#09090b]">
         <h1 class="text-green-500 font-bold tracking-tighter text-xl italic">🦞 CLAWNET_C2C <span class="text-zinc-600 text-xs font-mono not-italic">v3.3_WAR_ROOM</span></h1>
@@ -281,16 +245,95 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Security: Get secret from server-side EJS without exposing in HTML
+        // AUTHENTICATION LOGIC (BLOCKING MODAL)
         const secret = '<%= secret %>';
-        
-        const socket = io({ 
-            auth: { token: secret, agent_id: 'master-ui', role: 'master' },
-            transports: ['websocket', 'polling'], // Allow polling fallback
-            reconnection: true,
-            reconnectionAttempts: 10
+        let token = localStorage.getItem('clawnet_token') || secret;
+        let socket = null;
+
+        const modal = document.getElementById('login-overlay');
+        const form = document.getElementById('login-form');
+        const input = document.getElementById('access-code-input');
+        const msg = document.getElementById('login-message');
+
+        function showLogin(message = "Authentication Required") {
+            modal.classList.remove('hidden');
+            msg.innerText = message;
+            msg.classList.add('text-red-400');
+            input.value = '';
+            input.focus();
+        }
+
+        function hideLogin() {
+            modal.classList.add('hidden');
+        }
+
+        function connectSocket(authToken) {
+            if (socket) {
+                socket.auth.token = authToken;
+                socket.connect();
+                return;
+            }
+
+            socket = io({ 
+                auth: { token: authToken, agent_id: 'master-ui', role: 'master' },
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: 10
+            });
+
+            setupSocketListeners();
+        }
+
+        function setupSocketListeners() {
+            socket.on('connect', () => {
+                console.log("✅ Socket connected");
+                hideLogin();
+                document.getElementById('status-dot').className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
+                document.getElementById('status-text').innerText = 'ONLINE (' + socket.io.engine.transport.name.toUpperCase() + ')';
+                localStorage.setItem('clawnet_token', socket.auth.token);
+            });
+
+            socket.on('connect_error', (err) => {
+                console.error("Connection Error:", err.message);
+                document.getElementById('status-text').innerText = 'AUTH_FAILED';
+                document.getElementById('status-dot').className = 'w-2 h-2 bg-red-600 rounded-full';
+                
+                if (err.message === 'Unauthorized' || err.message.includes('auth')) {
+                    localStorage.removeItem('clawnet_token');
+                    showLogin("ACCESS DENIED. INVALID CODE.");
+                }
+            });
+
+            // Re-attach other listeners...
+            socket.on('fleet_update', handleFleetUpdate);
+            socket.on('task_update', handleTaskUpdate);
+            socket.on('chat_update', handleChatUpdate);
+            socket.on('typing_update', handleTypingUpdate);
+            socket.on('intel_update', appendIntel);
+        }
+
+        // Initialize Auth
+        if (!token) {
+            showLogin();
+        } else {
+            connectSocket(token);
+        }
+
+        // Handle Login Submission
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const code = input.value.trim();
+            if (code) {
+                msg.innerText = "VERIFYING CREDENTIALS...";
+                msg.classList.remove('text-red-400');
+                msg.classList.add('text-yellow-400');
+                connectSocket(code);
+            }
         });
         
+        // --- REST OF THE LOGIC (Functions hoisted or defined below) ---
+        // (Copied existing logic for brevity, assuming standard functions exist)
+
         let currentRoom = 'all';
         let agentsCache = [];
         const agentCache = {};
@@ -301,16 +344,81 @@
         const TYPING_TTL_MS = 2000;
         const TYPING_THROTTLE_MS = 800;
 
-        socket.on('connect', () => {
-            console.log("✅ Socket connected via " + socket.io.engine.transport.name);
-            document.getElementById('status-dot').className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
-            document.getElementById('status-text').innerText = 'ONLINE (' + socket.io.engine.transport.name.toUpperCase() + ')';
-        });
+        function handleFleetUpdate(agents) {
+            agentsCache = agents;
+            const grid = document.getElementById('fleet-grid');
+            agents.forEach(a => { agentCache[a.id] = a; });
+            updateTargetOptions(agents);
+            
+            // Update Fleet Grid
+            if (agents.length === 0) {
+                grid.innerHTML = '<div class="col-span-3 text-center py-20 text-zinc-600">NO AGENTS ONLINE</div>';
+            } else {
+                grid.innerHTML = agents.map(a => `
+                    <div class="bg-zinc-900 border border-zinc-800 p-5 rounded terminal-glow relative group" data-agent-id="${a.id}">
+                        <div class="absolute top-4 right-4 text-[10px] ${a.status === 'online' ? 'text-green-500' : 'text-red-500'}">
+                            ● ${a.status.toUpperCase()}
+                        </div>
+                        <button class="agent-actions absolute top-4 left-4 text-[9px] text-zinc-500 border border-zinc-800 px-2 py-1 rounded hover:text-zinc-200">ACTIONS</button>
+                        <h3 class="text-zinc-100 font-bold mb-1">${a.id}</h3>
+                        <div class="text-[10px] text-zinc-500 mb-4 tracking-tighter">ROLE: ${a.role.toUpperCase()}</div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-[10px]">
+                                <span class="text-zinc-600">LAST_HEARTBEAT</span>
+                                <span>${new Date(a.last_seen).toLocaleTimeString()}</span>
+                            </div>
+                            <div class="bg-black/50 p-2 rounded border border-zinc-800">
+                                <div class="text-[9px] text-zinc-600 mb-1">SYSTEM_RESOURCES</div>
+                                <div class="grid grid-cols-2 gap-2 text-[10px]">
+                                    <div>CPU: <span class="text-zinc-300">${(a.specs && a.specs.cpu_percent) || 0}%</span></div>
+                                    <div>RAM: <span class="text-zinc-300">${(a.specs && a.specs.ram_percent) || 0}%</span></div>
+                                </div>
+                            </div>
+                            ${(a.sessions && a.sessions.length > 0) ? `
+                                <div class="mt-2 pt-2 border-t border-zinc-800">
+                                    <div class="text-[9px] text-zinc-500 mb-1">ACTIVE SESSIONS</div>
+                                    ${a.sessions.map(s => `<div class="text-[9px] text-zinc-400 bg-zinc-950 p-1 rounded mb-1 truncate">${s.id || s}</div>`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Add event listeners for new buttons
+                document.querySelectorAll('.agent-actions').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const card = e.target.closest('[data-agent-id]');
+                        if (!card) return;
+                        const agent = agentCache[card.dataset.agentId];
+                        if (!agent) return;
+                        openAgentModal(agent);
+                    });
+                });
+            }
 
-        socket.on('connect_error', (err) => {
-            document.getElementById('status-text').innerText = 'ERROR: ' + err.message;
-            document.getElementById('status-dot').className = 'w-2 h-2 bg-red-600 rounded-full';
-        });
+            // Update Chat Rooms list
+            const roomList = document.getElementById('room-list');
+             let roomsHtml = `<button onclick="selectRoom('all')" class="chat-room ${currentRoom === 'all' ? 'active' : ''} w-full text-left px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-zinc-800/50"># BROADCAST_ALL</button>`;
+            
+            agents.forEach(a => {
+                if (a.id !== 'master-ui') {
+                    roomsHtml += `<button onclick="selectRoom('${a.id}')" class="chat-room ${currentRoom === a.id ? 'active' : ''} w-full text-left px-4 py-3 text-xs text-zinc-400 hover:bg-zinc-800 border-b border-zinc-800/50 flex justify-between">
+                        <span>@ ${a.id}</span>
+                        <span class="w-1.5 h-1.5 rounded-full ${a.status === 'online' ? 'bg-green-500' : 'bg-zinc-600'}"></span>
+                    </button>`;
+                }
+            });
+            roomList.innerHTML = roomsHtml;
+        }
+
+        function handleTaskUpdate(tasks) {
+            renderOps(tasks);
+            refreshLogs();
+        }
+
+        function handleChatUpdate(msg) {
+            handleChatMessage(msg);
+        }
 
         function showTab(id) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
@@ -549,90 +657,6 @@
             renderTypingIndicator();
         }
 
-        socket.on('fleet_update', (agents) => {
-            agentsCache = agents;
-            const grid = document.getElementById('fleet-grid');
-            agents.forEach(a => { agentCache[a.id] = a; });
-            updateTargetOptions(agents);
-            
-            // Update Fleet Grid
-            if (agents.length === 0) {
-                grid.innerHTML = '<div class="col-span-3 text-center py-20 text-zinc-600">NO AGENTS ONLINE</div>';
-            } else {
-                grid.innerHTML = agents.map(a => `
-                    <div class="bg-zinc-900 border border-zinc-800 p-5 rounded terminal-glow relative group" data-agent-id="${a.id}">
-                        <div class="absolute top-4 right-4 text-[10px] ${a.status === 'online' ? 'text-green-500' : 'text-red-500'}">
-                            ● ${a.status.toUpperCase()}
-                        </div>
-                        <button class="agent-actions absolute top-4 left-4 text-[9px] text-zinc-500 border border-zinc-800 px-2 py-1 rounded hover:text-zinc-200">ACTIONS</button>
-                        <h3 class="text-zinc-100 font-bold mb-1">${a.id}</h3>
-                        <div class="text-[10px] text-zinc-500 mb-4 tracking-tighter">ROLE: ${a.role.toUpperCase()}</div>
-                        <div class="space-y-3">
-                            <div class="flex justify-between text-[10px]">
-                                <span class="text-zinc-600">LAST_HEARTBEAT</span>
-                                <span>${new Date(a.last_seen).toLocaleTimeString()}</span>
-                            </div>
-                            <div class="bg-black/50 p-2 rounded border border-zinc-800">
-                                <div class="text-[9px] text-zinc-600 mb-1">SYSTEM_RESOURCES</div>
-                                <div class="grid grid-cols-2 gap-2 text-[10px]">
-                                    <div>CPU: <span class="text-zinc-300">${(a.specs && a.specs.cpu_percent) || 0}%</span></div>
-                                    <div>RAM: <span class="text-zinc-300">${(a.specs && a.specs.ram_percent) || 0}%</span></div>
-                                </div>
-                            </div>
-                            ${(a.sessions && a.sessions.length > 0) ? `
-                                <div class="mt-2 pt-2 border-t border-zinc-800">
-                                    <div class="text-[9px] text-zinc-500 mb-1">ACTIVE SESSIONS</div>
-                                    ${a.sessions.map(s => `<div class="text-[9px] text-zinc-400 bg-zinc-950 p-1 rounded mb-1 truncate">${s.id || s}</div>`).join('')}
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `).join('');
-                
-                // Add event listeners for new buttons
-                document.querySelectorAll('.agent-actions').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const card = e.target.closest('[data-agent-id]');
-                        if (!card) return;
-                        const agent = agentCache[card.dataset.agentId];
-                        if (!agent) return;
-                        openAgentModal(agent);
-                    });
-                });
-            }
-
-            // Update Chat Rooms list
-            const roomList = document.getElementById('room-list');
-             let roomsHtml = `<button onclick="selectRoom('all')" class="chat-room ${currentRoom === 'all' ? 'active' : ''} w-full text-left px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-zinc-800/50"># BROADCAST_ALL</button>`;
-            
-            agents.forEach(a => {
-                if (a.id !== 'master-ui') {
-                    roomsHtml += `<button onclick="selectRoom('${a.id}')" class="chat-room ${currentRoom === a.id ? 'active' : ''} w-full text-left px-4 py-3 text-xs text-zinc-400 hover:bg-zinc-800 border-b border-zinc-800/50 flex justify-between">
-                        <span>@ ${a.id}</span>
-                        <span class="w-1.5 h-1.5 rounded-full ${a.status === 'online' ? 'bg-green-500' : 'bg-zinc-600'}"></span>
-                    </button>`;
-                }
-            });
-            roomList.innerHTML = roomsHtml;
-        });
-
-        socket.on('task_update', (tasks) => {
-            renderOps(tasks);
-            refreshLogs();
-        });
-
-        socket.on('chat_update', (msg) => {
-            handleChatMessage(msg);
-        });
-
-        socket.on('typing_update', (msg) => {
-            handleTypingUpdate(msg);
-        });
-
-        socket.on('intel_update', (entry) => {
-            appendIntel(entry);
-        });
-
         const opsDispatch = document.getElementById('ops-dispatch');
         if (opsDispatch) {
             opsDispatch.addEventListener('click', () => {
@@ -704,9 +728,6 @@
                         addLog('SYSTEM', `Dispatching command to ${currentRoom}: ${cmd}`, true, { animate: false });
                     } else {
                         socket.emit('chat', { to: currentRoom, msg: msg });
-                        // Optimistic update
-                        // addLog('YOU', msg, true); // Server sends back confirmation so wait for that or do optimistic
-                        // Actually server sends back to sender, so let's rely on that to avoid dupes
                     }
                     masterInput.value = '';
                 }
