@@ -1,0 +1,11 @@
+node_modules
+.git
+.env
+.DS_Store
+*.log
+local-tests.js
+perfection-tests.js
+test-suite.js
+.sisyphus
+venv
+__pycache__
