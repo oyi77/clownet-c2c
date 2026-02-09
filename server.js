@@ -229,6 +229,15 @@ function parseAuthToken(token) {
 function resolveSocketAuth(auth) {
     const token = auth && auth.token ? auth.token : '';
     const parsed = parseAuthToken(token);
+
+    // Check if this is an access code token
+    if (DASHBOARD_ACCESS_CODE && token === `access-code:${DASHBOARD_ACCESS_CODE}`) {
+        const requestedTenant = auth && auth.tenant_id ? auth.tenant_id : null;
+        const tenantId = requestedTenant || DEFAULT_TENANT;
+        return { tenantId, token, isAccessCode: true };
+    }
+
+    // Normal token auth
     const requestedTenant = auth && auth.tenant_id ? auth.tenant_id : null;
     if (requestedTenant && parsed.tenantId !== DEFAULT_TENANT && requestedTenant !== parsed.tenantId) {
         throw new Error('Tenant mismatch');
@@ -239,20 +248,28 @@ function resolveSocketAuth(auth) {
     const tenantId = requestedTenant || parsed.tenantId || DEFAULT_TENANT;
     const expected = getTenantSecret(tenantId);
     if (parsed.secret !== expected) throw new Error('Unauthorized');
-    return { tenantId, token };
+    return { tenantId, token, isAccessCode: false };
 }
 
 function resolveHttpAuth(req, allowAccessCode = false) {
-    const authHeader = req.headers.authorization;
-    const accessCodeHeader = req.headers['x-access-code'];
-    const accessCodeQuery = req.query.access_code;
-    const accessCode = accessCodeHeader || accessCodeQuery || '';
+    // 1. Check access code first (strict - only one way in)
+    if (DASHBOARD_ACCESS_CODE) {
+        const accessCodeHeader = req.headers['x-access-code'] || '';
+        const accessCodeQuery = req.query.access_code || '';
+        const providedCode = accessCodeHeader || accessCodeQuery;
 
-    if (allowAccessCode && DASHBOARD_ACCESS_CODE && accessCode === DASHBOARD_ACCESS_CODE) {
-        const requestedTenant = req.headers['x-tenant-id'] || req.query.tenant || null;
-        return { tenantId: requestedTenant || DEFAULT_TENANT, token: `access-code:${DASHBOARD_ACCESS_CODE}`, isAccessCode: true };
+        // If access code is required, ONLY allow access code
+        if (allowAccessCode && providedCode === DASHBOARD_ACCESS_CODE) {
+            const requestedTenant = req.headers['x-tenant-id'] || req.query.tenant || null;
+            return { tenantId: requestedTenant || DEFAULT_TENANT, token: `access-code:${DASHBOARD_ACCESS_CODE}`, isAccessCode: true };
+        }
+
+        // If access code is set but not provided or wrong, block
+        return null;
     }
 
+    // 2. No access code required - allow Bearer token
+    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
     const token = authHeader.substring(7);
     const parsed = parseAuthToken(token);
@@ -388,9 +405,11 @@ fastify.register(require('@fastify/static'), { root: path.join(__dirname, 'publi
 fastify.register(require('@fastify/view'), { engine: { ejs: require('ejs') }, root: path.join(__dirname, 'views') });
 fastify.register(require('@fastify/formbody'));
 
-// Dashboard Route (v3.2.1 Fix) - Protected
+// Dashboard Route - Protected
 fastify.get('/dashboard', async (req, reply) => {
     const auth = resolveHttpAuth(req, true);
+
+    // If no valid auth, return 401 (dashboard will show login form if accessCodeRequired)
     if (!auth) {
         reply.header('WWW-Authenticate', 'Bearer realm="ClawNet Dashboard"');
         return reply.code(401).send({ error: 'Unauthorized' });
@@ -402,8 +421,8 @@ fastify.get('/dashboard', async (req, reply) => {
         tasks: tenantState.tasks.slice(-20),
         messages: tenantState.messages.slice(-50),
         secret: auth.token,
-        isAccessCode: auth.isAccessCode,
-        accessCodeRequired: DASHBOARD_ACCESS_CODE ? true : false,
+        isAccessCode: auth.isAccessCode || false,
+        accessCodeRequired: !!DASHBOARD_ACCESS_CODE,
         settings: settings
     });
 });

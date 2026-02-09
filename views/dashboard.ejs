@@ -50,7 +50,7 @@
     <% } %>
 
     <!-- DASHBOARD CONTENT (Hidden if not authenticated) -->
-    <div id="dashboard-content" class="<%= isAccessCode ? 'hidden' : 'flex' %> flex-col min-h-0">
+    <div id="dashboard-content" class="<%= (accessCodeRequired && !isAccessCode) ? 'hidden' : 'flex' %> flex-col min-h-0">
 
     <!-- LOGIN FORM HANDLING -->
     <script>
