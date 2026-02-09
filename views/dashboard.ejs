@@ -11,6 +11,15 @@
         .terminal-glow { box-shadow: 0 0 20px rgba(34, 197, 94, 0.1); }
         .tab-btn.active { border-bottom-color: #22c55e; color: #f4f4f5; background: #18181b; }
         .chat-room.active { background: #18181b; border-left: 2px solid #22c55e; }
+        .message-in { animation: message-in 180ms ease-out; }
+        .typing-caret { display: inline-block; width: 6px; height: 12px; margin-left: 2px; background: #22c55e; animation: caret-blink 1s step-end infinite; }
+        .typing-dots { display: inline-flex; gap: 3px; margin-left: 6px; }
+        .typing-dots span { width: 4px; height: 4px; border-radius: 9999px; background: #22c55e; opacity: 0.25; animation: dot-pulse 1.2s infinite; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes message-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes caret-blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0; } }
+        @keyframes dot-pulse { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-1px); } }
     </style>
 </head>
 <body class="bg-[#09090b] text-zinc-400 min-h-screen flex flex-col">
@@ -134,6 +143,7 @@
                     # BROADCAST_ALL
                 </div>
                 <div id="chat-box" class="flex-1 p-4 font-mono text-[11px] overflow-y-auto space-y-2"></div>
+                <div id="typing-indicator" class="px-4 pb-2 text-[10px] text-zinc-600 h-4"></div>
                 <div class="p-3 border-t border-zinc-800 bg-[#0c0c0e]">
                     <input type="text" id="master-input" placeholder="Broadcast message (or /exec command)..." 
                            class="w-full bg-black border border-zinc-800 rounded px-4 py-2 text-xs outline-none focus:border-green-600 text-zinc-100 font-mono">
@@ -221,6 +231,12 @@
         let currentRoom = 'all';
         let agentsCache = [];
         const agentCache = {};
+        const seenMessageKeys = new Set();
+        const seenMessageQueue = [];
+        const MAX_SEEN_MESSAGES = 200;
+        const activeTypers = new Map();
+        const TYPING_TTL_MS = 2000;
+        const TYPING_THROTTLE_MS = 800;
 
         socket.on('connect', () => {
             console.log("✅ Socket connected via " + socket.io.engine.transport.name);
@@ -287,23 +303,152 @@
             // Used by server-side update, but we are using Chat Box now
              if (entry.type === 'chat') {
                 const msg = entry.message;
-                 // Only show if broadcast or relevant to current room
-                if (msg.to === 'all' || msg.to === currentRoom || msg.from === currentRoom) {
-                    addLog(msg.from, msg.msg, msg.from === 'master-ui');
-                }
+                handleChatMessage(msg);
             }
         }
-        
-        function addLog(sender, text, isMe) {
+
+        function formatTime(ts) {
+            const date = ts ? new Date(ts) : new Date();
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function getMessageKey(msg) {
+            return `${msg.ts || ''}|${msg.from || ''}|${msg.to || ''}|${msg.msg || ''}`;
+        }
+
+        function rememberMessage(key) {
+            if (seenMessageKeys.has(key)) return false;
+            seenMessageKeys.add(key);
+            seenMessageQueue.push(key);
+            if (seenMessageQueue.length > MAX_SEEN_MESSAGES) {
+                const oldest = seenMessageQueue.shift();
+                if (oldest) seenMessageKeys.delete(oldest);
+            }
+            return true;
+        }
+
+        function typeText(container, text, options = {}) {
+            const safeText = text || '';
+            const maxDuration = 900;
+            const minSpeed = 8;
+            const maxSpeed = 28;
+            const speed = Math.min(maxSpeed, Math.max(minSpeed, Math.floor(maxDuration / Math.max(safeText.length, 1))));
+            const caret = document.createElement('span');
+            caret.className = 'typing-caret';
+            container.textContent = '';
+            container.appendChild(caret);
+
+            let index = 0;
+            const step = () => {
+                if (index < safeText.length) {
+                    container.insertBefore(document.createTextNode(safeText[index]), caret);
+                    index += 1;
+                    if (options.onUpdate) options.onUpdate();
+                    setTimeout(step, options.speed || speed);
+                } else {
+                    caret.remove();
+                    if (options.onDone) options.onDone();
+                }
+            };
+            step();
+        }
+
+        function addLog(sender, text, isMe, options = {}) {
             const box = document.getElementById('chat-box');
             if (!box) return;
-            const div = document.createElement('div');
-            div.className = "flex gap-4 animate-in fade-in slide-in-from-bottom-1 duration-200";
-            div.innerHTML = `<span class="text-zinc-700 min-w-[60px]">[${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}]</span> 
-                             <span class="${isMe ? 'text-blue-500' : 'text-green-500'} font-bold uppercase min-w-[80px] text-right">${sender}:</span> 
-                             <span class="text-zinc-300 flex-1 break-words">${text}</span>`;
-            box.appendChild(div);
+            const line = document.createElement('div');
+            line.className = 'flex gap-4 message-in';
+
+            const time = document.createElement('span');
+            time.className = 'text-zinc-700 min-w-[60px]';
+            time.textContent = `[${formatTime(options.timestamp)}]`;
+
+            const name = document.createElement('span');
+            name.className = `${isMe ? 'text-blue-500' : 'text-green-500'} font-bold uppercase min-w-[80px] text-right`;
+            name.textContent = `${sender}:`;
+
+            const message = document.createElement('span');
+            message.className = 'text-zinc-300 flex-1 break-words';
+
+            line.appendChild(time);
+            line.appendChild(name);
+            line.appendChild(message);
+            box.appendChild(line);
+
+            const shouldAnimate = options.animate !== false && (text || '').length <= 800;
+            if (shouldAnimate) {
+                typeText(message, text, {
+                    onUpdate: () => { box.scrollTop = box.scrollHeight; }
+                });
+            } else {
+                message.textContent = text || '';
+            }
             box.scrollTop = box.scrollHeight;
+        }
+
+        function handleChatMessage(msg) {
+            if (!msg || !msg.msg) return;
+            const key = getMessageKey(msg);
+            if (!rememberMessage(key)) return;
+            const typingMatchKey = typingKey({ from: msg.from, to: msg.to });
+            if (activeTypers.has(typingMatchKey)) {
+                clearTimeout(activeTypers.get(typingMatchKey).timeoutId);
+                activeTypers.delete(typingMatchKey);
+                renderTypingIndicator();
+            }
+            if (msg.to === 'all' || msg.to === currentRoom || msg.from === currentRoom) {
+                addLog(msg.from, msg.msg, msg.from === 'master-ui', { timestamp: msg.ts });
+            }
+        }
+
+        function typingKey(msg) {
+            return `${msg.from || ''}|${msg.to || 'all'}`;
+        }
+
+        function handleTypingUpdate(msg) {
+            if (!msg || !msg.from) return;
+            if (msg.from === 'master-ui') return;
+            const key = typingKey(msg);
+            if (msg.isTyping) {
+                if (activeTypers.has(key)) {
+                    clearTimeout(activeTypers.get(key).timeoutId);
+                }
+                const timeoutId = setTimeout(() => {
+                    activeTypers.delete(key);
+                    renderTypingIndicator();
+                }, TYPING_TTL_MS);
+                activeTypers.set(key, { from: msg.from, to: msg.to || 'all', timeoutId });
+            } else {
+                if (activeTypers.has(key)) {
+                    clearTimeout(activeTypers.get(key).timeoutId);
+                    activeTypers.delete(key);
+                }
+            }
+            renderTypingIndicator();
+        }
+
+        function renderTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (!indicator) return;
+            const relevant = Array.from(activeTypers.values()).filter(entry => {
+                return entry.to === 'all' || entry.to === currentRoom || entry.from === currentRoom;
+            });
+            if (relevant.length === 0) {
+                indicator.innerHTML = '';
+                return;
+            }
+            const names = relevant.map(entry => entry.from).join(', ');
+            indicator.innerHTML = '';
+            const text = document.createElement('span');
+            text.textContent = `${names} typing`;
+            const dots = document.createElement('span');
+            dots.className = 'typing-dots';
+            for (let i = 0; i < 3; i += 1) {
+                const dot = document.createElement('span');
+                dots.appendChild(dot);
+            }
+            indicator.appendChild(text);
+            indicator.appendChild(dots);
         }
 
         function refreshLogs() {
@@ -338,6 +483,7 @@
             
             // Clear chat for visual switch (in real app, load history)
             document.getElementById('chat-box').innerHTML = '<div class="text-zinc-600 italic mb-4">-- CHANNEL SWITCHED --</div>';
+            renderTypingIndicator();
         }
 
         socket.on('fleet_update', (agents) => {
@@ -413,10 +559,11 @@
         });
 
         socket.on('chat_update', (msg) => {
-             // Only show if broadcast or relevant to current room
-             if (msg.to === 'all' || msg.to === currentRoom || msg.from === currentRoom) {
-                addLog(msg.from, msg.msg, msg.from === 'master-ui');
-            }
+            handleChatMessage(msg);
+        });
+
+        socket.on('typing_update', (msg) => {
+            handleTypingUpdate(msg);
         });
 
         socket.on('intel_update', (entry) => {
@@ -440,15 +587,58 @@
         // Master Chat Input
         const masterInput = document.getElementById('master-input');
         if (masterInput) {
+            let typingActive = false;
+            let typingTimeoutId = null;
+            let lastTypingSent = 0;
+
+            const sendTyping = (isTyping) => {
+                socket.emit('typing', { to: currentRoom, isTyping: isTyping });
+            };
+
+            const stopTyping = () => {
+                if (!typingActive) return;
+                typingActive = false;
+                if (typingTimeoutId) clearTimeout(typingTimeoutId);
+                typingTimeoutId = null;
+                sendTyping(false);
+            };
+
+            masterInput.addEventListener('input', () => {
+                const hasText = masterInput.value.trim().length > 0;
+                const now = Date.now();
+                if (hasText) {
+                    if (!typingActive) {
+                        typingActive = true;
+                        sendTyping(true);
+                        lastTypingSent = now;
+                    } else if (now - lastTypingSent > TYPING_THROTTLE_MS) {
+                        sendTyping(true);
+                        lastTypingSent = now;
+                    }
+                    if (typingTimeoutId) clearTimeout(typingTimeoutId);
+                    typingTimeoutId = setTimeout(() => {
+                        stopTyping();
+                    }, TYPING_TTL_MS);
+                } else {
+                    stopTyping();
+                }
+            });
+
+            masterInput.addEventListener('blur', () => {
+                stopTyping();
+            });
+
             masterInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     const msg = masterInput.value.trim();
                     if (!msg) return;
 
+                    stopTyping();
+
                     if (msg.startsWith('/exec ')) {
                         const cmd = msg.replace('/exec ', '');
                         socket.emit('dispatch', { to: currentRoom === 'all' ? 'all' : currentRoom, cmd: cmd });
-                        addLog('SYSTEM', `Dispatching command to ${currentRoom}: ${cmd}`, true);
+                        addLog('SYSTEM', `Dispatching command to ${currentRoom}: ${cmd}`, true, { animate: false });
                     } else {
                         socket.emit('chat', { to: currentRoom, msg: msg });
                         // Optimistic update

@@ -204,6 +204,25 @@ const start = async () => {
                 }
             });
 
+            socket.on('typing', (payload) => {
+                if (!payload || typeof payload !== 'object') return;
+                const to = payload.to || 'all';
+                const msg = {
+                    from: agent_id || 'master-ui',
+                    to: to,
+                    isTyping: payload.isTyping === true,
+                    ts: new Date().toISOString()
+                };
+
+                if (to === 'all') {
+                    io.emit('typing_update', msg);
+                } else {
+                    const target = state.agents[to];
+                    if (target) io.to(target.sid).emit('typing_update', msg);
+                    socket.emit('typing_update', msg);
+                }
+            });
+
             // Unified Chat/Message Handler
             socket.on('chat', (payload) => {
                 // Support both 'msg' (old) and 'to/msg' (new) formats
