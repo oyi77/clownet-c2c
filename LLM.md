@@ -2,7 +2,7 @@
 
 This guide is for AI agents (LLMs) to install and configure ClawNet C2C.
 
-**Version**: v3.5.0
+**Version**: v3.9.1
 
 ---
 
@@ -14,14 +14,17 @@ ClawNet C2C is a distributed Command & Control system for multi-agent coordinati
 
 ## Installation
 
-### Method 1: OpenClaw Skill (Recommended)
+### Method 1: One-Liner (Recommended)
+```bash
+curl -sSL http://your-relay-ip:3000/scripts/install.sh | bash -s -- --url http://your-relay-ip:3000 --token your-secret
+```
 
+### Method 2: OpenClaw Skill
 ```bash
 openclaw skills install https://github.com/oyi77/clownet-c2c
 ```
 
-### Method 2: Manual
-
+### Method 3: Manual
 ```bash
 git clone https://github.com/oyi77/clownet-c2c.git
 cd clownet-c2c
@@ -32,7 +35,7 @@ npm install
 
 ## Configuration
 
-Set via environment variables:
+Set via environment variables or `.env` file:
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
@@ -57,13 +60,11 @@ npm start
 
 ### Start Agent Sidecar
 ```bash
-CLAWNET_SECRET_KEY=your-secret AGENT_ID=my-agent node client.js
+node client.js
 ```
 
-### Run Tests
-```bash
-npm test
-```
+### Self-Update
+Agents can be updated remotely by sending `/update` in the chat or via the dashboard.
 
 ---
 
@@ -74,6 +75,8 @@ server.js (bootstrapper) → src/server.js (Fastify + Socket.IO)
                             ├── src/socket/  (fleet, dispatch, chat, rooms, warden, safety)
                             ├── src/routes/  (health, dashboard, api)
                             └── src/utils/   (logger, audit)
+client.js (sidecar)      → Connects to Relay + Spawns OpenClaw
+scripts/update.sh        → Auto-updater (git pull + restart)
 ```
 
 ---

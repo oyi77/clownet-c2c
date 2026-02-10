@@ -1,6 +1,7 @@
 const io = require('socket.io-client');
 const { spawn } = require('child_process');
 const os = require('os');
+const path = require('path');
 
 const DEFAULT_SERVER = 'wss://clownet-c2c.fly.dev';
 const DEFAULT_TOKEN = 'very-secret-key-123';
@@ -75,6 +76,8 @@ function getCpuUsage() {
     return total > 0 ? ((total - idle) / total) * 100 : 0;
 }
 
+const VERSION = '3.9.1';
+
 function reportStatus() {
     if (!sio.connected) return;
     try {
@@ -83,7 +86,8 @@ function reportStatus() {
         
         const specs = {
             cpu_percent: cpu,
-            ram_percent: ram
+            ram_percent: ram,
+            version: VERSION
         };
         sio.emit('report', { agent_id: args.id, role: args.role, specs });
     } catch (e) {
@@ -152,6 +156,18 @@ function processInstruction(msg, replyTo, taskId = null) {
         if (msg.startsWith('/exec ')) {
             const shellCmd = msg.replace('/exec ', '').trim();
             handleExecCommand(shellCmd, replyTo, taskId);
+        } else if (msg === '/update') {
+            sendReply('Initiating self-update...', replyTo, taskId);
+            const updater = spawn('sh', [path.join(__dirname, 'scripts', 'update.sh')], {
+                detached: true,
+                stdio: 'ignore'
+            });
+            updater.unref();
+        } else if (msg === '/restart') {
+            sendReply('Restarting client...', replyTo, taskId);
+            setTimeout(() => {
+                process.exit(0);
+            }, 1000);
         } else if (msg.startsWith('/join ')) {
             const parts = msg.split(' ', 2);
             if (parts.length < 2) {
