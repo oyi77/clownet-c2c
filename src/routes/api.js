@@ -55,15 +55,35 @@ function register(fastify) {
 
     // Server logs
     fastify.get('/api/logs/server', async (req, reply) => {
-        const limit = Math.min(parseInt(req.query.limit || '200', 10), 1000);
-        return reply.send({ lines: readLastLines(config.SERVER_LOG_PATH, limit) });
+        let limit = Math.min(parseInt(req.query.limit || '200', 10), 1000);
+        const search = req.query.search ? req.query.search.toLowerCase() : null;
+
+        let lines = readLastLines(config.SERVER_LOG_PATH, limit);
+
+        if (search) {
+            lines = lines.filter(line => line.toLowerCase().includes(search));
+        }
+
+        return reply.send({ lines });
     });
 
     // Task logs
     fastify.get('/api/logs/tasks', async (req, reply) => {
         const s = state.getTenantState('default');
-        const limit = Math.min(parseInt(req.query.limit || '50', 10), 200);
-        return reply.send({ tasks: s.tasks.slice(-limit) });
+        let limit = Math.min(parseInt(req.query.limit || '50', 10), 200);
+        const search = req.query.search ? req.query.search.toLowerCase() : null;
+
+        let tasks = s.tasks.slice(-limit);
+
+        if (search) {
+            tasks = tasks.filter(t =>
+                (t.id && t.id.toLowerCase().includes(search)) ||
+                (t.agent_id && t.agent_id.toLowerCase().includes(search)) ||
+                (t.cmd && t.cmd.toLowerCase().includes(search))
+            );
+        }
+
+        return reply.send({ tasks });
     });
 
     // Metrics endpoint

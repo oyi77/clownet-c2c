@@ -110,6 +110,48 @@
                 transform: translateY(-1px);
             }
         }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #333;
+            color: #eee;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 12px;
+            min-width: 250px;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.success { border-left: 4px solid #22c55e; }
+        .toast.error { border-left: 4px solid #ef4444; }
+        .toast.info { border-left: 4px solid #3b82f6; }
+        .toast.warning { border-left: 4px solid #f59e0b; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(20px); }
+        }
     </style>
 </head>
 
@@ -578,16 +620,21 @@
         <section id="logs" class="tab-content h-full p-6 overflow-y-auto hidden">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div class="bg-zinc-900 border border-zinc-800 rounded p-4 flex flex-col gap-3">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between gap-2 mb-2">
                         <div class="text-[10px] uppercase tracking-widest text-zinc-500">Server Logs</div>
-                        <button id="logs-refresh" class="text-[10px] uppercase text-green-500">Refresh</button>
+                        <input type="text" id="server-logs-search" placeholder="Search logs..." class="bg-black border border-zinc-800 rounded px-2 py-1 text-[10px] outline-none flex-1">
+                        <button id="logs-refresh" class="text-[10px] uppercase text-green-500 whitespace-nowrap">Refresh</button>
                     </div>
                     <div id="server-logs"
                         class="h-72 bg-black/50 border border-zinc-800 rounded p-2 text-[10px] font-mono overflow-y-auto">
                     </div>
                 </div>
                 <div class="bg-zinc-900 border border-zinc-800 rounded p-4 flex flex-col gap-3">
-                    <div class="text-[10px] uppercase tracking-widest text-zinc-500">Client Task Logs</div>
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <div class="text-[10px] uppercase tracking-widest text-zinc-500">Client Task Logs</div>
+                        <input type="text" id="task-logs-search" placeholder="Search tasks..." class="bg-black border border-zinc-800 rounded px-2 py-1 text-[10px] outline-none flex-1">
+                        <button id="task-logs-refresh" class="text-[10px] uppercase text-green-500 whitespace-nowrap">Refresh</button>
+                    </div>
                     <div id="task-logs"
                         class="h-72 bg-black/50 border border-zinc-800 rounded p-2 text-[10px] font-mono overflow-y-auto">
                     </div>
@@ -595,6 +642,9 @@
             </div>
         </section>
     </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
 
     <!-- TASK OUTPUT MODAL -->
     <div id="task-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4">
@@ -704,6 +754,23 @@
         const modalClose = document.getElementById('agent-modal-close');
         const modalDispatch = document.getElementById('agent-modal-dispatch');
         const modalRoleApply = document.getElementById('agent-modal-role-apply');
+
+        // --- Toast Notification System ---
+        function showToast(message, type = 'info', duration = 4000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="font-bold">${type.toUpperCase()}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-in forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
 
         let currentRoom = 'all';
         let agentsCache = [];
@@ -853,9 +920,13 @@
                 const data = await res.json();
                 if (data.success) {
                     handlePendingClientsUpdate(data.pendingClients);
+                    showToast(`Client ${agentId} approved successfully.`, 'success');
+                } else {
+                    showToast('Failed to approve client.', 'error');
                 }
             } catch (e) {
                 console.error(e);
+                showToast('Network error while approving client.', 'error');
             }
         }
 
@@ -870,9 +941,13 @@
                 const data = await res.json();
                 if (data.success) {
                     handlePendingClientsUpdate(data.pendingClients);
+                    showToast(`Client ${agentId} denied.`, 'warning');
+                } else {
+                    showToast('Failed to deny client.', 'error');
                 }
             } catch (e) {
                 console.error(e);
+                showToast('Network error while denying client.', 'error');
             }
         }
 
@@ -895,13 +970,13 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('Security settings updated.');
+                    showToast('Security settings updated successfully.', 'success');
                 } else {
-                    alert('Failed to update settings.');
+                    showToast('Failed to update settings.', 'error');
                 }
             } catch (e) {
                 console.error(e);
-                alert('Error updating settings.');
+                showToast('Error updating settings.', 'error');
             }
         });
 
@@ -1291,24 +1366,68 @@
         }
 
         function refreshLogs() {
-            const serverBox = document.getElementById('server-logs');
-            const taskBox = document.getElementById('task-logs');
-            fetch('/api/logs/server?limit=200')
+            const serverSearch = document.getElementById('server-logs-search')?.value || '';
+            const taskSearch = document.getElementById('task-logs-search')?.value || '';
+
+            // Server Logs
+            fetch(`/api/logs/server?search=${encodeURIComponent(serverSearch)}`)
                 .then(res => res.json())
                 .then(data => {
-                    if (serverBox) serverBox.innerText = (data.lines || []).join('\n');
-                });
-            fetch('/api/logs/tasks?limit=50')
+                    document.getElementById('server-logs').innerText = (data.lines || []).join('\n');
+                })
+                .catch(err => console.error('Failed to fetch server logs:', err));
+
+            // Task Logs
+            fetch(`/api/logs/tasks?search=${encodeURIComponent(taskSearch)}`)
                 .then(res => res.json())
                 .then(data => {
-                    if (!taskBox) return;
-                    taskBox.innerText = (data.tasks || []).map(t => {
-                        const status = (t.status || 'UNKNOWN').toUpperCase();
-                        const output = t.result && t.result.stdout ? t.result.stdout.substring(0, 120) : '';
-                        return `[${t.ts}] ${t.agent_id} ${t.cmd} -> ${status} ${output}`;
-                    }).join('\n');
-                });
+                    const logsDiv = document.getElementById('task-logs');
+                    logsDiv.innerHTML = (data.tasks || []).map(t => `
+                        <div class="mb-2 pb-2 border-b border-zinc-800/30 last:border-0">
+                            <div class="flex justify-between text-zinc-500 mb-1">
+                                <span class="font-bold text-zinc-400">#${t.id.substring(0, 8)}</span>
+                                <span>${new Date(t.created_at || t.timestamp).toLocaleString()}</span>
+                            </div>
+                            <div class="text-zinc-300 mb-1">&gt; ${t.cmd}</div>
+                            <div class="text-[10px] text-zinc-600 font-mono truncate">Result: ${typeof t.result === 'object' ? JSON.stringify(t.result) : t.result || 'Pending'}</div>
+                        </div>
+                    `).join('');
+                })
+                .catch(err => console.error('Failed to fetch task logs:', err));
         }
+
+        // Logs Search Handlers
+        function setupLogsSearch() {
+            const serverSearch = document.getElementById('server-logs-search');
+            const taskSearch = document.getElementById('task-logs-search');
+            let serverTimeout, taskTimeout;
+
+            if (serverSearch) {
+                serverSearch.addEventListener('input', () => {
+                    clearTimeout(serverTimeout);
+                    serverTimeout = setTimeout(refreshLogs, 300);
+                });
+            }
+
+            if (taskSearch) {
+                taskSearch.addEventListener('input', () => {
+                    clearTimeout(taskTimeout);
+                    taskTimeout = setTimeout(refreshLogs, 300);
+                });
+            }
+
+            // Refresh buttons
+            document.getElementById('logs-refresh')?.addEventListener('click', refreshLogs);
+            document.getElementById('task-logs-refresh')?.addEventListener('click', refreshLogs);
+
+            // Initial load
+            if (document.getElementById('logs') && !document.getElementById('logs').classList.contains('hidden')) {
+                refreshLogs();
+            }
+        }
+
+        // ... inside DOMContentLoaded ...
+        setupLogsSearch();
 
         function selectRoom(target) {
             currentRoom = target;
@@ -1584,6 +1703,8 @@
                 agentLogsModal.classList.remove('flex');
             });
         }
+
+        setupLogsSearch();
     </script>
 </body>
 
