@@ -1345,10 +1345,6 @@
             });
         }
 
-            document.querySelectorAll(`[data-tab="${id}"]`).forEach(b => b.classList.add('active'));
-            if (id === 'logs') refreshLogs();
-        }
-
         // Command Templates Logic
         function refreshOps() {
             fetch('/api/templates')
