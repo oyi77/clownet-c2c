@@ -352,7 +352,7 @@
             <div id="fleet-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Initial render from server -->
                 <% if (agents && agents.length > 0) { %>
-                    <% agents.forEach(agent=> { %>
+                    <% agents.forEach(agent => { %>
                         <div class="bg-zinc-900 border border-zinc-800 p-5 rounded terminal-glow relative group flex flex-col justify-between"
                             data-agent-id="<%= agent.id %>">
                             <div>
@@ -399,7 +399,7 @@
                                             <div class="text-[9px] text-zinc-500 mb-1 uppercase tracking-wider">Sessions
                                             </div>
                                             <div class="flex flex-wrap gap-1">
-                                                <% agent.sessions.forEach(s=> { %>
+                                                <% agent.sessions.forEach(s => { %>
                                                     <span
                                                         class="text-[9px] text-zinc-400 bg-zinc-950 border border-zinc-800 px-2 py-0.5 rounded truncate max-w-[100px]">
                                                         <%= s.id || s %>
@@ -580,7 +580,7 @@
                     <label class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2 block">Approval_Mode</label>
                     <select id="approval-mode" name="clientApprovalMode" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none">
                         <option value="auto" <%= settings.clientApprovalMode === 'auto' ? 'selected' : '' %>>Auto Allow</option>
-                        <option value="manual" <%= settings.clientApprovalMode === 'manual' ? 'selected' %>>Manual Approval</option>
+                        <option value="manual" <%= settings.clientApprovalMode === 'manual' ? 'selected' : '' %>>Manual Approval</option>
                     </select>
                 </div>
 
@@ -870,7 +870,7 @@
         if (tasks && tasks.length > 0) {
             tasks.forEach(task => {
         %>
-                    tasksCache.push({ id: '<%= task.id %>', agent_id: '<%= task.agent_id %>', cmd: '<%= task.cmd %>', status: '<%= task.status %>', result: <% - JSON.stringify(task.result || null) %> });
+                    tasksCache.push({ id: '<%= task.id %>', agent_id: '<%= task.agent_id %>', cmd: '<%= task.cmd %>', status: '<%= task.status %>', result: <%- JSON.stringify(task.result || null) %> });
         <%
             });
         }
