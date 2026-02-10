@@ -571,6 +571,29 @@
                 </div>
             </form>
 
+            <!-- Token Configuration -->
+            <div class="max-w-md bg-zinc-900 border border-zinc-800 p-6 rounded mb-6">
+                <h3 class="text-zinc-100 font-bold mb-4 uppercase text-sm tracking-widest">Access Token</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2 block">Current Token</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="current-token" value="<%= secret %>" readonly
+                                class="flex-1 bg-black border border-zinc-800 rounded p-2 text-xs font-mono text-zinc-400 outline-none">
+                            <button onclick="copyCurrentToken()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-2 rounded text-[10px] uppercase">Copy</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2 block">New Token</label>
+                        <input type="text" id="new-token" placeholder="Minimum 8 characters"
+                            class="w-full bg-black border border-zinc-800 rounded p-2 text-xs font-mono text-zinc-100 outline-none focus:border-green-600">
+                    </div>
+                    <button onclick="rotateToken()" id="rotate-token-btn"
+                        class="w-full bg-red-600 hover:bg-red-500 py-2 rounded text-[10px] font-bold text-black uppercase">Rotate Token</button>
+                    <p class="text-[9px] text-zinc-500">Token change requires server restart to take effect.</p>
+                </div>
+            </div>
+
             <!-- Advanced Settings -->
             <form id="advanced-settings-form" class="max-w-md bg-zinc-900 border border-zinc-800 p-6 rounded mb-6">
                 <h3 class="text-zinc-100 font-bold mb-4 uppercase text-sm tracking-widest">Client_Security</h3>
@@ -1088,6 +1111,41 @@
                 document.body.appendChild(toast);
                 setTimeout(() => toast.remove(), 2000);
             });
+        }
+
+        function copyCurrentToken() {
+            const token = document.getElementById('current-token').value;
+            copyToClipboard(token);
+            showToast('Token copied to clipboard', 'success');
+        }
+
+        async function rotateToken() {
+            const newToken = document.getElementById('new-token').value.trim();
+            if (newToken.length < 8) {
+                showToast('Token must be at least 8 characters', 'error');
+                return;
+            }
+
+            if (!confirm('Rotate access token? This will invalidate the current token. Restart server to apply changes.')) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/rotate-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ newToken })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    document.getElementById('new-token').value = '';
+                } else {
+                    showToast(data.error || 'Failed to rotate token', 'error');
+                }
+            } catch (e) {
+                showToast('Network error', 'error');
+            }
         }
 
         function handleFleetUpdate(agents) {

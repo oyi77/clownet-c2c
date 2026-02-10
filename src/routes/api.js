@@ -163,6 +163,38 @@ function register(fastify) {
             pid: process.pid
         });
     });
+
+    // Token rotation (write new token to .env file)
+    fastify.post('/api/rotate-token', async (req, reply) => {
+        const { newToken } = req.body;
+        if (!newToken || newToken.length < 8) {
+            return reply.status(400).send({ success: false, error: 'Token must be at least 8 characters' });
+        }
+
+        const envPath = require('path').join(__dirname, '..', '..', '.env');
+        const fs = require('fs');
+
+        try {
+            let envContent = '';
+            if (fs.existsSync(envPath)) {
+                envContent = fs.readFileSync(envPath, 'utf8');
+            }
+
+            // Update or add CLAWNET_SECRET_KEY
+            const tokenRegex = /^CLAWNET_SECRET_KEY=.*$/m;
+            if (tokenRegex.test(envContent)) {
+                envContent = envContent.replace(tokenRegex, `CLAWNET_SECRET_KEY=${newToken}`);
+            } else {
+                envContent += `\nCLAWNET_SECRET_KEY=${newToken}\n`;
+            }
+
+            fs.writeFileSync(envPath, envContent);
+
+            return reply.send({ success: true, message: 'Token rotated. Restart server to apply.' });
+        } catch (e) {
+            return reply.status(500).send({ success: false, error: e.message });
+        }
+    });
 }
 
 module.exports = { register };
