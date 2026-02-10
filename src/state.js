@@ -8,6 +8,8 @@ const defaultState = {
     rooms: {},       // { roomName: Set<agent_id> }
     handles: {},     // { agent_id: handle }
     metrics: { tasks_total: 0, tasks_success: 0, tasks_failed: 0, messages_total: 0 },
+    connectionEvents: [], // { type: 'connect'|'disconnect', agentId: string, timestamp: Date }
+    pendingClients: [] // { agentId: string, timestamp: Date }
 };
 
 // Per-tenant state storage
@@ -41,7 +43,14 @@ function setTenantState(tenantId, data) {
 }
 
 // Settings (global, not per-tenant)
-let settings = { supabase_url: '', supabase_key: '' };
+let settings = {
+    supabase_url: '',
+    supabase_key: '',
+    clientApprovalMode: 'auto', // 'auto' | 'manual'
+    whitelistedClients: [], // List of allowed client IDs
+    blacklistedClients: [], // List of blocked client IDs
+    tokenRotationEnabled: false
+};
 
 function getSettings() { return settings; }
 function setSettings(s) { settings = s; }

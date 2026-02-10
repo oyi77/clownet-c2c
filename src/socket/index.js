@@ -1,5 +1,6 @@
 const socketio = require('socket.io');
 const { resolveTenant } = require('../auth');
+const state = require('../state');
 const fleet = require('./fleet');
 const dispatch = require('./dispatch');
 const chat = require('./chat');
@@ -30,6 +31,31 @@ function setup(server) {
         const { agent_id, role, specs } = socket.handshake.auth;
         const tenantId = socket.tenantId;
 
+        const s = state.getTenantState(tenantId);
+        const settings = state.getSettings();
+
+        // Client approval workflow
+        if (settings.clientApprovalMode === 'manual') {
+            if (settings.blacklistedClients.includes(agent_id)) {
+                return socket.disconnect();
+            }
+
+            if (!settings.whitelistedClients.includes(agent_id)) {
+                // Check if already pending
+                if (!s.pendingClients.find(c => c.agentId === agent_id)) {
+                    s.pendingClients.push({ agentId: agent_id, timestamp: new Date() });
+                    // Notify dashboard of pending client
+                    io.to(`tenant:${tenantId}`).emit('pending_clients_update', s.pendingClients);
+                }
+                return socket.disconnect();
+            }
+        }
+
+        // Log connection event
+        s.connectionEvents.push({ type: 'connect', agentId: agent_id, timestamp: new Date() });
+        if (s.connectionEvents.length > 100) s.connectionEvents.shift(); // Keep last 100
+        io.to(`tenant:${tenantId}`).emit('connection_events_update', s.connectionEvents);
+
         // Join tenant room for scoped broadcasts
         socket.join(`tenant:${tenantId}`);
 
@@ -40,6 +66,12 @@ function setup(server) {
         dispatch.register(io, socket, ctx);
         chat.register(io, socket, ctx);
         rooms.register(io, socket, ctx);
+
+        socket.on('disconnect', () => {
+             s.connectionEvents.push({ type: 'disconnect', agentId: agent_id, timestamp: new Date() });
+             if (s.connectionEvents.length > 100) s.connectionEvents.shift();
+             io.to(`tenant:${tenantId}`).emit('connection_events_update', s.connectionEvents);
+        });
     });
 
     return io;

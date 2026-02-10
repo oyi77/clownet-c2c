@@ -16,6 +16,8 @@ function register(fastify) {
             accessCodeRequired: false,
             isAccessCode: false,
             settings: state.getSettings(),
+            connectionEvents: s.connectionEvents,
+            pendingClients: s.pendingClients
         });
     });
 }

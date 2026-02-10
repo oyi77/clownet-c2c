@@ -495,11 +495,21 @@
                     <div class="text-[10px] text-zinc-700 italic text-center mt-4">No room selected</div>
                 </div>
             </div>
+
+            <!-- Col 4: Connection Events -->
+            <div class="w-64 border-l border-zinc-800 bg-[#0c0c0e] flex flex-col">
+                <div class="p-3 border-b border-zinc-800 text-[10px] uppercase font-bold text-zinc-500 flex justify-between items-center">
+                    <span>Connection Events</span>
+                </div>
+                <div id="connection-events-list" class="flex-1 overflow-y-auto p-2 space-y-2">
+                    <div class="text-[10px] text-zinc-600 italic text-center mt-4">Waiting for events...</div>
+                </div>
+            </div>
         </section>
 
         <!-- SETTINGS TAB -->
         <section id="settings" class="tab-content h-full p-6 overflow-y-auto hidden">
-            <form class="max-w-md bg-zinc-900 border border-zinc-800 p-6 rounded" method="POST" action="/api/settings">
+            <form class="max-w-md bg-zinc-900 border border-zinc-800 p-6 rounded mb-6" method="POST" action="/api/settings">
                 <h3 class="text-zinc-100 font-bold mb-4 uppercase text-sm tracking-widest">Database_Config</h3>
                 <div class="space-y-4">
                     <input name="supabase_url" type="text" placeholder="Supabase URL"
@@ -512,6 +522,56 @@
                         class="w-full bg-green-600 py-2 rounded text-[10px] font-bold text-black uppercase">Save_State</button>
                 </div>
             </form>
+
+            <!-- Advanced Settings -->
+            <form id="advanced-settings-form" class="max-w-md bg-zinc-900 border border-zinc-800 p-6 rounded mb-6">
+                <h3 class="text-zinc-100 font-bold mb-4 uppercase text-sm tracking-widest">Client_Security</h3>
+
+                <!-- Client Approval Mode -->
+                <div class="mb-4">
+                    <label class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2 block">Approval_Mode</label>
+                    <select id="approval-mode" name="clientApprovalMode" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none">
+                        <option value="auto" <%= settings.clientApprovalMode === 'auto' ? 'selected' : '' %>>Auto Allow</option>
+                        <option value="manual" <%= settings.clientApprovalMode === 'manual' ? 'selected' %>>Manual Approval</option>
+                    </select>
+                </div>
+
+                <!-- Whitelist -->
+                <div class="mb-4">
+                    <label class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2 block">Whitelisted_Clients</label>
+                    <textarea id="whitelist-input" name="whitelistedClients" rows="3" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none font-mono" placeholder="Comma separated client IDs"><%= settings.whitelistedClients ? settings.whitelistedClients.join(', ') : '' %></textarea>
+                </div>
+
+                <!-- Blacklist -->
+                <div class="mb-4">
+                    <label class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2 block">Blacklisted_Clients</label>
+                    <textarea id="blacklist-input" name="blacklistedClients" rows="3" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none font-mono" placeholder="Comma separated client IDs"><%= settings.blacklistedClients ? settings.blacklistedClients.join(', ') : '' %></textarea>
+                </div>
+
+                <button type="submit" id="save-advanced-settings"
+                    class="w-full bg-blue-600 py-2 rounded text-[10px] font-bold text-black uppercase">Save_Security_Settings</button>
+            </form>
+
+            <!-- Pending Clients Queue -->
+            <div id="pending-clients-section" class="bg-zinc-900 border border-zinc-800 p-6 rounded hidden">
+                <h3 class="text-zinc-100 font-bold mb-4 uppercase text-sm tracking-widest">Pending_Approval</h3>
+                <div id="pending-clients-list" class="space-y-2">
+                    <!-- Populated by JS -->
+                    <% if (pendingClients && pendingClients.length > 0) { %>
+                        <% pendingClients.forEach(client => { %>
+                            <div class="flex justify-between items-center bg-black/40 p-3 rounded border border-zinc-800">
+                                <span class="text-xs font-mono text-zinc-300"><%= client.agentId %></span>
+                                <div class="space-x-2">
+                                    <button onclick="approveClient('<%= client.agentId %>')" class="bg-green-600 hover:bg-green-500 text-black text-[9px] font-bold px-2 py-1 rounded uppercase">Approve</button>
+                                    <button onclick="denyClient('<%= client.agentId %>')" class="bg-red-600 hover:bg-red-500 text-black text-[9px] font-bold px-2 py-1 rounded uppercase">Deny</button>
+                                </div>
+                            </div>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="text-[10px] text-zinc-500 italic">No pending clients.</div>
+                    <% } %>
+                </div>
+            </div>
         </section>
 
         <!-- LOGS TAB -->
@@ -735,7 +795,115 @@
             socket.on('room_update', handleRoomUpdate);
             socket.on('traffic', handleTraffic);
             socket.on('intel_update', appendIntel);
+            socket.on('pending_clients_update', handlePendingClientsUpdate);
+            socket.on('connection_events_update', handleConnectionEventsUpdate);
         }
+
+        // --- NEW EVENT HANDLERS ---
+
+        function handlePendingClientsUpdate(pendingClients) {
+            const section = document.getElementById('pending-clients-section');
+            const list = document.getElementById('pending-clients-list');
+            if (!section || !list) return;
+
+            if (pendingClients && pendingClients.length > 0) {
+                section.classList.remove('hidden');
+                list.innerHTML = pendingClients.map(c => `
+                    <div class="flex justify-between items-center bg-black/40 p-3 rounded border border-zinc-800">
+                        <span class="text-xs font-mono text-zinc-300">${c.agentId}</span>
+                        <div class="space-x-2">
+                            <button onclick="approveClient('${c.agentId}')" class="bg-green-600 hover:bg-green-500 text-black text-[9px] font-bold px-2 py-1 rounded uppercase">Approve</button>
+                            <button onclick="denyClient('${c.agentId}')" class="bg-red-600 hover:bg-red-500 text-black text-[9px] font-bold px-2 py-1 rounded uppercase">Deny</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                section.classList.add('hidden');
+                list.innerHTML = '';
+            }
+        }
+
+        function handleConnectionEventsUpdate(events) {
+            const list = document.getElementById('connection-events-list');
+            if (!list) return;
+
+            if (events && events.length > 0) {
+                list.innerHTML = events.slice().reverse().slice(0, 20).map(e => `
+                    <div class="flex justify-between items-center bg-black/40 p-2 rounded border border-zinc-800/50">
+                        <span class="text-[10px] font-mono ${e.type === 'connect' ? 'text-green-500' : 'text-red-500'}">
+                            ${e.type === 'connect' ? '[CONNECTED]' : '[DISCONNECTED]'}
+                        </span>
+                        <span class="text-[10px] text-zinc-400 font-mono">${e.agentId}</span>
+                        <span class="text-[9px] text-zinc-600">${new Date(e.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                `).join('');
+            } else {
+                list.innerHTML = '<div class="text-[10px] text-zinc-600 italic text-center p-2">No recent connection events</div>';
+            }
+        }
+
+        async function approveClient(agentId) {
+            if (!confirm(`Approve client ${agentId}?`)) return;
+            try {
+                const res = await fetch('/api/client/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agentId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    handlePendingClientsUpdate(data.pendingClients);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function denyClient(agentId) {
+            if (!confirm(`Deny client ${agentId}?`)) return;
+            try {
+                const res = await fetch('/api/client/deny', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agentId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    handlePendingClientsUpdate(data.pendingClients);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Advanced Settings Form
+        document.getElementById('advanced-settings-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const approvalMode = document.getElementById('approval-mode').value;
+            const whitelist = document.getElementById('whitelist-input').value.split(',').map(s => s.trim()).filter(Boolean);
+            const blacklist = document.getElementById('blacklist-input').value.split(',').map(s => s.trim()).filter(Boolean);
+
+            try {
+                const res = await fetch('/api/advanced-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clientApprovalMode: approvalMode,
+                        whitelistedClients: whitelist,
+                        blacklistedClients: blacklist
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Security settings updated.');
+                } else {
+                    alert('Failed to update settings.');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error updating settings.');
+            }
+        });
 
         // --- 3. INIT AUTH ---
         if (!token) {
