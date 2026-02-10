@@ -29,6 +29,7 @@ function setup(server) {
 
     io.on('connection', (socket) => {
         const { agent_id, role, specs } = socket.handshake.auth;
+        const ip = socket.handshake.address;
         const tenantId = socket.tenantId;
 
         const s = state.getTenantState(tenantId);
@@ -59,7 +60,7 @@ function setup(server) {
         // Join tenant room for scoped broadcasts
         socket.join(`tenant:${tenantId}`);
 
-        const ctx = { agent_id, role, specs, tenantId };
+        const ctx = { agent_id, role, specs, tenantId, ip };
 
         // Register all handlers
         fleet.register(io, socket, ctx);

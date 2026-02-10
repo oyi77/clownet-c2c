@@ -695,57 +695,130 @@
 
     <!-- AGENT MODAL -->
     <div id="agent-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4">
-        <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-lg p-5">
-            <div class="flex items-center justify-between mb-4">
-                <div class="text-zinc-100 font-bold" id="agent-modal-title">AGENT</div>
-                <button id="agent-modal-close" class="text-zinc-500 text-xs">CLOSE</button>
+        <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-2xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
+                <div>
+                    <h2 class="text-zinc-100 font-bold text-lg uppercase tracking-widest flex items-center gap-2">
+                        <span class="text-green-500">●</span> <span id="agent-modal-title">AGENT</span>
+                    </h2>
+                    <div id="agent-modal-subtitle" class="text-xs text-zinc-500 font-mono mt-1">ID: <span id="agent-modal-id"></span></div>
+                </div>
+                <button id="agent-modal-close" class="text-zinc-500 text-xs hover:text-zinc-300 uppercase tracking-wider">Close [ESC]</button>
             </div>
-            <div class="space-y-3 text-xs">
-                <div class="flex justify-between"><span class="text-zinc-500">ID</span><span id="agent-modal-id"
-                        class="text-zinc-200"></span></div>
-                <div class="flex justify-between"><span class="text-zinc-500">ROLE</span><span id="agent-modal-role"
-                        class="text-zinc-200"></span></div>
-                <div class="flex justify-between"><span class="text-zinc-500">STATUS</span><span id="agent-modal-status"
-                        class="text-zinc-200"></span></div>
-                <div class="flex justify-between"><span class="text-zinc-500">CPU</span><span id="agent-modal-cpu"
-                        class="text-zinc-200"></span></div>
-                <div class="flex justify-between"><span class="text-zinc-500">RAM</span><span id="agent-modal-ram"
-                        class="text-zinc-200"></span></div>
-                <div class="text-zinc-500 text-[10px]">SESSIONS</div>
-                <div id="agent-modal-sessions" class="flex flex-wrap gap-2"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <!-- Status Column -->
+                <div class="bg-zinc-900/50 p-4 rounded border border-zinc-800">
+                    <h3 class="text-[10px] uppercase tracking-widest text-zinc-500 mb-3">Status</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">Role</span>
+                            <span id="agent-modal-role" class="font-bold text-zinc-200"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">State</span>
+                            <span id="agent-modal-status" class="font-bold text-green-500"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">IP Address</span>
+                            <span id="agent-modal-ip" class="font-mono text-zinc-300"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">Last Seen</span>
+                            <span id="agent-modal-last-seen" class="font-mono text-zinc-400"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resources Column -->
+                <div class="bg-zinc-900/50 p-4 rounded border border-zinc-800">
+                    <h3 class="text-[10px] uppercase tracking-widest text-zinc-500 mb-3">Resources</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">CPU</span>
+                            <span id="agent-modal-cpu" class="font-bold text-zinc-200"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">RAM</span>
+                            <span id="agent-modal-ram" class="font-bold text-zinc-200"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">Hostname</span>
+                            <span id="agent-modal-hostname" class="font-mono text-zinc-300 truncate max-w-[120px]"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">Uptime</span>
+                            <span id="agent-modal-uptime" class="font-mono text-zinc-400"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Column -->
+                <div class="bg-zinc-900/50 p-4 rounded border border-zinc-800">
+                    <h3 class="text-[10px] uppercase tracking-widest text-zinc-500 mb-3">Info</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">Version</span>
+                            <span id="agent-modal-version" class="font-mono text-zinc-300"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">OS</span>
+                            <span id="agent-modal-os" class="font-mono text-zinc-300 truncate max-w-[120px]"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-zinc-400">Sessions</span>
+                            <span id="agent-modal-sessions-count" class="font-bold text-zinc-200"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="mt-5 space-y-3">
-                <div class="flex gap-2 mb-2">
-                    <button id="agent-modal-logs"
-                        class="flex-1 bg-zinc-800 hover:bg-zinc-700 px-3 py-2 rounded text-[10px] font-bold text-zinc-200 uppercase tracking-wider transition-colors">
-                        LOGS
+
+            <!-- Recent Tasks -->
+            <div class="flex-1 overflow-hidden flex flex-col mb-4">
+                <h3 class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Recent Tasks</h3>
+                <div class="bg-black/40 border border-zinc-800 rounded flex-1 overflow-y-auto max-h-48">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-zinc-900/50 text-zinc-500 sticky top-0">
+                            <tr>
+                                <th class="p-2 font-normal">Task</th>
+                                <th class="p-2 font-normal">Status</th>
+                                <th class="p-2 font-normal">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="agent-modal-tasks" class="font-mono text-zinc-400 divide-y divide-zinc-800/50">
+                            <!-- Tasks injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="grid grid-cols-2 gap-4 border-t border-zinc-800 pt-4 mt-auto">
+                <div class="flex gap-2">
+                    <button id="agent-modal-logs" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-colors">
+                        View Logs
                     </button>
-                    <button id="agent-modal-restart"
-                        class="flex-1 bg-zinc-800 hover:bg-red-900/50 px-3 py-2 rounded text-[10px] font-bold text-zinc-200 uppercase tracking-wider transition-colors">
-                        RESTART
-                    </button>
-                    <button id="agent-modal-update"
-                        class="flex-1 bg-zinc-800 hover:bg-green-900/50 px-3 py-2 rounded text-[10px] font-bold text-green-500 uppercase tracking-wider transition-colors">
-                        UPDATE
+                    <button id="agent-modal-restart" class="flex-1 bg-zinc-800 hover:bg-red-900/50 text-zinc-200 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-colors">
+                        Restart
                     </button>
                 </div>
-                <div class="text-[10px] uppercase tracking-widest text-zinc-500">Dispatch Command</div>
                 <div class="flex gap-2">
-                    <input id="agent-modal-command" type="text" placeholder="/status | /sessions list"
+                    <button id="agent-modal-update" class="flex-1 bg-zinc-800 hover:bg-green-900/50 text-green-500 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-colors">
+                        Update
+                    </button>
+                    <button id="agent-modal-inspect" class="flex-1 bg-zinc-800 hover:bg-blue-900/50 text-blue-500 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-colors">
+                        Shell
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Command -->
+            <div class="mt-4 pt-4 border-t border-zinc-800">
+                <div class="flex gap-2">
+                    <input type="text" id="agent-modal-command" placeholder="/status | /sessions list"
                         class="flex-1 bg-black border border-zinc-800 rounded px-3 py-2 text-xs outline-none focus:border-green-600 text-zinc-100 font-mono">
                     <button id="agent-modal-dispatch"
                         class="bg-green-600 px-4 py-2 rounded text-[10px] font-bold text-black uppercase">Send</button>
-                </div>
-                <div class="text-[10px] uppercase tracking-widest text-zinc-500">Reassign Role</div>
-                <div class="flex gap-2">
-                    <select id="agent-modal-role-select"
-                        class="bg-black border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-200">
-                        <option value="worker">worker</option>
-                        <option value="warden">warden</option>
-                        <option value="master">master</option>
-                    </select>
-                    <button id="agent-modal-role-apply"
-                        class="bg-zinc-800 px-4 py-2 rounded text-[10px] font-bold text-zinc-200 uppercase">Apply</button>
                 </div>
             </div>
         </div>
@@ -1076,9 +1149,9 @@
                     btn.addEventListener('click', (e) => {
                         const card = e.target.closest('[data-agent-id]');
                         if (!card) return;
-                        const agent = agentCache[card.dataset.agentId];
-                        if (!agent) return;
-                        openAgentModal(agent);
+                        const agentId = card.dataset.agentId;
+                        if (!agentId) return;
+                        openAgentModal(agentId);
                     });
                 });
             }
@@ -1692,25 +1765,62 @@
             }
         }
 
-        function openAgentModal(agent) {
-            currentAgentId = agent.id;
-            document.getElementById('agent-modal').classList.remove('hidden');
-            document.getElementById('agent-modal').classList.add('flex');
-            document.getElementById('agent-modal-title').innerText = agent.id;
-            document.getElementById('agent-modal-id').innerText = agent.id;
-            document.getElementById('agent-modal-role').innerText = agent.role;
-            document.getElementById('agent-modal-status').innerText = agent.status;
-            document.getElementById('agent-modal-cpu').innerText = `${(agent.specs && agent.specs.cpu_percent) || 0}%`;
-            document.getElementById('agent-modal-ram').innerText = `${(agent.specs && agent.specs.ram_percent) || 0}%`;
-            const sessions = document.getElementById('agent-modal-sessions');
-            sessions.innerHTML = '';
-            (agent.sessions || []).forEach(s => {
-                const span = document.createElement('span');
-                span.className = 'text-[9px] text-zinc-400 bg-zinc-950 p-1 rounded';
-                span.innerText = s.id || s;
-                sessions.appendChild(span);
+        function openAgentModal(agentId) {
+            currentAgentId = agentId;
+            const modal = document.getElementById('agent-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // Reset fields
+            document.getElementById('agent-modal-title').innerText = 'Loading...';
+            document.getElementById('agent-modal-id').innerText = agentId;
+            ['role', 'status', 'ip', 'last-seen', 'cpu', 'ram', 'hostname', 'uptime', 'version', 'os', 'sessions-count'].forEach(id => {
+                document.getElementById(`agent-modal-${id}`).innerText = '...';
             });
-            document.getElementById('agent-modal-role-select').value = agent.role;
+            document.getElementById('agent-modal-tasks').innerHTML = '<tr><td colspan="3" class="p-4 text-center text-zinc-600 text-xs">Loading tasks...</td></tr>';
+
+            fetch(`/api/agents/${agentId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        showToast('Agent not found', 'error');
+                        modal.classList.add('hidden');
+                        return;
+                    }
+
+                    const agent = data.agent;
+
+                    document.getElementById('agent-modal-title').innerText = agent.id;
+                    document.getElementById('agent-modal-id').innerText = agent.id;
+                    document.getElementById('agent-modal-role').innerText = agent.role;
+                    document.getElementById('agent-modal-status').innerText = agent.status;
+                    document.getElementById('agent-modal-ip').innerText = agent.ip || 'Unknown';
+                    document.getElementById('agent-modal-last-seen').innerText = new Date(agent.last_seen).toLocaleString();
+                    document.getElementById('agent-modal-cpu').innerText = `${(agent.specs && agent.specs.cpu_percent) || 0}%`;
+                    document.getElementById('agent-modal-ram').innerText = `${(agent.specs && agent.specs.ram_percent) || 0}%`;
+                    document.getElementById('agent-modal-hostname').innerText = (agent.specs && agent.specs.hostname) || 'Unknown';
+                    document.getElementById('agent-modal-version').innerText = (agent.specs && agent.specs.version) || 'Unknown';
+                    document.getElementById('agent-modal-os').innerText = (agent.specs && agent.specs.os) || 'Unknown';
+                    document.getElementById('agent-modal-sessions-count').innerText = (agent.sessions && agent.sessions.length) || 0;
+
+                    // Render Tasks
+                    const tasksBody = document.getElementById('agent-modal-tasks');
+                    if (data.tasks && data.tasks.length > 0) {
+                        tasksBody.innerHTML = data.tasks.slice().reverse().map(t => `
+                            <tr class="hover:bg-zinc-800/30 transition-colors">
+                                <td class="p-2 truncate max-w-[200px]" title="${t.cmd}">${t.cmd}</td>
+                                <td class="p-2"><span class="${t.status === 'SUCCESS' ? 'text-green-500' : t.status === 'FAIL' ? 'text-red-500' : 'text-zinc-500'}">${t.status}</span></td>
+                                <td class="p-2 text-zinc-600 font-mono">${new Date(t.created_at).toLocaleTimeString()}</td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        tasksBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-zinc-600 text-xs">No recent tasks</td></tr>';
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast('Failed to load agent details', 'error');
+                });
         }
 
         // --- 5. EVENT LISTENERS ---
@@ -1914,6 +2024,12 @@
             if (confirm(`Send UPDATE signal to ${currentAgentId}?`)) {
                 socket.emit('dispatch', { to: currentAgentId, cmd: '/update' });
             }
+        });
+
+        document.getElementById('agent-modal-inspect').addEventListener('click', () => {
+            if (!currentAgentId) return;
+            // Placeholder for Shell functionality
+            showToast('Interactive Shell coming soon!', 'info');
         });
 
         if (agentLogsClose) {

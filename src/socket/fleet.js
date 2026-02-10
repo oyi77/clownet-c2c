@@ -3,7 +3,7 @@ const { logEvent } = require('../utils/logger');
 const { emitTraffic } = require('./warden');
 
 function register(io, socket, ctx) {
-    const { agent_id, role, specs, tenantId } = ctx;
+    const { agent_id, role, specs, tenantId, ip } = ctx;
     const s = state.getTenantState(tenantId);
     const sid = socket.id;
 
@@ -17,6 +17,7 @@ function register(io, socket, ctx) {
             sid: sid,
             cron: [],
             sessions: [],
+            ip: ip,
         };
 
         // Broadcast fleet update to same-tenant sockets

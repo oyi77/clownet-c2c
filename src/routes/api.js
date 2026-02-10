@@ -130,6 +130,31 @@ function register(fastify) {
         return reply.send({ entries: getRecentTraffic(limit) });
     });
 
+    fastify.get('/api/agents/:id', async (req, reply) => {
+        const s = state.getTenantState('default');
+        const agentId = req.params.id;
+        const agent = s.agents[agentId];
+
+        if (!agent) {
+            return reply.status(404).send({ error: 'Agent not found' });
+        }
+
+        const recentTasks = s.tasks.filter(t => t.agent_id === agentId).slice(-20);
+
+        return reply.send({
+            agent: {
+                id: agent.id,
+                role: agent.role,
+                status: agent.status,
+                last_seen: agent.last_seen,
+                ip: agent.ip,
+                specs: agent.specs,
+                sessions: agent.sessions,
+            },
+            tasks: recentTasks
+        });
+    });
+
     // Server info
     fastify.get('/api/info', async (req, reply) => {
         return reply.send({
