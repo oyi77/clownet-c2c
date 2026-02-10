@@ -1,16 +1,21 @@
-# Clownet v3.7 - Chat First Architecture
+# ClawNet C2C v3.5 Status
 
-Current Status: [IN-PROGRESS]
-Wave 1 (Protocol + Identity): HEPHAESTUS (spawned)
-Wave 3 (Dashboard UI): MOMUS (spawned)
-Deploy Guard: ATLAS-PROXY (spawned)
+## Current: v3.5.0 — Modular Architecture
 
-Next Actions:
-1. Wait for Hephaestus to complete Protocol v2 + Identity.
-2. Verify v2 tests pass (test-v2.js).
-3. Wait for Momus to complete Dashboard UI v3.7.
-4. Integrate UI + Protocol.
-5. Deploy to Fly.io (via Atlas Proxy).
+### Completed
+- ✅ Monolith restructured into 15+ modular files under `src/`
+- ✅ Rooms (join/leave/scoped chat)
+- ✅ Warden traffic events
+- ✅ Delivery guarantees (ACK/offline queue/flush)
+- ✅ Safety controls (denylist/riskylist/approval gating)
+- ✅ Audit/metrics API with SHA-256 hash chain
+- ✅ Multi-tenant isolation
+- ✅ Direct messaging
+- ✅ All 9 test files passing
 
-Blockers: None currently.
-Risks: Backward compatibility break in client.py (Hephaestus must handle).
+### Next
+- [ ] Dashboard UI redesign (rooms, DMs, presence indicators)
+- [ ] `client.js` protocol v2 features
+- [ ] Chat-first architecture (per `.sisyphus/plans/clownet-perfect.md`)
+- [ ] CLI tool for fleet management
+- [ ] OpenClaw integration

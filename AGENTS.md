@@ -1,100 +1,72 @@
-# CLAWNET C2C KNOWLEDGE BASE
+# ClawNet C2C — Agent Knowledge Base
 
-**Generated:** 2026-02-09 09:00  
-**Commit:** 31aa3cb  
-**Branch:** master
+> ClawNet C2C v3.5 — Multi-Agent Command & Control Relay
 
-## OVERVIEW
-Multi-agent coordination relay. Node.js/Fastify server + Socket.io for real-time C2C protocol. Python sidecars proxy OpenClaw commands with telemetry.
+## Directory Structure
 
-## STRUCTURE
 ```
 clownet-c2c/
-├── server.js           # Main: Fastify + Socket.io relay + JSON persistence
-├── client.py           # Python sidecar: telemetry + command proxy
-├── views/
-│   └── dashboard.ejs   # Terminal UI (Tailwind + Socket.io client)
-├── public/
-│   └── index.html      # Landing page
-└── scripts/
-    └── install.sh      # Skill installer
+├── server.js            # Bootstrapper (requires src/server.js)
+├── client.js            # Agent sidecar (connects to relay)
+├── package.json         # v3.5.0, scripts: start, test
+├── src/                 # Core modular source
+│   ├── server.js        # Fastify + Socket.IO bootstrap
+│   ├── config.js        # Env vars, paths, safety lists
+│   ├── state.js         # Multi-tenant in-memory state
+│   ├── persistence.js   # JSON file I/O
+│   ├── auth.js          # Token auth (single + multi-tenant)
+│   ├── routes/          # HTTP endpoints
+│   │   ├── health.js    # GET /
+│   │   ├── dashboard.js # GET /dashboard
+│   │   └── api.js       # /api/metrics, /api/traffic, etc.
+│   ├── socket/          # WebSocket handlers
+│   │   ├── index.js     # Socket.IO setup + auth middleware
+│   │   ├── fleet.js     # Agent connect/disconnect/report
+│   │   ├── dispatch.js  # Task dispatch + delivery guarantees
+│   │   ├── chat.js      # Global/room/DM chat
+│   │   ├── rooms.js     # Room join/leave
+│   │   ├── warden.js    # Traffic events to wardens
+│   │   └── safety.js    # Command denylist/riskylist
+│   └── utils/
+│       ├── logger.js    # Event logging
+│       └── audit.js     # Traffic audit + SHA-256 hash chain
+├── views/               # EJS templates
+├── public/              # Static assets
+├── tests/               # 9 JS test files + runner
+├── docs/                # OpenAPI spec, SQL schema
+├── scripts/             # Install scripts
+├── .legacy/             # Archived stale test scripts
+├── Dockerfile           # Docker deployment
+└── fly.toml             # Fly.io config
 ```
 
-## WHERE TO LOOK
-| Task | Location | Notes |
-|------|----------|-------|
-| Add Socket.io event | server.js:95-168 | Main connection handler block |
-| Change dashboard UI | views/dashboard.ejs | EJS template with inline Socket.io |
-| Modify persistence | server.js:38-51 | JSON file persistence functions |
-| Update sidecar | client.py | Command proxy + psutil telemetry |
-| Add tests | perfection-tests.js | Atomic test suite pattern |
+## Code Conventions
+- **No TypeScript** — plain Node.js (CommonJS `require`)
+- **Env-first config** — all config via environment variables
+- **Modular architecture** — each feature isolated in its own module
+- **Multi-tenant state** — `state.getTenantState(tenantId)` for isolation
+- **Socket events** over REST for real-time operations
 
-## CODE MAP
-**Entry Point:** server.js  
-**Key Flows:**
-- Agent connect → Auth via SECRET_KEY → Add to `state.agents`
-- Agent `report` → Update specs/sessions → Broadcast `fleet_update`
-- Master `dispatch` → Target agent gets `command` event → Agent sends `task_result`
-- Chat messages → Stored in `state.messages` (max 100) → Broadcast `chat_update`
-
-**Data Persistence:**
-- **Single System:** server.js → JSON files in DATA_DIR (tasks, messages)
-- **Settings:** Separate settings.json for Supabase config (future use)
-
-**Agent Protocol (C2CPv1):**
-- Auth handshake: `{ token, agent_id, role, specs }`
-- Events: `connect`, `report`, `dispatch`, `task_result`, `chat`
-
-## CONVENTIONS
-**Deviations from Standard Node.js:**
-- No TypeScript, no linting, no formatter config
-- Direct inline Socket.io setup (not modularized)
-- Single-file server architecture (no separation of concerns)
-- Mixed async patterns: callbacks + async/await
-- Python sidecar instead of Node.js workers
-- Dashboard auth via Bearer token in Authorization header
-
-**Style:**
-- Minimal error handling (catch blocks log to console)
-- Direct state mutation (no state management library)
-- Inline configs (PORT, SECRET_KEY from env with defaults)
-- Terminal aesthetic (green glow, monospace fonts)
-
-## ANTI-PATTERNS (THIS PROJECT)
-❌ **NEVER** exceed 100 messages in chat log (hard limit enforced)  
-❌ **NEVER** skip payload validation on Socket.io events (now enforced)  
-❌ **DO NOT** add native Node modules (breaks Docker cross-platform)  
-❌ **NEVER** access dashboard without Bearer auth header (401 protected)
-
-## UNIQUE STYLES
-- **Terminal UI Aesthetic:** Fira Code font, zinc color palette, green accents for "online" states
-- **Encrypted Settings:** AES-256-CTR for Supabase credentials (state.js)
-- **Exponential Backoff:** Python sidecar reconnects with 5→60s delay
-- **Self-Healing:** Agents auto-reconnect, relay is stateless
-- **Spec-Driven Development:** CLAWNET_V3_SPEC.md defines architecture philosophy
-
-## COMMANDS
+## Key Commands
 ```bash
-npm start              # Launch relay on PORT (default 3000)
-node perfection-tests  # Run atomic test suite (requires PORT 3333)
-node test-suite        # Run integration tests (fly.dev)
-python client.py       # Start sidecar (requires CLAWNET_SECRET_KEY env)
+npm start            # Start relay server
+npm test             # Run all 9 test files
+node client.js       # Start agent sidecar
 ```
 
-## NOTES
-**Gotchas:**
-1. Dashboard requires Bearer token in Authorization header (e.g., `Authorization: Bearer very-secret-key-123`)
-2. Python sidecar expects `openclaw` binary in PATH or OPENCLAW_BIN_PATH env
-3. DATA_DIR auto-detects `/data` for Docker or local `./data`
-4. Sessions array in agent state not persisted to JSON (ephemeral)
-5. Dashboard specs use `cpu_percent` and `ram_percent` (match client.py keys)
+## Environment Variables
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CLAWNET_SECRET_KEY` | `very-secret-key-123` | Auth token |
+| `PORT` | `3000` | Server port |
+| `CLAWNET_COMMAND_DENYLIST` | *(empty)* | CSV of blocked command tokens |
+| `CLAWNET_COMMAND_RISKYLIST` | *(empty)* | CSV of approval-gated tokens |
+| `CLAWNET_TENANTS_PATH` | *(empty)* | Path to tenants JSON file |
+| `CLAWNET_ACK_TIMEOUT_MS` | `5000` | ACK timeout for delivery |
+| `CLAWNET_ACK_MAX_RETRIES` | `3` | Max delivery retries |
 
-**Version:**
-- Unified to v3.2.0 across package.json, README, dashboard, and API
-
-**Recent Improvements (v3.2.0):**
-- ✅ Added dashboard authentication (Bearer token)
-- ✅ Added Socket.io payload validation
-- ✅ Fixed dashboard spec key mismatch (cpu_percent, ram_percent)
-- ✅ Removed dead code (database.js, state.js)
-- ✅ Unified version numbering
+## Anti-Patterns to Avoid
+- Don't add logic to root `server.js` — it's a bootstrapper only
+- Don't bypass `state.getTenantState()` — always use it for tenant isolation
+- Don't emit events directly — use `emitToTenant()` from `fleet.js`
+- Don't hardcode ports in tests — use env var `PORT`

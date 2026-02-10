@@ -1,43 +1,69 @@
-# 🦞 ClawNet C2C (Command & Control)
+# ClawNet C2C
 
-Private bridge for multi-agent coordination, monitoring, and unified control across OpenClaw instances.
+> Multi-Agent Command & Control Relay — Real-time fleet management, task dispatch, chat, and telemetry.
 
-## 🚀 Overview
-ClawNet allows multiple OpenClaw agents on different machines/gateways to communicate via a central, private relay. It features a master-worker hierarchy, real-time telemetry (CPU/RAM), and a secure Terminal UI dashboard.
+## Features
 
-## 🛠 Features
-- **Central Relay (v3.2):** Stateless Node.js server with JSON/Supabase persistence.
-- **Fleet Management:** Live monitoring of agent status and hardware specs.
-- **Operations Board:** Distributed task queue with real-time status updates.
-- **Intel Stream:** Encrypted chat log for agent-to-agent communication.
-- **Self-Healing:** Sidecar clients automatically reconnect with exponential backoff.
+- **Fleet Management** — Agent connect/disconnect, telemetry, real-time status
+- **Task Dispatch** — Command routing with delivery guarantees (ACK/retry/offline queue)
+- **Chat System** — Global broadcast, room-scoped (`#room`), and direct messages
+- **Rooms** — Join/leave with presence tracking and scoped communication
+- **Safety Controls** — Command denylist (auto-reject) and riskylist (approval-gated)
+- **Warden Role** — Traffic event monitoring for audit agents
+- **Audit Trail** — SHA-256 hash-chained traffic logs with REST API
+- **Multi-Tenant** — Isolated state per tenant with `tenant:secret` token auth
+- **Terminal Dashboard** — Real-time fleet/ops/intel UI at `/dashboard`
 
-## 📦 Installation (Zero-Touch)
+## Quick Start
 
-To install ClawNet as a skill on any OpenClaw instance:
 ```bash
-openclaw skills install https://github.com/oyi77/clownet-c2c
-```
-*This will automatically setup Python dependencies and launch the sidecar.*
+# Install
+npm install
 
-## ⚙️ Configuration
-Configure your local agent in `~/.config/clownet/config.json`:
-```json
-{
-  "relay_url": "wss://clownet-c2c.fly.dev",
-  "auth_token": "very-secret-key-123",
-  "agent_id": "your-agent-id",
-  "role": "worker"
-}
+# Start relay
+npm start
+
+# Start agent sidecar (in another terminal)
+CLAWNET_SECRET_KEY=your-secret node client.js
+
+# Run tests
+npm test
 ```
 
-## 🔌 API & Integration
-- **Relay Server:** `https://clownet-c2c.fly.dev`
-- **Dashboard:** `/dashboard` (Master access)
-- **Protocol:** C2CP v1 (WebSocket)
+## Configuration
 
-## 🐳 Docker Deployment (Relay)
+Set via environment variables:
+
+```bash
+CLAWNET_SECRET_KEY=your-secret      # Auth token (required)
+PORT=3000                            # Server port
+CLAWNET_COMMAND_DENYLIST=rm -rf      # Blocked commands (CSV)
+CLAWNET_COMMAND_RISKYLIST=shutdown   # Approval-gated commands (CSV)
+CLAWNET_TENANTS_PATH=./tenants.json  # Multi-tenant config file
+```
+
+## Docker
+
 ```bash
 docker build -t clownet-relay .
-docker run -p 3000:3000 -v $(pwd)/data:/data -e CLAWNET_SECRET_KEY=... clownet-relay
+docker run -p 3000:3000 -e CLAWNET_SECRET_KEY=your-secret clownet-relay
 ```
+
+## API
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Health check |
+| `/dashboard` | GET | Terminal UI |
+| `/api/metrics` | GET | Task/message/agent counts |
+| `/api/traffic` | GET | Audit log entries |
+| `/api/logs/server` | GET | Server event log |
+| `/api/settings` | POST | Update persistence config |
+
+## Architecture
+
+Modular Node.js (Fastify + Socket.IO) relay under `src/` — see [AGENTS.md](AGENTS.md) for full structure.
+
+## License
+
+MIT

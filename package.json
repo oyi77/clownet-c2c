@@ -1,10 +1,11 @@
 {
   "name": "clownet-c2c",
-  "version": "3.2.0",
+  "version": "3.5.0",
   "description": "ClawNet C2C Federated Control",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node tests/run-all.js"
   },
   "dependencies": {
     "@fastify/formbody": "^7.4.0",

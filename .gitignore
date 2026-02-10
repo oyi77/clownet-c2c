@@ -5,4 +5,9 @@ data/
 venv/
 __pycache__/
 .DS_Store
-.sisyphus/
+.legacy/
+.pytest_cache/
+.ruff_cache/
+data-test/
+data-persist-test/
+*.db
