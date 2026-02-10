@@ -421,6 +421,52 @@
 
         <!-- OPERATIONS TAB -->
         <section id="ops" class="tab-content h-full p-6 overflow-y-auto hidden">
+            <!-- Command Templates -->
+            <div class="mb-6 bg-zinc-900/30 border border-zinc-800 rounded p-4">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="text-[10px] uppercase tracking-widest text-zinc-500">Command Templates</div>
+                    <button id="add-template-btn" class="text-[10px] text-green-500 uppercase hover:underline">+ Add Template</button>
+                </div>
+                <div id="templates-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <!-- Templates rendered by JS -->
+                    <% if (commandTemplates && commandTemplates.length > 0) { %>
+                        <% commandTemplates.forEach(t => { %>
+                            <div class="bg-black/40 border border-zinc-800 p-3 rounded hover:border-zinc-700 transition-colors group">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="font-bold text-xs text-zinc-200"><%= t.name %></div>
+                                    <button onclick="deleteTemplate('<%= t.id %>')" class="text-[10px] text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                                </div>
+                                <div class="text-[10px] text-zinc-500 font-mono truncate mb-3"><%= t.command %></div>
+                                <button onclick="useTemplate('<%= t.command.replace(/'/g, "\\'") %>')" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] py-1 rounded uppercase transition-colors">Use Template</button>
+                            </div>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="col-span-full text-center py-4 text-zinc-600 text-xs italic">No templates saved.</div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Add Template Modal (Hidden by default) -->
+            <div id="template-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
+                <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-md p-6">
+                    <h3 class="text-zinc-100 font-bold mb-4 uppercase text-sm tracking-widest">New Template</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-[10px] uppercase tracking-widest text-zinc-500 block mb-1">Name</label>
+                            <input type="text" id="template-name" placeholder="e.g. Check Disk" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] uppercase tracking-widest text-zinc-500 block mb-1">Command</label>
+                            <input type="text" id="template-command" placeholder="e.g. df -h" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none font-mono">
+                        </div>
+                        <div class="flex justify-end gap-2 mt-4">
+                            <button onclick="document.getElementById('template-modal').classList.add('hidden')" class="px-4 py-2 text-[10px] text-zinc-500 uppercase">Cancel</button>
+                            <button onclick="saveTemplate()" class="bg-green-600 px-4 py-2 rounded text-[10px] font-bold text-black uppercase">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="mb-4 bg-zinc-950/60 border border-zinc-800 rounded p-4 flex flex-col gap-3">
                 <div class="text-[10px] uppercase tracking-widest text-zinc-500">Dispatch Command</div>
                 <div class="flex flex-col md:flex-row gap-2">
@@ -1131,10 +1177,91 @@
             if (tab) {
                 tab.classList.remove('hidden');
                 if (id === 'intel') tab.classList.add('flex');
+                if (id === 'ops') refreshOps(); // Refresh ops when tab is shown
             }
 
             document.querySelectorAll(`[data-tab="${id}"]`).forEach(b => b.classList.add('active'));
             if (id === 'logs') refreshLogs();
+        }
+
+        // Command Templates Logic
+        function refreshOps() {
+            fetch('/api/templates')
+                .then(res => res.json())
+                .then(data => {
+                    const grid = document.getElementById('templates-grid');
+                    if (data.templates && data.templates.length > 0) {
+                        grid.innerHTML = data.templates.map(t => `
+                            <div class="bg-black/40 border border-zinc-800 p-3 rounded hover:border-zinc-700 transition-colors group">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="font-bold text-xs text-zinc-200">${t.name}</div>
+                                    <button onclick="deleteTemplate('${t.id}')" class="text-[10px] text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                                </div>
+                                <div class="text-[10px] text-zinc-500 font-mono truncate mb-3">${t.command}</div>
+                                <button onclick="useTemplate('${t.command.replace(/'/g, "\\'")}')" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] py-1 rounded uppercase transition-colors">Use Template</button>
+                            </div>
+                        `).join('');
+                    } else {
+                        grid.innerHTML = '<div class="col-span-full text-center py-4 text-zinc-600 text-xs italic">No templates saved.</div>';
+                    }
+                });
+        }
+
+        function useTemplate(cmd) {
+            const input = document.getElementById('ops-command');
+            input.value = cmd;
+            input.focus();
+            showToast('Template command copied to input.', 'info');
+        }
+
+        function deleteTemplate(id) {
+            if (!confirm('Delete this template?')) return;
+            fetch(`/api/templates/${id}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        refreshOps();
+                        showToast('Template deleted.', 'warning');
+                    }
+                });
+        }
+
+        document.getElementById('add-template-btn')?.addEventListener('click', () => {
+            document.getElementById('template-modal').classList.remove('hidden');
+            document.getElementById('template-modal').classList.add('flex');
+        });
+
+        document.getElementById('template-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'template-modal') {
+                document.getElementById('template-modal').classList.add('hidden');
+                document.getElementById('template-modal').classList.remove('flex');
+            }
+        });
+
+        function saveTemplate() {
+            const name = document.getElementById('template-name').value;
+            const command = document.getElementById('template-command').value;
+            if (!name || !command) {
+                showToast('Please fill in all fields.', 'error');
+                return;
+            }
+
+            fetch('/api/templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, command })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('template-modal').classList.add('hidden');
+                    document.getElementById('template-modal').classList.remove('flex');
+                    document.getElementById('template-name').value = '';
+                    document.getElementById('template-command').value = '';
+                    refreshOps();
+                    showToast('Template saved.', 'success');
+                }
+            });
         }
 
         function updateTargetOptions(agents) {

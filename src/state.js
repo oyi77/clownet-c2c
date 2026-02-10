@@ -9,7 +9,8 @@ const defaultState = {
     handles: {},     // { agent_id: handle }
     metrics: { tasks_total: 0, tasks_success: 0, tasks_failed: 0, messages_total: 0 },
     connectionEvents: [], // { type: 'connect'|'disconnect', agentId: string, timestamp: Date }
-    pendingClients: [] // { agentId: string, timestamp: Date }
+    pendingClients: [], // { agentId: string, timestamp: Date }
+    commandTemplates: [] // { id: string, name: string, command: string }
 };
 
 // Per-tenant state storage

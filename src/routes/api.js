@@ -53,6 +53,31 @@ function register(fastify) {
         return reply.send({ success: true, pendingClients: s.pendingClients });
     });
 
+    // Command Templates
+    fastify.get('/api/templates', async (req, reply) => {
+        const s = state.getTenantState('default');
+        return reply.send({ templates: s.commandTemplates || [] });
+    });
+
+    fastify.post('/api/templates', async (req, reply) => {
+        const { name, command } = req.body;
+        const s = state.getTenantState('default');
+        const newTemplate = {
+            id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+            name,
+            command
+        };
+        s.commandTemplates.push(newTemplate);
+        return reply.send({ success: true, template: newTemplate });
+    });
+
+    fastify.delete('/api/templates/:id', async (req, reply) => {
+        const { id } = req.params;
+        const s = state.getTenantState('default');
+        s.commandTemplates = s.commandTemplates.filter(t => t.id !== id);
+        return reply.send({ success: true });
+    });
+
     // Server logs
     fastify.get('/api/logs/server', async (req, reply) => {
         let limit = Math.min(parseInt(req.query.limit || '200', 10), 1000);

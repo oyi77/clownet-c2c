@@ -17,7 +17,8 @@ function register(fastify) {
             isAccessCode: false,
             settings: state.getSettings(),
             connectionEvents: s.connectionEvents,
-            pendingClients: s.pendingClients
+            pendingClients: s.pendingClients,
+            commandTemplates: s.commandTemplates
         });
     });
 }
