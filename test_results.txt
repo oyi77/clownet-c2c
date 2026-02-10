@@ -1,0 +1,187 @@
+­ƒº¬ ClawNet C2C Test Suite ÔÇö 9 tests
+
+
+ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+ÔûÂ Running: persistence.test.js
+­ƒº¬ Data Persistence Tests
+==================================================
+Starting server (instance 1) on port 3335
+Ô£ô Server started
+
+Test 1: Verify server initialization and data directory
+  Ô£ô Data directory created: C:\Users\Snap-PC-Dev-026\clownet-c2c\data
+  Ô£ô Server HTTP endpoint responding
+
+Stopping server (instance 1)
+Ô£ô Server stopped
+
+  Ô£ô Data directory structure preserved
+
+Test 2: Restart server and verify data loads
+Starting server (instance 2) on port 3335
+Ô£ô Server restarted
+
+  Ô£ô Dashboard accessible after restart
+  Ô£ô Data directory still exists after restart
+
+==================================================
+Results: 5 passed, 0 failed
+==================================================
+Ô£à persistence.test.js PASSED
+
+ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+ÔûÂ Running: dashboard-ui.test.js
+­ƒº¬ Dashboard UI Tests (Cheerio HTML Parsing)
+==================================================
+Starting server on port 3334
+Ô£ô Server started
+
+Test 1: Dashboard HTML Structure
+  Ô£ô Page title found: CLAWNET_C2C_HQ
+  Ô£ô Fleet tab (#fleet) found
+  Ô£ô Ops tab (#ops) found
+  Ô£ô Intel tab (#intel) found
+  Ô£ô Terminal glow styling (.terminal-glow) defined in CSS
+  Ô£ô Agent grid container found
+
+==================================================
+Results: 6 passed, 0 failed
+==================================================
+Ô£à dashboard-ui.test.js PASSED
+
+ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+ÔûÂ Running: broadcast.test.js
+­ƒôí [BROADCAST] Starting Master Broadcast to 2+ Workers Test...
+Ô£à [MASTER] Master connected successfully.
+Ô£à [WORKER-A] Connected
+Ô£à [WORKER-B] Connected
+­ƒôñ [MASTER] Dispatched broadcast command to all workers.
+Ô£à [WORKER-A] Received command: {
+  id: 'be6d75f5-1c48-4ec1-8298-35b456c9f441',
+  cmd: 'test-broadcast-command',
+  trace_id: 'dcb734ca-3297-435c-84da-58706a76197d'
+}
+Ô£à [WORKER-B] Received command: {
+  id: 'be6d75f5-1c48-4ec1-8298-35b456c9f441',
+  cmd: 'test-broadcast-command',
+  trace_id: 'dcb734ca-3297-435c-84da-58706a76197d'
+}
+Ô£à [BROADCAST] Both workers received the command!
+
+­ƒÅü [RESULT] 1/1 tests passed.
+Ô£à broadcast.test.js PASSED
+
+ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+ÔûÂ Running: rooms.test.js
+­ƒÜÇ Starting server...
+­ƒöî Connecting agents...
+Ô£ô master-1 connected
+Ô£ô worker-a connected
+Ô£ô worker-b connected
+
+­ƒôï TEST 1: Workers join #squad-alpha
+  Worker A received room_update: {
+  action: 'join',
+  agent_id: 'worker-a',
+  room: '#squad-alpha',
+  members: [ 'worker-a' ]
+}
+  Worker A received room_update: {
+  action: 'join',
+  agent_id: 'worker-b',
+  room: '#squad-alpha',
+  members: [ 'worker-a', 'worker-b' ]
+}
+  Ô£ô Room join events received (count: 2)
+
+­ƒôï TEST 2: Master sends room chat to #squad-alpha
+  Worker B received room_update: {
+  action: 'join',
+  agent_id: 'worker-b',
+  room: '#squad-alpha',
+  members: [ 'worker-a', 'worker-b' ]
+}
+  Worker A received: "Hello squad-alpha!" from master-1
+  Worker B received: "Hello squad-alpha!" from master-1
+  Ô£ô Both workers received room chat
+
+­ƒôï TEST 3: Worker A leaves #squad-alpha
+  Worker B received room_update: {
+  action: 'leave',
+  agent_id: 'worker-a',
+  room: '#squad-alpha',
+  members: [ 'worker-b' ]
+}
+  Worker B received leave notification: {
+  action: 'leave',
+  agent_id: 'worker-a',
+  room: '#squad-alpha',
+  members: [ 'worker-b' ]
+}
+  Ô£ô Leave event received
+
+­ƒôï TEST 4: Master sends chat again, only Worker B should receive
+  Worker B received: "Second message" from master-1
+  Worker B received: "Second message"
+  Ô£ô Only Worker B received (Worker A correctly excluded)
+
+Ô£à All tests passed!
+Ô£à rooms.test.js PASSED
+
+ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+ÔûÂ Running: warden.test.js
+­ƒøí´©Å [WARDEN] Starting Warden Traffic Event Test...
+Ô£à [WARDEN] Warden connected successfully.
+Ô£à [WARDEN] Received traffic event for worker connect: {
+  type: 'connect',
+  agent_id: 'worker-1',
+  role: 'worker',
+  ts: '2026-02-10T04:41:18.559Z'
+}
+Ô£à [WARDEN] Received traffic event for chat: {
+  type: 'chat',
+  from: 'worker-1',
+  to: 'all',
+  msg: 'Test message from worker',
+  ts: '2026-02-10T04:41:18.572Z'
+}
+
+­ƒÅü [RESULT] 3/3 tests passed.
+Ô£à warden.test.js PASSED
+
+ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+ÔûÂ Running: delivery.test.js
+­ƒôª Running Delivery Guarantees Test...
+Ô£à ACK + success verified
+Ô£à Offline queue verified
+Ô£à Queue flush verified
+­ƒÅü Delivery test passed.
+Ô£à delivery.test.js PASSED
+
+ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+ÔûÂ Running: safety.test.js
+­ƒøí´©Å Running Safety Controls Test...
+Ô£à Denylist rejection verified
+Ô£à Approval gating verified
+Ô£à Approval dispatch verified
+­ƒÅü Safety test passed.
+Ô£à safety.test.js PASSED
+
+ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+ÔûÂ Running: audit-metrics.test.js
+­ƒô£ Running Audit + Metrics Test...
+Ô£à Metrics endpoint verified
+Ô£à Traffic API verified
+Ô£à Audit log hash chain verified
+­ƒÅü Audit + metrics test passed.
+Ô£à audit-metrics.test.js PASSED
+
+ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+ÔûÂ Running: tenant.test.js
+­ƒÅó Running Multi-Tenant Isolation Test...
+Ô£à Tenant isolation verified
+­ƒÅü Tenant test passed.
+Ô£à tenant.test.js PASSED
+
+ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+­ƒÅü Results: 9 passed, 0 failed, 9 total
