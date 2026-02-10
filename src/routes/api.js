@@ -129,6 +129,15 @@ function register(fastify) {
         const limit = Math.min(parseInt(req.query.limit || '50', 10), 500);
         return reply.send({ entries: getRecentTraffic(limit) });
     });
+
+    // Server info
+    fastify.get('/api/info', async (req, reply) => {
+        return reply.send({
+            uptime: process.uptime(),
+            memory: process.memoryUsage(),
+            pid: process.pid
+        });
+    });
 }
 
 module.exports = { register };
