@@ -195,6 +195,15 @@ function register(fastify) {
             return reply.status(500).send({ success: false, error: e.message });
         }
     });
+
+    // Restart server
+    fastify.post('/api/restart', async (req, reply) => {
+        // Signal itself to restart (requires process manager like pm2, Docker, or systemd)
+        setTimeout(() => {
+            process.kill(process.pid, 'SIGTERM');
+        }, 100);
+        return reply.send({ success: true, message: 'Restart signal sent.' });
+    });
 }
 
 module.exports = { register };

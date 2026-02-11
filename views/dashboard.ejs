@@ -592,6 +592,12 @@
                         class="w-full bg-red-600 hover:bg-red-500 py-2 rounded text-[10px] font-bold text-black uppercase">Rotate Token</button>
                     <p class="text-[9px] text-zinc-500">Token change requires server restart to take effect.</p>
                 </div>
+
+                <div class="mt-4 pt-4 border-t border-zinc-800">
+                    <button onclick="restartServer()" id="restart-server-btn"
+                        class="w-full bg-yellow-600 hover:bg-yellow-500 py-2 rounded text-[10px] font-bold text-black uppercase">Restart Server</button>
+                    <p class="text-[9px] text-zinc-500 mt-1">Sends SIGTERM. Requires process manager (Docker/pm2/systemd) to auto-restart.</p>
+                </div>
             </div>
 
             <!-- Advanced Settings -->
@@ -1145,6 +1151,20 @@
                 }
             } catch (e) {
                 showToast('Network error', 'error');
+            }
+        }
+
+        async function restartServer() {
+            if (!confirm('Restart the server? This will disconnect all agents.')) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/restart', { method: 'POST' });
+                const data = await res.json();
+                showToast(data.message || 'Restarting...', 'info');
+            } catch (e) {
+                showToast('Failed to send restart signal', 'error');
             }
         }
 
