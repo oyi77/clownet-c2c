@@ -1,137 +1,120 @@
-# 🦞 CLAWNET C2C — Agent Installation Guide
+# CLAWNET C2C - LLM Reference
 
-This guide is for AI agents (LLMs) to install and configure ClawNet C2C.
+This file is the canonical prompt reference for LLM agents that need to install and connect to a ClawNet C2C relay.
 
-**Version**: v3.9.1
+## 01. Connection
 
----
+Use these values from the relay dashboard Docs tab:
 
-## Overview
+- `CLAWNET_SERVER`: relay URL (example: `http://your-relay:3000`)
+- `CLAWNET_SECRET_KEY`: relay token
+- Optional: `AGENT_ID`, `AGENT_ROLE` (`worker`, `warden`, `master`)
 
-ClawNet C2C is a distributed Command & Control system for multi-agent coordination. It enables multiple agents to communicate, share telemetry, and execute commands through a central relay server.
+Authentication behavior:
 
----
+- Single-tenant mode: token must exactly match `CLAWNET_SECRET_KEY`
+- Multi-tenant mode: token format is `tenant_id:secret`
 
-## Installation
+If token is rotated:
 
-### Method 1: One-Liner (Recommended)
+1. Update `CLAWNET_SECRET_KEY` on agent side
+2. Restart relay
+3. Reconnect agents
+
+## 02. LLM Instructions
+
+Use this sequence when the user asks an LLM to set up a node as an agent.
+
+### 1) Install
+
+Preferred automated install:
+
 ```bash
-curl -sSL http://your-relay-ip:3000/scripts/install.sh | bash -s -- --url http://your-relay-ip:3000 --token your-secret
+curl -sSL http://your-relay:3000/scripts/install.sh | bash -s -- --url http://your-relay:3000 --token your-secret
 ```
 
-### Method 2: OpenClaw Skill
-```bash
-openclaw skills install https://github.com/oyi77/clownet-c2c
-```
+Manual install:
 
-### Method 3: Manual
 ```bash
 git clone https://github.com/oyi77/clownet-c2c.git
 cd clownet-c2c
 npm install
 ```
 
----
+### 2) Connect
 
-## Configuration
+Set environment variables before launching client:
 
-Set via environment variables or `.env` file:
+```bash
+export CLAWNET_SERVER="http://your-relay:3000"
+export CLAWNET_SECRET_KEY="your-secret"
+export AGENT_ROLE="worker"
+export AGENT_ID="node-$(hostname)-$(date +%s)"
+```
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `CLAWNET_SECRET_KEY` | `very-secret-key-123` | Auth token |
-| `PORT` | `3000` | Server port |
-| `AGENT_ID` | *(auto)* | Unique agent identifier |
-| `AGENT_ROLE` | `worker` | Role: `worker`, `warden`, `master` |
-| `CLAWNET_SERVER` | `ws://localhost:3000` | Relay URL (client) |
-| `CLAWNET_EXEC_ALLOWLIST` | *(empty)* | Allowed command prefixes |
-| `CLAWNET_EXEC_DENYLIST` | *(empty)* | Blocked command tokens |
-| `CLAWNET_EXEC_TIMEOUT` | `30` | Command timeout (seconds) |
-| `OPENCLAW_BIN` | `openclaw` | OpenClaw binary path |
+### 3) Auto Update and Restart
 
----
+When `scripts/install.sh` is used, it sets:
 
-## Running
+- Hourly cron job: runs `scripts/update.sh`
+- Reboot persistence: starts `node client.js` on reboot
 
-### Start Relay Server
+`scripts/update.sh` behavior:
+
+- Fetches latest git changes
+- Pulls and installs if updated
+- Restarts `node client.js` if needed
+- Ensures client is running even when no update exists
+
+### 4) Run
+
+Relay:
+
 ```bash
 npm start
 ```
 
-### Start Agent Sidecar
+Agent client:
+
 ```bash
 node client.js
 ```
 
-### Self-Update
-Agents can be updated remotely by sending `/update` in the chat or via the dashboard.
+Verify in dashboard:
 
----
+- Fleet tab shows agent online
+- CPU/RAM telemetry updates periodically
+- Agent can receive tasks
 
-## Architecture
+### 5) Included Skills and Capabilities
 
+This repository provides a ClawNet sidecar that wraps LLM execution and relay operations.
+
+Included command capabilities handled by `client.js`:
+
+- `/exec <command>`: execute shell command (subject to allowlist/denylist)
+- `/update`: run updater script in background
+- `/restart`: exit process for restart cycle
+- `/join #room`: join a relay room
+- Any other message: forwarded to `openclaw agent --local --json`
+
+Included runtime behavior:
+
+- Heartbeat and telemetry report every 5 seconds
+- Automatic reconnect to relay
+- Task ACK/result callbacks through Socket.IO
+
+## Ready-to-paste LLM prompt template
+
+Use this prompt in other agents:
+
+```text
+Install and connect ClawNet C2C agent on this machine.
+Steps required:
+1) Install dependencies and repository.
+2) Configure CLAWNET_SERVER and CLAWNET_SECRET_KEY.
+3) Enable auto-update and reboot persistence.
+4) Start node client.js as worker.
+5) Verify heartbeat appears in dashboard fleet.
+6) Confirm command capabilities: /exec, /update, /restart, /join.
 ```
-server.js (bootstrapper) → src/server.js (Fastify + Socket.IO)
-                            ├── src/socket/  (fleet, dispatch, chat, rooms, warden, safety)
-                            ├── src/routes/  (health, dashboard, api)
-                            └── src/utils/   (logger, audit)
-client.js (sidecar)      → Connects to Relay + Spawns OpenClaw
-scripts/update.sh        → Auto-updater (git pull + restart)
-```
-
----
-
-## Socket.IO Events
-
-| Event | Direction | Description |
-|-------|-----------|-------------|
-| `fleet_update` | Server → Client | Agent list changed |
-| `dispatch` | Client → Server | Send command to agent |
-| `command` | Server → Client | Command to execute |
-| `command_ack` | Client → Server | ACK command received |
-| `task_result` | Client → Server | Report execution result |
-| `task_update` | Server → Client | Task list changed |
-| `chat` | Client → Server | Send chat message |
-| `chat_update` | Server → Client | New chat message |
-| `join_room` | Client → Server | Join a room |
-| `leave_room` | Client → Server | Leave a room |
-| `room_update` | Server → Client | Room membership changed |
-| `report` | Client → Server | Send telemetry |
-| `traffic` | Server → Warden | Audit traffic event |
-
----
-
-## REST Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Health check |
-| `/dashboard` | GET | Terminal UI |
-| `/api/metrics` | GET | Task/message/agent counts |
-| `/api/traffic` | GET | Audit log entries |
-| `/api/logs/server` | GET | Server event log |
-| `/api/settings` | POST | Update settings |
-
----
-
-## Docker Deployment
-
-```bash
-docker build -t clownet-relay .
-docker run -p 3000:3000 -e CLAWNET_SECRET_KEY=your-secret clownet-relay
-```
-
-Or deploy to Fly.io:
-```bash
-fly deploy
-```
-
----
-
-## Security Notes
-
-- All WebSocket connections require `CLAWNET_SECRET_KEY`
-- Client has `CLAWNET_EXEC_ALLOWLIST` and `CLAWNET_EXEC_DENYLIST` for safe execution
-- Server has `CLAWNET_COMMAND_DENYLIST` and `CLAWNET_COMMAND_RISKYLIST` for dispatch safety
-- Multi-tenant: Use `CLAWNET_TENANTS_PATH` with `tenant_id:secret` token format
-- Traffic audit trail with SHA-256 hash chain at `data/traffic.log`

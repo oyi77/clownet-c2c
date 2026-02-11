@@ -274,9 +274,9 @@
                             <h2 class="text-green-500 text-2xl font-bold mb-6 tracking-tighter flex items-center gap-3">
                                 <span class="bg-green-500/10 p-2 rounded">📖</span> SYSTEM_DOCUMENTATION
                             </h2>
-                            <p class="text-zinc-400 text-sm mb-8 leading-relaxed">ClawNet C2C is a high-performance command & control relay. Use this dashboard to manage your fleet of agents across multiple machines.</p>
+                            <p class="text-zinc-400 text-sm mb-8 leading-relaxed">ClawNet C2C setup reference for operators and LLM agents. This tab intentionally contains only Connection and LLM Instructions.</p>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-6">
                                 <div class="space-y-4">
                                     <h3 class="text-zinc-100 font-bold text-xs uppercase tracking-[0.2em] border-b border-zinc-800 pb-3 flex items-center gap-2">
                                         <span class="w-1 h-1 bg-green-500 rounded-full"></span> 01_CONNECTION
@@ -296,63 +296,28 @@
                                                 <button onclick="copyToClipboard('<%= secret %>')" class="text-[9px] bg-zinc-800 hover:bg-zinc-700 px-2 rounded">COPY</button>
                                             </div>
                                         </div>
+                                        <div class="text-[10px] text-zinc-500 leading-relaxed border-t border-zinc-800 pt-3">
+                                            Keep token secret. Rotate from Settings when needed. If rotated, restart relay and reconnect agents with the new token.
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div class="space-y-4">
                                     <h3 class="text-zinc-100 font-bold text-xs uppercase tracking-[0.2em] border-b border-zinc-800 pb-3 flex items-center gap-2">
-                                        <span class="w-1 h-1 bg-green-500 rounded-full"></span> 02_LLM_ONE_LINER
+                                        <span class="w-1 h-1 bg-green-500 rounded-full"></span> 02_LLM_INSTRUCTIONS
                                     </h3>
-                                    <div class="bg-black/60 p-5 rounded border border-zinc-800 flex flex-col justify-between h-[176px]">
-                                        <p class="text-[10px] text-zinc-500 italic mb-2">Use this single command to install and connect an agent:</p>
-                                        <div class="relative group">
-                                            <code class="block text-[10px] text-zinc-300 font-mono bg-zinc-950 p-3 rounded border border-zinc-900 break-all leading-normal">cd /tmp && git clone https://github.com/oyi77/clownet-c2c.git && cd clownet-c2c && npm install && export CLAWNET_URL="<%= serverUrl %>" && export CLAWNET_SECRET_KEY="<%= secret %>" && node client.js --url $CLAWNET_URL --token $CLAWNET_SECRET_KEY --id "$(hostname)-$(date +%s)" --role worker</code>
-                                            <button onclick="copyToClipboard('cd /tmp && git clone https://github.com/oyi77/clownet-c2c.git && cd clownet-c2c && npm install && export CLAWNET_URL=\"<%= serverUrl %>\" && export CLAWNET_SECRET_KEY=\"<%= secret %>\" && node client.js --url \$CLAWNET_URL --token \$CLAWNET_SECRET_KEY --id \"\$(hostname)-\$(date +%s)\" --role worker')" class="absolute top-2 right-2 bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">COPY</button>
-                                        </div>
+                                    <div class="bg-black/60 p-5 rounded border border-zinc-800 space-y-4">
+                                        <p class="text-[11px] text-zinc-400 leading-relaxed">Use these instructions in LLM prompts exactly. Full reference lives in <code class="text-green-400">LLM.md</code>.</p>
+                                        <ol class="list-decimal list-inside text-[11px] text-zinc-300 space-y-2">
+                                            <li><span class="text-zinc-100 font-bold">Install</span>: clone repository, run <code>npm install</code>, or use <code>scripts/install.sh</code> for automated setup.</li>
+                                            <li><span class="text-zinc-100 font-bold">Connect</span>: set <code>CLAWNET_SERVER=<%= serverUrl %></code>, <code>CLAWNET_SECRET_KEY=<%= secret %></code>, optional <code>AGENT_ID</code>, <code>AGENT_ROLE</code>.</li>
+                                            <li><span class="text-zinc-100 font-bold">Auto update & restart</span>: installer creates hourly cron update and reboot startup; manual update via <code>scripts/update.sh</code>.</li>
+                                            <li><span class="text-zinc-100 font-bold">Run</span>: relay with <code>npm start</code>, agent with <code>node client.js</code>.</li>
+                                            <li><span class="text-zinc-100 font-bold">Included skills/capabilities</span>: remote commands <code>/exec</code>, <code>/update</code>, <code>/restart</code>, <code>/join</code>, telemetry reports, room chat, task result callbacks.</li>
+                                        </ol>
+                                        <pre class="bg-zinc-950 p-3 rounded border border-zinc-900 text-[10px] text-zinc-300 break-all">LLM quick prompt: Install clownet-c2c agent, connect to <%= serverUrl %> using token <%= secret %>, enable auto-update, start client.js as worker, and confirm heartbeat appears in dashboard fleet.</pre>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-zinc-900/30 border border-zinc-800 p-8 rounded-lg">
-                            <h3 class="text-zinc-100 font-bold text-xs uppercase tracking-[0.2em] border-b border-zinc-800 pb-3 mb-6 flex items-center gap-2">
-                                <span class="w-1 h-1 bg-green-500 rounded-full"></span> 03_OPENCLAW_INTEGRATION
-                            </h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div class="space-y-4">
-                                    <p class="text-xs text-zinc-400 leading-relaxed">To install ClawNet as an OpenClaw skill, use the official installation command:</p>
-                                    <pre class="bg-black p-4 rounded border border-zinc-800 text-green-500 font-mono text-[10px] overflow-x-auto">openclaw skills install https://github.com/oyi77/clownet-c2c</pre>
-                                </div>
-                                <div class="space-y-4">
-                                    <h4 class="text-zinc-300 font-bold text-[10px] uppercase tracking-wider flex items-center gap-2">
-                                        <span class="text-green-500">✔</span> Auto-Restart & Updates
-                                    </h4>
-                                    <p class="text-[11px] text-zinc-500 leading-relaxed">The installer automatically configures a crontab entry for hourly updates and persistence after system reboots.</p>
-                                    <div class="bg-zinc-950 p-3 rounded border border-zinc-800">
-                                        <div class="text-[9px] text-zinc-600 uppercase mb-1">Manual Update Command</div>
-                                        <code class="text-[10px] text-zinc-400 font-mono">./scripts/update.sh</code>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-red-950/10 border border-red-900/30 p-6 rounded-lg flex items-start gap-5">
-                            <div class="bg-red-500/10 p-3 rounded-full text-red-500 text-xl">⚠️</div>
-                            <div>
-                                <h4 class="text-red-400 font-bold text-xs uppercase tracking-widest mb-1">Security Enforcement</h4>
-                                <p class="text-[11px] text-zinc-500 leading-relaxed max-w-2xl">Keep your Access Token confidential. Anyone with this token can execute arbitrary shell commands on your linked agents. If your token is compromised, change it immediately in your server's environment variables.</p>
-                            </div>
-                        </div>
-
-                        <!-- LLM Instructions -->
-                        <div class="bg-green-950/10 border border-green-900/30 p-6 rounded-lg">
-                            <h3 class="text-green-400 font-bold text-xs uppercase tracking-[0.2em] border-b border-green-900/30 pb-3 mb-4 flex items-center gap-2">
-                                <span class="w-1 h-1 bg-green-500 rounded-full"></span> LLM_ONE_LINER
-                            </h3>
-                            <p class="text-[10px] text-zinc-500 mb-3">Copy-paste this single command for AI agents:</p>
-                            <div class="relative group">
-                                <pre class="bg-black p-3 rounded border border-zinc-800 text-[10px] font-mono text-green-400 break-all">cd /tmp && git clone https://github.com/oyi77/clownet-c2c.git && cd clownet-c2c && npm install && export CLAWNET_URL="<%= serverUrl %>" && export CLAWNET_SECRET_KEY="<%= secret %>" && node client.js --url $CLAWNET_URL --token $CLAWNET_SECRET_KEY --id "$(hostname)-$(date +%s)" --role worker</pre>
-                                <button onclick="copyToClipboard('cd /tmp && git clone https://github.com/oyi77/clownet-c2c.git && cd clownet-c2c && npm install && export CLAWNET_URL=\"<%= serverUrl %>\" && export CLAWNET_SECRET_KEY=\"<%= secret %>\" && node client.js --url \$CLAWNET_URL --token \$CLAWNET_SECRET_KEY --id \"\$(hostname)-\$(date +%s)\" --role worker')" class="absolute top-2 right-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-2 py-1 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">COPY</button>
                             </div>
                         </div>
                     </div>

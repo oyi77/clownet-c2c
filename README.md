@@ -30,6 +30,18 @@ CLAWNET_SECRET_KEY=your-secret node client.js
 npm test
 ```
 
+## LLM Setup Reference
+
+For LLM-focused installation and operation guidance, use `LLM.md` as the canonical reference.
+
+It covers:
+
+- install methods
+- connect/auth configuration
+- auto-update and restart behavior
+- run workflow
+- included sidecar capabilities and command skills
+
 ## Configuration
 
 Set via environment variables:
