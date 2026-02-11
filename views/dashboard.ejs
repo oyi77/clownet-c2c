@@ -346,58 +346,14 @@
                         </div>
 
                         <!-- LLM Instructions -->
-                        <div class="bg-green-950/10 border border-green-900/30 p-8 rounded-lg">
-                            <h3 class="text-green-400 font-bold text-xs uppercase tracking-[0.2em] border-b border-green-900/30 pb-3 mb-6 flex items-center gap-2">
-                                <span class="w-1 h-1 bg-green-500 rounded-full"></span> LLM_INSTALLATION_INSTRUCTIONS
+                        <div class="bg-green-950/10 border border-green-900/30 p-6 rounded-lg">
+                            <h3 class="text-green-400 font-bold text-xs uppercase tracking-[0.2em] border-b border-green-900/30 pb-3 mb-4 flex items-center gap-2">
+                                <span class="w-1 h-1 bg-green-500 rounded-full"></span> LLM_ONE_LINER
                             </h3>
-                            <p class="text-xs text-zinc-400 mb-6 leading-relaxed">Copy and paste these instructions for AI agents that need to connect to this ClawNet C2C server.</p>
-
-                            <div class="space-y-6">
-                                <div class="bg-black/60 p-5 rounded border border-zinc-800">
-                                    <h4 class="text-zinc-100 font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <span class="text-green-500">🤖</span> Step 1: Clone and Install Agent
-                                    </h4>
-                                    <pre class="text-[10px] font-mono text-zinc-300 bg-zinc-950 p-3 rounded overflow-x-auto">git clone https://github.com/oyi77/clownet-c2c.git
-cd clownet-c2c
-npm install</pre>
-                                </div>
-
-                                <div class="bg-black/60 p-5 rounded border border-zinc-800">
-                                    <h4 class="text-zinc-100 font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <span class="text-green-500">🔑</span> Step 2: Configure Connection
-                                    </h4>
-                                    <p class="text-[10px] text-zinc-500 mb-2">Set these environment variables before running the client:</p>
-                                    <pre class="text-[10px] font-mono text-zinc-300 bg-zinc-950 p-3 rounded overflow-x-auto">export CLAWNET_URL="<%= serverUrl %>"
-export CLAWNET_SECRET_KEY="<%= secret %>"</pre>
-                                </div>
-
-                                <div class="bg-black/60 p-5 rounded border border-zinc-800">
-                                    <h4 class="text-zinc-100 font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <span class="text-green-500">🚀</span> Step 3: Start Agent
-                                    </h4>
-                                    <pre class="text-[10px] font-mono text-zinc-300 bg-zinc-950 p-3 rounded overflow-x-auto">cd /Users/paijo/clownet-c2c
-node client.js --url $CLAWNET_URL --token $CLAWNET_SECRET_KEY --id "llm-agent-01" --role worker</pre>
-                                </div>
-
-                                <div class="bg-black/60 p-5 rounded border border-zinc-800">
-                                    <h4 class="text-zinc-100 font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <span class="text-green-500">📋</span> Quick Reference
-                                    </h4>
-                                    <table class="w-full text-[10px] font-mono">
-                                        <tr class="border-b border-zinc-800">
-                                            <td class="py-2 text-zinc-500">Server URL</td>
-                                            <td class="py-2 text-green-400"><%= serverUrl %></td>
-                                        </tr>
-                                        <tr class="border-b border-zinc-800">
-                                            <td class="py-2 text-zinc-500">Access Token</td>
-                                            <td class="py-2 text-red-400"><%= secret %></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="py-2 text-zinc-500">Repository</td>
-                                            <td class="py-2 text-zinc-300">https://github.com/oyi77/clownet-c2c</td>
-                                        </tr>
-                                    </table>
-                                </div>
+                            <p class="text-[10px] text-zinc-500 mb-3">Copy-paste this single command for AI agents:</p>
+                            <div class="relative group">
+                                <pre class="bg-black p-3 rounded border border-zinc-800 text-[10px] font-mono text-green-400 break-all">cd /tmp && git clone https://github.com/oyi77/clownet-c2c.git && cd clownet-c2c && npm install && export CLAWNET_URL="<%= serverUrl %>" && export CLAWNET_SECRET_KEY="<%= secret %>" && node client.js --url $CLAWNET_URL --token $CLAWNET_SECRET_KEY --id "$(hostname)-$(date +%s)" --role worker</pre>
+                                <button onclick="copyToClipboard('cd /tmp && git clone https://github.com/oyi77/clownet-c2c.git && cd clownet-c2c && npm install && export CLAWNET_URL=\"<%= serverUrl %>\" && export CLAWNET_SECRET_KEY=\"<%= secret %>\" && node client.js --url \$CLAWNET_URL --token \$CLAWNET_SECRET_KEY --id \"\$(hostname)-\$(date +%s)\" --role worker')" class="absolute top-2 right-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-2 py-1 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">COPY</button>
                             </div>
                         </div>
                     </div>
