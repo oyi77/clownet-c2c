@@ -24,6 +24,9 @@ function createState() {
         rooms: {},
         handles: {},
         metrics: { tasks_total: 0, tasks_success: 0, tasks_failed: 0, messages_total: 0 },
+        connectionEvents: [],
+        pendingClients: [],
+        commandTemplates: []
     };
 }
 
