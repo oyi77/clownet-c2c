@@ -266,7 +266,7 @@
                     data-tab="docs">📖 DOCS</button>
             </nav>
 
-            <div class="flex-1 overflow-hidden relative">
+            <div class="flex-1 overflow-y-auto relative">
                 <!-- DOCS TAB -->
                 <section id="docs" class="tab-content h-full p-6 overflow-y-auto hidden">
                     <div class="max-w-4xl mx-auto space-y-8 pb-20">
@@ -307,54 +307,7 @@
                                         <span class="w-1 h-1 bg-green-500 rounded-full"></span> 02_LLM_INSTRUCTIONS
                                     </h3>
                                     <div class="bg-black/60 p-5 rounded border border-zinc-800 space-y-4">
-                                        <p class="text-[11px] text-zinc-400 leading-relaxed">Use this structure for LLM prompts. Canonical reference: <code class="text-green-400">LLM.md</code>.</p>
-
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <div class="bg-zinc-950/60 border border-zinc-800 rounded p-3">
-                                                <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">1) Install</div>
-                                                <p class="text-[10px] text-zinc-400 mb-2">Clone repo and install dependencies on the target node.</p>
-                                                <div class="relative group">
-                                                    <code class="block text-[10px] text-zinc-300 font-mono bg-black/70 p-2 rounded border border-zinc-900 break-all">git clone https://github.com/oyi77/clownet-c2c.git && cd clownet-c2c && npm install</code>
-                                                    <button onclick="copyToClipboard('git clone https://github.com/oyi77/clownet-c2c.git && cd clownet-c2c && npm install')" class="absolute top-1.5 right-1.5 bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">COPY</button>
-                                                </div>
-                                            </div>
-
-                                            <div class="bg-zinc-950/60 border border-zinc-800 rounded p-3">
-                                                <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">2) Connect</div>
-                                                <p class="text-[10px] text-zinc-400 mb-2">Set relay URL and auth token, then define identity.</p>
-                                                <div class="relative group">
-                                                    <code class="block text-[10px] text-zinc-300 font-mono bg-black/70 p-2 rounded border border-zinc-900 break-all">export CLAWNET_SERVER="<%= serverUrl %>" && export CLAWNET_SECRET_KEY="<%= secret %>" && export AGENT_ROLE="worker" && export AGENT_ID="node-$(hostname)-$(date +%s)"</code>
-                                                    <button onclick="copyToClipboard('export CLAWNET_SERVER=\"<%= serverUrl %>\" && export CLAWNET_SECRET_KEY=\"<%= secret %>\" && export AGENT_ROLE=\"worker\" && export AGENT_ID=\"node-$(hostname)-$(date +%s)\"')" class="absolute top-1.5 right-1.5 bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">COPY</button>
-                                                </div>
-                                            </div>
-
-                                            <div class="bg-zinc-950/60 border border-zinc-800 rounded p-3">
-                                                <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">3) Auto Update & Restart</div>
-                                                <p class="text-[10px] text-zinc-400 mb-2">Use installer for hourly update + reboot persistence. Manual updater available.</p>
-                                                <div class="relative group">
-                                                    <code class="block text-[10px] text-zinc-300 font-mono bg-black/70 p-2 rounded border border-zinc-900 break-all">./scripts/update.sh</code>
-                                                    <button onclick="copyToClipboard('./scripts/update.sh')" class="absolute top-1.5 right-1.5 bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">COPY</button>
-                                                </div>
-                                            </div>
-
-                                            <div class="bg-zinc-950/60 border border-zinc-800 rounded p-3">
-                                                <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">4) Run</div>
-                                                <p class="text-[10px] text-zinc-400 mb-2">Start relay on server, then start agent sidecar on node.</p>
-                                                <div class="relative group">
-                                                    <code class="block text-[10px] text-zinc-300 font-mono bg-black/70 p-2 rounded border border-zinc-900 break-all">npm start && node client.js</code>
-                                                    <button onclick="copyToClipboard('npm start && node client.js')" class="absolute top-1.5 right-1.5 bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">COPY</button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="bg-zinc-950/60 border border-zinc-800 rounded p-3 space-y-2">
-                                            <div class="text-[10px] uppercase tracking-widest text-zinc-500">5) Included Capabilities</div>
-                                            <p class="text-[10px] text-zinc-400 leading-relaxed">Remote command skills available through sidecar: <code>/exec</code>, <code>/update</code>, <code>/restart</code>, <code>/join</code>, telemetry heartbeat, room chat, task ACK/result callbacks.</p>
-                                            <div class="relative group">
-                                                <pre class="bg-black/70 p-2 rounded border border-zinc-900 text-[10px] text-zinc-300 break-all">Prompt template: Install clownet-c2c agent, connect to <%= serverUrl %> using token <%= secret %>, enable auto-update and reboot persistence, run node client.js as worker, then confirm heartbeat in fleet dashboard.</pre>
-                                                <button onclick="copyToClipboard('Install clownet-c2c agent, connect to <%= serverUrl %> using token <%= secret %>, enable auto-update and reboot persistence, run node client.js as worker, then confirm heartbeat in fleet dashboard.')" class="absolute top-1.5 right-1.5 bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">COPY</button>
-                                            </div>
-                                        </div>
+                                        <p class="text-[11px] text-zinc-400 leading-relaxed">Complete LLM agent setup reference: see <code class="text-green-400">LLM.md</code> in the repository for detailed installation, configuration, and operation instructions.</p>
                                     </div>
                                 </div>
                             </div>
