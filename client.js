@@ -252,7 +252,7 @@ function registerHandlers() {
       }
       sio.emit('command_ack', { id: cmdId });
     }
-    processInstruction(data.cmd, 'master-ui', cmdId);
+    handleExecCommand(data.cmd, 'master-ui', cmdId);
   });
 }
 
