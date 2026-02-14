@@ -1,0 +1,23 @@
+<!-- BLOCKING LOGIN MODAL -->
+<div id="login-overlay" class="fixed inset-0 bg-black/95 flex items-center justify-center z-[9999] hidden">
+  <div class="terminal-glow bg-[#0c0c0e] border border-zinc-700 rounded-lg p-8 max-w-md w-full mx-4 relative overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiAvPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSIxIiBmaWxsPSIjMzMzIiAvPgo8L3N2Zz4=')]">
+    </div>
+    <h2 class="text-green-500 text-2xl font-bold mb-6 tracking-tighter flex items-center gap-3">
+      <span class="text-red-500 animate-pulse">🔒</span> ACCESS_CONTROL
+    </h2>
+    <div class="space-y-4 text-sm relative z-10">
+      <p id="login-message" class="text-zinc-400 font-mono text-xs uppercase tracking-wider">Authentication Required</p>
+      <form id="login-form" class="space-y-4">
+        <input type="password" id="access-code-input" placeholder="ENTER_ACCESS_CODE"
+          class="w-full bg-black/50 border border-zinc-800 rounded p-4 text-center text-green-500 font-mono text-lg tracking-[0.2em] focus:border-green-600 outline-none transition-all focus:ring-1 focus:ring-green-900 placeholder:text-zinc-700"
+          autocomplete="off" autocapitalize="off">
+        <button type="submit" id="login-submit"
+          class="w-full bg-green-600/90 hover:bg-green-500 py-3 rounded text-black font-bold uppercase tracking-widest transition-all transform active:scale-95 shadow-[0_0_15px_rgba(34,197,94,0.3)] hover:shadow-[0_0_25px_rgba(34,197,94,0.5)]">
+          AUTHENTICATE
+        </button>
+      </form>
+      <div class="text-[10px] text-zinc-600 text-center font-mono mt-4">SECURE CONNECTION // CLAWNET_V3.5</div>
+    </div>
+  </div>
+</div>
