@@ -1,0 +1,168 @@
+<script>
+// --- 1. GLOBAL VARIABLES & ELEMENT REFERENCES ---
+const masterInput = document.getElementById('master-input');
+const opsDispatch = document.getElementById('ops-dispatch');
+const logsRefresh = document.getElementById('logs-refresh');
+const modalClose = document.getElementById('agent-modal-close');
+const modalDispatch = document.getElementById('agent-modal-dispatch');
+const modalRoleApply = document.getElementById('agent-modal-role-apply');
+
+// --- Toast Notification System ---
+function showToast(message, type = 'info', duration = 4000) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <span class="font-bold">${type.toUpperCase()}</span>
+    <span>${message}</span>
+  `;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease-in forwards';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+let currentRoom = 'all';
+let agentsCache = [];
+let tasksCache = [];
+const agentCache = {};
+const chatHistory = {};
+
+// Function to handle tab switching
+function showTab(tabId) {
+  // Hide all tab contents
+  document.querySelectorAll('.tab-content').forEach(tabContent => {
+    tabContent.classList.add('hidden');
+  });
+  // Deactivate all tab buttons
+  document.querySelectorAll('.tab-btn').forEach(tabBtn => {
+    tabBtn.classList.remove('active');
+  });
+
+  // Show the selected tab content
+  const selectedTab = document.getElementById(tabId);
+  if (selectedTab) {
+    selectedTab.classList.remove('hidden');
+    if (tabId === 'intel') selectedTab.classList.add('flex');
+    // Activate the corresponding tab button
+    document.querySelectorAll(`.tab-btn[data-tab='${tabId}']`).forEach(tabBtn => tabBtn.classList.add('active'));
+  }
+}
+
+// Show default tab on load
+document.addEventListener('DOMContentLoaded', () => {
+  // Check for a tab hash in the URL (e.g., #ops)
+  const urlHash = window.location.hash.substring(1);
+  if (urlHash && document.getElementById(urlHash)) {
+    showTab(urlHash);
+  } else {
+    showTab('fleet');
+  }
+});
+
+const seenMessageKeys = new Set();
+const seenMessageQueue = [];
+const MAX_SEEN_MESSAGES = 200;
+const activeTypers = new Map();
+const TYPING_TTL_MS = 2000;
+const TYPING_THROTTLE_MS = 800;
+let currentAgentId = null;
+
+// Initialize tasks cache from server data
+<% if (tasks && tasks.length > 0) { %>
+  <% tasks.forEach(task => { %>
+    tasksCache.push({ id: '<%= task.id %>', agent_id: '<%= task.agent_id %>', cmd: '<%= task.cmd %>', status: '<%= task.status %>', result: <%- JSON.stringify(task.result || null) %> });
+  <% }); %>
+<% } %>
+
+// --- 2. AUTHENTICATION LOGIC ---
+const secret = '<%= secret %>';
+
+let token = localStorage.getItem('clawnet_token') || secret;
+let socket = null;
+
+const modal = document.getElementById('login-overlay');
+const form = document.getElementById('login-form');
+const input = document.getElementById('access-code-input');
+const msg = document.getElementById('login-message');
+
+function showLogin(message = "Authentication Required") {
+  modal.classList.remove('hidden');
+  msg.innerText = message;
+  msg.classList.add('text-red-400');
+  input.value = '';
+  input.focus();
+}
+
+function hideLogin() {
+  modal.classList.add('hidden');
+}
+
+function connectSocket(authToken) {
+  if (socket) {
+    socket.auth.token = authToken;
+    socket.connect();
+    return;
+  }
+
+  socket = io({
+    auth: { token: authToken, agent_id: 'master-ui', role: 'master' },
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 10
+  });
+
+  setupSocketListeners();
+}
+
+function setupSocketListeners() {
+  socket.on('connect', () => {
+    console.log("Socket connected");
+    hideLogin();
+    document.getElementById('status-dot').className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
+    document.getElementById('status-text').innerText = 'ONLINE (' + socket.io.engine.transport.name.toUpperCase() + ')';
+    localStorage.setItem('clawnet_token', socket.auth.token);
+  });
+
+  socket.on('connect_error', (err) => {
+    console.error("Connection Error:", err.message);
+    document.getElementById('status-text').innerText = 'AUTH_FAILED';
+    document.getElementById('status-dot').className = 'w-2 h-2 bg-red-600 rounded-full';
+
+    if (err.message === 'Unauthorized' || err.message.includes('auth')) {
+      localStorage.removeItem('clawnet_token');
+      showLogin("ACCESS DENIED. INVALID CODE.");
+    }
+  });
+
+  socket.on('fleet_update', handleFleetUpdate);
+  socket.on('task_update', handleTaskUpdate);
+  socket.on('chat_update', handleChatUpdate);
+  socket.on('typing_update', handleTypingUpdate);
+  socket.on('room_update', handleRoomUpdate);
+  socket.on('traffic', handleTraffic);
+  socket.on('intel_update', appendIntel);
+  socket.on('pending_clients_update', handlePendingClientsUpdate);
+  socket.on('connection_events_update', handleConnectionEventsUpdate);
+}
+
+// --- 3. INIT AUTH ---
+if (!token) {
+  showLogin();
+} else {
+  connectSocket(token);
+}
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const code = input.value.trim();
+  if (code) {
+    msg.innerText = "VERIFYING CREDENTIALS...";
+    msg.classList.remove('text-red-400');
+    msg.classList.add('text-yellow-400');
+    connectSocket(code);
+  }
+});
+</script>

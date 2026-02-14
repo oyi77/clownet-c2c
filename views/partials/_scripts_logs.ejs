@@ -1,0 +1,67 @@
+<script>
+// --- LOGS FUNCTIONS ---
+
+function refreshLogs() {
+  const serverSearch = document.getElementById('server-logs-search')?.value || '';
+  const taskSearch = document.getElementById('task-logs-search')?.value || '';
+
+  // Server Logs
+  fetch(`/api/logs/server?search=${encodeURIComponent(serverSearch)}`)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('server-logs').innerText = (data.lines || []).join('\n');
+    })
+    .catch(err => console.error('Failed to fetch server logs:', err));
+
+  // Task Logs
+  fetch(`/api/logs/tasks?search=${encodeURIComponent(taskSearch)}`)
+    .then(res => res.json())
+    .then(data => {
+      const logsDiv = document.getElementById('task-logs');
+      logsDiv.innerHTML = (data.tasks || []).map(t => `
+        <div class="mb-2 pb-2 border-b border-zinc-800/30 last:border-0">
+          <div class="flex justify-between text-zinc-500 mb-1">
+            <span class="font-bold text-zinc-400">#${t.id.substring(0, 8)}</span>
+            <span>${new Date(t.created_at || t.timestamp).toLocaleString()}</span>
+          </div>
+          <div class="text-zinc-300 mb-1">> ${t.cmd}</div>
+          <div class="text-[10px] text-zinc-600 font-mono truncate">Result: ${typeof t.result === 'object' ? JSON.stringify(t.result) : t.result || 'Pending'}</div>
+        </div>
+      `).join('');
+    })
+    .catch(err => console.error('Failed to fetch task logs:', err));
+}
+
+// Logs Search Handlers
+function setupLogsSearch() {
+  const serverSearch = document.getElementById('server-logs-search');
+  const taskSearch = document.getElementById('task-logs-search');
+  let serverTimeout, taskTimeout;
+
+  if (serverSearch) {
+    serverSearch.addEventListener('input', () => {
+      clearTimeout(serverTimeout);
+      serverTimeout = setTimeout(refreshLogs, 300);
+    });
+  }
+
+  if (taskSearch) {
+    taskSearch.addEventListener('input', () => {
+      clearTimeout(taskTimeout);
+      taskTimeout = setTimeout(refreshLogs, 300);
+    });
+  }
+
+  // Refresh buttons
+  document.getElementById('logs-refresh')?.addEventListener('click', refreshLogs);
+  document.getElementById('task-logs-refresh')?.addEventListener('click', refreshLogs);
+
+  // Initial load
+  if (document.getElementById('logs') && !document.getElementById('logs').classList.contains('hidden')) {
+    refreshLogs();
+  }
+}
+
+// Setup logs search on load
+setupLogsSearch();
+</script>

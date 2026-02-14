@@ -1,0 +1,133 @@
+<script>
+// --- OPERATIONS FUNCTIONS ---
+
+function handleTaskUpdate(tasks) {
+  tasksCache = tasks || [];
+  renderOps(tasks);
+  refreshLogs();
+}
+
+function renderOps(tasks) {
+  const body = document.getElementById('ops-body');
+  if (!tasks || tasks.length === 0) {
+    body.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-zinc-600 text-xs">NO TASKS</td></tr>';
+    return;
+  }
+  body.innerHTML = tasks.slice().reverse().map(t => {
+    const status = (t.status || 'UNKNOWN').toUpperCase();
+    const statusClass = status === 'SUCCESS' ? 'text-green-500' : status === 'FAIL' ? 'text-red-500' : 'text-zinc-500';
+    const output = t.result && t.result.stdout ? t.result.stdout.substring(0, 60) : (typeof t.result === 'string' ? t.result.substring(0, 60) : '');
+    const approvalBtn = status === 'PENDING_APPROVAL' ? `<button onclick="approveTask('${t.id}')" class="bg-green-600 hover:bg-green-500 text-black text-[9px] font-bold px-2 py-1 rounded uppercase">Approve</button>` : '';
+    return `
+      <tr class="border-b border-zinc-800/50">
+        <td class="p-4 font-mono text-zinc-600">#${t.id.substring(0, 8)}</td>
+        <td class="p-4 font-bold text-zinc-300">${t.agent_id}</td>
+        <td class="p-4 font-mono text-zinc-500">${t.cmd}</td>
+        <td class="p-4"><span class="text-[9px] font-bold ${statusClass}">${status}</span></td>
+        <td class="p-4 text-[10px] text-zinc-500 font-mono">${output}</td>
+        <td class="p-4">${approvalBtn}</td>
+        <td class="p-4"><button onclick="showTaskOutput('${t.id}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold px-2 py-1 rounded">Log</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function approveTask(taskId) {
+  if (!confirm('Authorize this risky command?')) return;
+  socket.emit('approve_task', { task_id: taskId });
+}
+
+// Command Templates Logic
+function refreshOps() {
+  fetch('/api/templates')
+    .then(res => res.json())
+    .then(data => {
+      const grid = document.getElementById('templates-grid');
+      if (data.templates && data.templates.length > 0) {
+        grid.innerHTML = data.templates.map(t => `
+          <div class="bg-black/40 border border-zinc-800 p-3 rounded hover:border-zinc-700 transition-colors group">
+            <div class="flex justify-between items-start mb-2">
+              <div class="font-bold text-xs text-zinc-200">${t.name}</div>
+              <button onclick="deleteTemplate('${t.id}')" class="text-[10px] text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+            </div>
+            <div class="text-[10px] text-zinc-500 font-mono truncate mb-3">${t.command}</div>
+            <button onclick="useTemplate('${t.command.replace(/'/g, "\\'")}')" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] py-1 rounded uppercase transition-colors">Use Template</button>
+          </div>
+        `).join('');
+      } else {
+        grid.innerHTML = '<div class="col-span-full text-center py-4 text-zinc-700 text-[10px] italic border border-dashed border-zinc-800 rounded">NO_TEMPLATES_DEFINED</div>';
+      }
+    });
+}
+
+function useTemplate(cmd) {
+  const input = document.getElementById('ops-command');
+  input.value = cmd;
+  input.focus();
+  showToast('Template command copied to input.', 'info');
+}
+
+function deleteTemplate(id) {
+  if (!confirm('Delete this template?')) return;
+  fetch(`/api/templates/${id}`, { method: 'DELETE' })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        refreshOps();
+        showToast('Template deleted.', 'warning');
+      }
+    });
+}
+
+document.getElementById('add-template-btn')?.addEventListener('click', () => {
+  document.getElementById('template-modal').classList.remove('hidden');
+  document.getElementById('template-modal').classList.add('flex');
+});
+
+document.getElementById('template-modal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'template-modal') {
+    document.getElementById('template-modal').classList.add('hidden');
+    document.getElementById('template-modal').classList.remove('flex');
+  }
+});
+
+function saveTemplate() {
+  const name = document.getElementById('template-name').value;
+  const command = document.getElementById('template-command').value;
+  if (!name || !command) {
+    showToast('Please fill in all fields.', 'error');
+    return;
+  }
+
+  fetch('/api/templates', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, command })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById('template-modal').classList.add('hidden');
+        document.getElementById('template-modal').classList.remove('flex');
+        document.getElementById('template-name').value = '';
+        document.getElementById('template-command').value = '';
+        refreshOps();
+        showToast('Template saved.', 'success');
+      }
+    });
+}
+
+// Ops Dispatch
+if (opsDispatch) {
+  opsDispatch.addEventListener('click', () => {
+    const target = document.getElementById('ops-target').value;
+    const cmd = document.getElementById('ops-command').value.trim();
+    if (!cmd) return;
+    socket.emit('dispatch', { to: target, cmd: cmd });
+    document.getElementById('ops-command').value = '';
+  });
+  document.getElementById('ops-command').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') opsDispatch.click();
+  });
+}
+</script>

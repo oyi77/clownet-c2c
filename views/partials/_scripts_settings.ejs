@@ -1,0 +1,81 @@
+<script>
+// --- SETTINGS FUNCTIONS ---
+
+function copyCurrentToken() {
+  const token = document.getElementById('current-token').value;
+  copyToClipboard(token);
+  showToast('Token copied to clipboard', 'success');
+}
+
+async function rotateToken() {
+  const newToken = document.getElementById('new-token').value.trim();
+  if (newToken.length < 8) {
+    showToast('Token must be at least 8 characters', 'error');
+    return;
+  }
+
+  if (!confirm('Rotate access token? This will invalidate the current token. Restart server to apply changes.')) {
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/rotate-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newToken })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message, 'success');
+      document.getElementById('new-token').value = '';
+    } else {
+      showToast(data.error || 'Failed to rotate token', 'error');
+    }
+  } catch (e) {
+    showToast('Network error', 'error');
+  }
+}
+
+async function restartServer() {
+  if (!confirm('Restart the server? This will disconnect all agents.')) {
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/restart', { method: 'POST' });
+    const data = await res.json();
+    showToast(data.message || 'Restarting...', 'info');
+  } catch (e) {
+    showToast('Failed to send restart signal', 'error');
+  }
+}
+
+// Advanced Settings Form
+document.getElementById('advanced-settings-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const approvalMode = document.getElementById('approval-mode').value;
+  const whitelist = document.getElementById('whitelist-input').value.split(',').map(s => s.trim()).filter(Boolean);
+  const blacklist = document.getElementById('blacklist-input').value.split(',').map(s => s.trim()).filter(Boolean);
+
+  try {
+    const res = await fetch('/api/advanced-settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientApprovalMode: approvalMode,
+        whitelistedClients: whitelist,
+        blacklistedClients: blacklist
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Security settings updated successfully.', 'success');
+    } else {
+      showToast('Failed to update settings.', 'error');
+    }
+  } catch (e) {
+    console.error(e);
+    showToast('Error updating settings.', 'error');
+  }
+});
+</script>

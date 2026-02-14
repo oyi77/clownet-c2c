@@ -1,0 +1,181 @@
+<script>
+// --- AGENT MODAL FUNCTIONS ---
+
+function openAgentModal(agentId) {
+  currentAgentId = agentId;
+  const modal = document.getElementById('agent-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  // Reset fields
+  document.getElementById('agent-modal-title').innerText = 'Loading...';
+  document.getElementById('agent-modal-id').innerText = agentId;
+  ['role', 'status', 'ip', 'last-seen', 'cpu', 'ram', 'hostname', 'uptime', 'version', 'os', 'sessions-count'].forEach(id => {
+    document.getElementById(`agent-modal-${id}`).innerText = '...';
+  });
+  document.getElementById('agent-modal-tasks').innerHTML = '<tr><td colspan="3" class="p-4 text-center text-zinc-600 text-xs">Loading tasks...</td></tr>';
+
+  fetch(`/api/agents/${agentId}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        showToast('Agent not found', 'error');
+        modal.classList.add('hidden');
+        return;
+      }
+
+      const agent = data.agent;
+
+      document.getElementById('agent-modal-title').innerText = agent.id;
+      document.getElementById('agent-modal-id').innerText = agent.id;
+      document.getElementById('agent-modal-role').innerText = agent.role;
+      document.getElementById('agent-modal-status').innerText = agent.status;
+      document.getElementById('agent-modal-ip').innerText = agent.ip || 'Unknown';
+      document.getElementById('agent-modal-last-seen').innerText = new Date(agent.last_seen).toLocaleString();
+      document.getElementById('agent-modal-cpu').innerText = `${(agent.specs && agent.specs.cpu_percent) || 0}%`;
+      document.getElementById('agent-modal-ram').innerText = `${(agent.specs && agent.specs.ram_percent) || 0}%`;
+      document.getElementById('agent-modal-hostname').innerText = (agent.specs && agent.specs.hostname) || 'Unknown';
+      document.getElementById('agent-modal-version').innerText = (agent.specs && agent.specs.version) || 'Unknown';
+      document.getElementById('agent-modal-os').innerText = (agent.specs && agent.specs.os) || 'Unknown';
+      document.getElementById('agent-modal-sessions-count').innerText = (agent.sessions && agent.sessions.length) || 0;
+
+      // Render Tasks
+      const tasksBody = document.getElementById('agent-modal-tasks');
+      if (data.tasks && data.tasks.length > 0) {
+        tasksBody.innerHTML = data.tasks.slice().reverse().map(t => `
+          <tr class="hover:bg-zinc-800/30 transition-colors">
+            <td class="p-2 truncate max-w-[200px]" title="${t.cmd}">${t.cmd}</td>
+            <td class="p-2"><span class="${t.status === 'SUCCESS' ? 'text-green-500' : t.status === 'FAIL' ? 'text-red-500' : 'text-zinc-500'}">${t.status}</span></td>
+            <td class="p-2 text-zinc-600 font-mono">${new Date(t.created_at).toLocaleTimeString()}</td>
+          </tr>
+        `).join('');
+      } else {
+        tasksBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-zinc-600 text-xs">No recent tasks</td></tr>';
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      showToast('Failed to load agent details', 'error');
+    });
+}
+
+// Agent Modal Event Listeners
+document.getElementById('agent-modal-restart').addEventListener('click', () => {
+  if (!currentAgentId) return;
+  if (confirm(`Send RESTART signal to ${currentAgentId}?`)) {
+    socket.emit('dispatch', { to: currentAgentId, cmd: '/restart' });
+  }
+});
+
+document.getElementById('agent-modal-update').addEventListener('click', () => {
+  if (!currentAgentId) return;
+  if (confirm(`Send UPDATE signal to ${currentAgentId}?`)) {
+    socket.emit('dispatch', { to: currentAgentId, cmd: '/update' });
+  }
+});
+
+document.getElementById('agent-modal-inspect').addEventListener('click', () => {
+  if (!currentAgentId) return;
+  showToast('Interactive Shell coming soon!', 'info');
+});
+
+if (modalClose) {
+  modalClose.addEventListener('click', () => {
+    document.getElementById('agent-modal').classList.add('hidden');
+    document.getElementById('agent-modal').classList.remove('flex');
+  });
+}
+
+if (modalDispatch) {
+  modalDispatch.addEventListener('click', () => {
+    const cmd = document.getElementById('agent-modal-command').value.trim();
+    if (!cmd || !currentAgentId) return;
+    socket.emit('dispatch', { to: currentAgentId, cmd: cmd });
+    document.getElementById('agent-modal-command').value = '';
+  });
+}
+
+// Task Output Modal Functions
+const taskModalClose = document.getElementById('task-modal-close');
+
+function showTaskOutput(taskId) {
+  const task = tasksCache.find(t => t.id === taskId);
+  if (!task) return;
+
+  document.getElementById('task-modal').classList.remove('hidden');
+  document.getElementById('task-modal').classList.add('flex');
+  document.getElementById('task-modal-id').textContent = '#' + task.id.substring(0, 8);
+  document.getElementById('task-modal-agent').textContent = task.agent_id;
+  document.getElementById('task-modal-cmd').textContent = task.cmd;
+  document.getElementById('task-modal-status').textContent = task.status || 'UNKNOWN';
+  document.getElementById('task-modal-status').className = 'text-zinc-200 ' + (task.status === 'SUCCESS' ? 'text-green-500' : task.status === 'FAIL' ? 'text-red-500' : 'text-zinc-500');
+
+  let output = '';
+  if (task.result) {
+    if (typeof task.result === 'string') {
+      output = task.result;
+    } else if (task.result.stdout) {
+      output = task.result.stdout;
+      if (task.result.stderr) output += '\n\nSTDERR:\n' + task.result.stderr;
+    }
+  }
+  document.getElementById('task-modal-output').textContent = output || 'No output available.';
+}
+
+if (taskModalClose) {
+  taskModalClose.addEventListener('click', () => {
+    document.getElementById('task-modal').classList.add('hidden');
+    document.getElementById('task-modal').classList.remove('flex');
+  });
+}
+
+// Agent Logs Modal
+const agentLogsModal = document.getElementById('agent-logs-modal');
+const agentLogsClose = document.getElementById('agent-logs-close');
+const agentLogsButton = document.getElementById('agent-modal-logs');
+
+function showAgentLogs(agentId) {
+  const agentTasks = tasksCache.filter(t => t.agent_id === agentId);
+
+  document.getElementById('agent-logs-agent-id').textContent = agentId;
+  const logsBox = document.getElementById('agent-logs-content');
+  if (agentTasks.length === 0) {
+    logsBox.innerHTML = '<div class="text-zinc-600 text-[10px] italic">No task logs for this agent.</div>';
+  } else {
+    logsBox.innerHTML = agentTasks.map(t => {
+      const status = (t.status || 'UNKNOWN').toUpperCase();
+      const statusClass = status === 'SUCCESS' ? 'text-green-500' : status === 'FAIL' ? 'text-red-500' : 'text-zinc-500';
+      const output = t.result && t.result.stdout ? t.result.stdout.substring(0, 200) : (typeof t.result === 'string' ? t.result.substring(0, 200) : '');
+      return `
+        <div class="border-b border-zinc-800/50 py-2">
+          <div class="flex gap-2 text-[10px] mb-1">
+            <span class="text-zinc-500">${new Date(t.ts).toLocaleTimeString()}</span>
+            <span class="${statusClass} font-bold">${status}</span>
+            <span class="text-zinc-600 font-mono">#${t.id.substring(0, 8)}</span>
+          </div>
+          <div class="text-zinc-400 text-[10px] font-mono bg-black/30 rounded p-2">${t.cmd}</div>
+          ${output ? `<div class="text-zinc-500 text-[10px] font-mono mt-1 whitespace-pre-wrap">${output}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  agentLogsModal.classList.remove('hidden');
+  agentLogsModal.classList.add('flex');
+}
+
+if (agentLogsButton) {
+  agentLogsButton.addEventListener('click', () => {
+    if (currentAgentId) {
+      showAgentLogs(currentAgentId);
+    }
+  });
+}
+
+if (agentLogsClose) {
+  agentLogsClose.addEventListener('click', () => {
+    agentLogsModal.classList.add('hidden');
+    agentLogsModal.classList.remove('flex');
+  });
+}
+</script>
