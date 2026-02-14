@@ -13,12 +13,9 @@ function loadOverviewMetrics() {
     const successRate = metrics.tasks_total > 0
       ? ((metrics.tasks_success / metrics.tasks_total) * 100).toFixed(1)
       : 0;
-    const failRate = metrics.tasks_total > 0
-      ? ((metrics.tasks_failed / metrics.tasks_total) * 100).toFixed(1)
-      : 0;
     document.getElementById('metric-success').textContent = successRate + '%';
 
-    renderSuccessChart(successRate, failRate);
+    renderSuccessChart(successRate, 100 - successRate);
     renderVolumeChart();
 
     const seconds = Math.floor(info.uptime || 0);
@@ -26,6 +23,21 @@ function loadOverviewMetrics() {
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
     document.getElementById('metric-uptime').textContent = `${h}h ${m}m ${s}s`;
+
+    if (info.server) {
+      document.getElementById('metric-server-cpu').textContent = (info.server.cpu_percent || 0) + '%';
+      document.getElementById('bar-server-cpu').style.width = (info.server.cpu_percent || 0) + '%';
+      document.getElementById('metric-server-ram').textContent = (info.server.ram_percent || 0) + '%';
+      document.getElementById('bar-server-ram').style.width = (info.server.ram_percent || 0) + '%';
+      
+      const serverSeconds = Math.floor(info.server.uptime || 0);
+      const serverH = Math.floor(serverSeconds / 3600);
+      const serverM = Math.floor((serverSeconds % 3600) / 60);
+      document.getElementById('metric-server-uptime').textContent = `${serverH}h ${serverM}m`;
+      document.getElementById('metric-server-host').textContent = info.server.hostname || '-';
+    }
+  }).catch(err => {
+    console.error('Failed to load metrics:', err);
   });
 }
 
@@ -55,6 +67,21 @@ function renderSuccessChart(success, fail) {
       }
     }
   });
+}
+
+let metricsRefreshInterval = null;
+
+function startMetricsRefresh() {
+  if (metricsRefreshInterval) return;
+  loadOverviewMetrics();
+  metricsRefreshInterval = setInterval(loadOverviewMetrics, 5000);
+}
+
+function stopMetricsRefresh() {
+  if (metricsRefreshInterval) {
+    clearInterval(metricsRefreshInterval);
+    metricsRefreshInterval = null;
+  }
 }
 
 function renderVolumeChart() {

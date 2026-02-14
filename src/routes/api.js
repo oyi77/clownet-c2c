@@ -3,6 +3,7 @@ const persistence = require('../persistence');
 const config = require('../config');
 const { readLastLines } = require('../utils/logger');
 const { getRecentTraffic } = require('../utils/audit');
+const { getServerStats } = require('../utils/server-monitor');
 
 function register(fastify) {
     // Settings
@@ -111,18 +112,24 @@ function register(fastify) {
         return reply.send({ tasks });
     });
 
-    // Metrics endpoint
-    fastify.get('/api/metrics', async (req, reply) => {
-        const s = state.getTenantState('default');
-        const agentsOnline = Object.values(s.agents).filter(a => a.status === 'online').length;
-        return reply.send({
-            tasks_total: s.metrics.tasks_total,
-            tasks_success: s.metrics.tasks_success,
-            tasks_failed: s.metrics.tasks_failed,
-            messages_total: s.metrics.messages_total,
-            agents_online: agentsOnline,
-        });
+// Metrics endpoint
+  fastify.get('/api/metrics', async (req, reply) => {
+    const s = state.getTenantState('default');
+    const agentsOnline = Object.values(s.agents).filter(a => a.status === 'online').length;
+    const serverStats = getServerStats();
+    return reply.send({
+      tasks_total: s.metrics.tasks_total,
+      tasks_success: s.metrics.tasks_success,
+      tasks_failed: s.metrics.tasks_failed,
+      messages_total: s.metrics.messages_total,
+      agents_online: agentsOnline,
+      server: {
+        cpu: serverStats.cpu_percent,
+        ram: serverStats.ram_percent,
+        uptime: serverStats.uptime
+      }
     });
+  });
 
     // Traffic audit log
     fastify.get('/api/traffic', async (req, reply) => {
@@ -155,14 +162,15 @@ function register(fastify) {
         });
     });
 
-    // Server info
-    fastify.get('/api/info', async (req, reply) => {
-        return reply.send({
-            uptime: process.uptime(),
-            memory: process.memoryUsage(),
-            pid: process.pid
-        });
+// Server info
+  fastify.get('/api/info', async (req, reply) => {
+    return reply.send({
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      pid: process.pid,
+      server: getServerStats()
     });
+  });
 
     // Token rotation (write new token to .env file)
     fastify.post('/api/rotate-token', async (req, reply) => {

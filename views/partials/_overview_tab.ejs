@@ -19,6 +19,35 @@
     </div>
   </div>
 
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded">
+      <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Server CPU</div>
+      <div class="flex items-center gap-2">
+        <div id="metric-server-cpu" class="text-2xl font-bold text-zinc-100">0%</div>
+        <div class="flex-1 bg-zinc-800 rounded-full h-2">
+          <div id="bar-server-cpu" class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded">
+      <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Server RAM</div>
+      <div class="flex items-center gap-2">
+        <div id="metric-server-ram" class="text-2xl font-bold text-zinc-100">0%</div>
+        <div class="flex-1 bg-zinc-800 rounded-full h-2">
+          <div id="bar-server-ram" class="bg-purple-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded text-center">
+      <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Server Uptime</div>
+      <div id="metric-server-uptime" class="text-2xl font-bold text-zinc-100">0h 0m</div>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded text-center">
+      <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Server Host</div>
+      <div id="metric-server-host" class="text-lg font-bold text-zinc-100 font-mono">-</div>
+    </div>
+  </div>
+
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     <!-- Task Success Rate Chart -->
     <div class="bg-zinc-900 border border-zinc-800 p-4 rounded">

@@ -32,22 +32,24 @@ const chatHistory = {};
 
 // Function to handle tab switching
 function showTab(tabId) {
-  // Hide all tab contents
   document.querySelectorAll('.tab-content').forEach(tabContent => {
     tabContent.classList.add('hidden');
   });
-  // Deactivate all tab buttons
   document.querySelectorAll('.tab-btn').forEach(tabBtn => {
     tabBtn.classList.remove('active');
   });
 
-  // Show the selected tab content
   const selectedTab = document.getElementById(tabId);
   if (selectedTab) {
     selectedTab.classList.remove('hidden');
     if (tabId === 'intel') selectedTab.classList.add('flex');
-    // Activate the corresponding tab button
     document.querySelectorAll(`.tab-btn[data-tab='${tabId}']`).forEach(tabBtn => tabBtn.classList.add('active'));
+  }
+
+  if (tabId === 'overview') {
+    if (typeof startMetricsRefresh === 'function') startMetricsRefresh();
+  } else {
+    if (typeof stopMetricsRefresh === 'function') stopMetricsRefresh();
   }
 }
 
