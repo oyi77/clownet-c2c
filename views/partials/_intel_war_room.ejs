@@ -1,0 +1,64 @@
+        <!-- INTEL TAB (WAR ROOM) -->
+        <section id="intel" class="tab-content h-full hidden flex">
+            <!-- Col 1: Channels & DMs -->
+            <div class="w-64 border-r border-zinc-800 bg-[#0c0c0e] flex flex-col">
+                <div
+                    class="p-3 border-b border-zinc-800 text-[10px] uppercase font-bold text-zinc-500 flex justify-between items-center">
+                    <span>Channels</span>
+                    <button onclick="joinNewRoom()" class="text-green-500 hover:text-green-400">+ NEW</button>
+                </div>
+                <div id="room-list" class="flex-1 overflow-y-auto">
+                    <button onclick="selectRoom('all')"
+                        class="channel-item active w-full text-left px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-zinc-800/50">
+                        # BROADCAST_ALL
+                    </button>
+                </div>
+                <div class="p-3 border-t border-b border-zinc-800 text-[10px] uppercase font-bold text-zinc-500">
+                    Direct_Messages</div>
+                <div id="dm-list" class="h-48 overflow-y-auto"></div>
+            </div>
+
+            <!-- Col 2: Chat Box -->
+            <div class="flex-1 flex flex-col bg-[#09090b]">
+                <div id="chat-header"
+                    class="p-3 border-b border-zinc-800 text-xs font-bold text-green-500 bg-zinc-900/50 flex justify-between">
+                    <span id="chat-title"># BROADCAST_ALL</span>
+                    <span id="chat-topic" class="text-[10px] text-zinc-600 font-normal">SECURE_CHANNEL</span>
+                </div>
+                <div id="chat-box" class="flex-1 p-4 font-mono text-[11px] overflow-y-auto space-y-2"></div>
+
+                <!-- Traffic Feed Overlay (Conditional) -->
+                <div id="traffic-feed" class="h-24 border-t border-zinc-800 bg-black/40 overflow-hidden hidden">
+                    <div
+                        class="p-1 px-3 text-[8px] text-zinc-600 uppercase border-b border-zinc-900 bg-zinc-950 flex justify-between">
+                        <span>Traffic Monitor</span>
+                        <span id="traffic-status" class="animate-pulse text-red-900">● LIVE</span>
+                    </div>
+                    <div id="traffic-lines" class="p-2 space-y-0.5 font-mono text-[9px] overflow-y-auto h-full"></div>
+                </div>
+
+                <div id="typing-indicator" class="px-4 pb-2 text-[10px] text-zinc-600 h-4"></div>
+                <div class="p-3 border-t border-zinc-800 bg-[#0c0c0e]">
+                    <input type="text" id="master-input" placeholder="Broadcast message (or /exec command)..."
+                        class="w-full bg-black border border-zinc-800 rounded px-4 py-2 text-xs outline-none focus:border-green-600 text-zinc-100 font-mono">
+                </div>
+            </div>
+
+            <!-- Col 3: Room Members -->
+            <div class="w-48 border-l border-zinc-800 bg-[#0c0c0e] flex flex-col hidden sm:flex">
+                <div class="p-3 border-b border-zinc-800 text-[10px] uppercase font-bold text-zinc-500">Members</div>
+                <div id="member-list" class="flex-1 overflow-y-auto p-2 space-y-2">
+                    <div class="text-[10px] text-zinc-700 italic text-center mt-4">No room selected</div>
+                </div>
+            </div>
+
+            <!-- Col 4: Connection Events -->
+            <div class="w-64 border-l border-zinc-800 bg-[#0c0c0e] flex flex-col">
+                <div class="p-3 border-b border-zinc-800 text-[10px] uppercase font-bold text-zinc-500 flex justify-between items-center">
+                    <span>Connection Events</span>
+                </div>
+                <div id="connection-events-list" class="flex-1 overflow-y-auto p-2 space-y-2">
+                    <div class="text-[10px] text-zinc-600 italic text-center mt-4">Waiting for events...</div>
+                </div>
+            </div>
+        </section>
