@@ -54,14 +54,21 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
-  <%- include('partials/_scripts_core') %>
-  <%- include('partials/_scripts_fleet') %>
-  <%- include('partials/_scripts_ops') %>
-  <%- include('partials/_scripts_overview') %>
-  <%- include('partials/_scripts_chat') %>
-  <%- include('partials/_scripts_logs') %>
-  <%- include('partials/_scripts_agent_modal') %>
-  <%- include('partials/_scripts_settings') %>
+<%- include('partials/_scripts_core') %>
+<%- include('partials/_scripts_fleet') %>
+<%- include('partials/_scripts_ops') %>
+<%- include('partials/_scripts_overview') %>
+<%- include('partials/_scripts_chat') %>
+<%- include('partials/_scripts_logs') %>
+<%- include('partials/_scripts_agent_modal') %>
+<%- include('partials/_scripts_settings') %>
+
+<script>
+// Setup socket listeners AFTER all handler functions are defined
+if (typeof setupSocketListeners === 'function' && socket) {
+  setupSocketListeners();
+}
+</script>
 
 </body>
 
