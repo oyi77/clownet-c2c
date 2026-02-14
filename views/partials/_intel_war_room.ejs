@@ -1,5 +1,5 @@
-        <!-- INTEL TAB (WAR ROOM) -->
-        <section id="intel" class="tab-content h-full hidden flex">
+<!-- INTEL TAB (WAR ROOM) -->
+<section id="intel" class="tab-content h-full hidden">
             <!-- Col 1: Channels & DMs -->
             <div class="w-64 border-r border-zinc-800 bg-[#0c0c0e] flex flex-col">
                 <div
@@ -7,12 +7,12 @@
                     <span>Channels</span>
                     <button onclick="joinNewRoom()" class="text-green-500 hover:text-green-400">+ NEW</button>
                 </div>
-                <div id="room-list" class="flex-1 overflow-y-auto">
-                    <button onclick="selectRoom('all')"
-                        class="channel-item active w-full text-left px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-zinc-800/50">
-                        # BROADCAST_ALL
-                    </button>
-                </div>
+<div id="room-list" class="flex-1 overflow-y-auto">
+    <button onclick="selectRoom('all')"
+      class="chat-room active w-full text-left px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-zinc-800/50">
+      # BROADCAST_ALL
+    </button>
+  </div>
                 <div class="p-3 border-t border-b border-zinc-800 text-[10px] uppercase font-bold text-zinc-500">
                     Direct_Messages</div>
                 <div id="dm-list" class="h-48 overflow-y-auto"></div>
