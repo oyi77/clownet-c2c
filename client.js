@@ -242,14 +242,18 @@ function registerHandlers() {
     }
   });
 
-    sio.on('command', (data) => {
-        const cmdId = data.id;
-        if (cmdId) {
-            if (!rememberCommand(cmdId)) return;
-            sio.emit('command_ack', { id: cmdId });
-        }
-        processInstruction(data.cmd, 'master-ui', cmdId);
-    });
+  sio.on('command', (data) => {
+    console.log(`[COMMAND] Received command: ${data.cmd} (ID: ${data.id})`);
+    const cmdId = data.id;
+    if (cmdId) {
+      if (!rememberCommand(cmdId)) {
+        console.log(`[COMMAND] Duplicate command ID: ${cmdId}, skipping`);
+        return;
+      }
+      sio.emit('command_ack', { id: cmdId });
+    }
+    processInstruction(data.cmd, 'master-ui', cmdId);
+  });
 }
 
 function main() {
