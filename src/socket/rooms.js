@@ -16,13 +16,21 @@ function register(io, socket, ctx) {
         // Join Socket.io room
         socket.join(room);
 
-        // Notify room members
-        io.to(room).emit('room_update', {
-            action: 'join',
-            agent_id: agent_id,
-            room: room,
-            members: Array.from(s.rooms[room]),
-        });
+    // Notify room members
+    const roomMembers = Array.from(s.rooms[room]).map(id => {
+      const agent = s.agents[id];
+      return {
+        id: id,
+        status: agent ? agent.status : 'offline',
+        role: agent ? agent.role : 'unknown'
+      };
+    });
+    io.to(room).emit('room_update', {
+      action: 'join',
+      agent_id: agent_id,
+      room: room,
+      members: roomMembers,
+    });
 
         logEvent(`Room join: ${agent_id} -> ${room}`);
     });
@@ -40,13 +48,21 @@ function register(io, socket, ctx) {
         // Leave Socket.io room
         socket.leave(room);
 
-        // Notify remaining room members
-        io.to(room).emit('room_update', {
-            action: 'leave',
-            agent_id: agent_id,
-            room: room,
-            members: s.rooms[room] ? Array.from(s.rooms[room]) : [],
-        });
+    // Notify remaining room members
+    const remainingMembers = s.rooms[room] ? Array.from(s.rooms[room]).map(id => {
+      const agent = s.agents[id];
+      return {
+        id: id,
+        status: agent ? agent.status : 'offline',
+        role: agent ? agent.role : 'unknown'
+      };
+    }) : [];
+    io.to(room).emit('room_update', {
+      action: 'leave',
+      agent_id: agent_id,
+      room: room,
+      members: remainingMembers,
+    });
 
         logEvent(`Room leave: ${agent_id} <- ${room}`);
     });
