@@ -136,4 +136,25 @@ body {
   from { opacity: 1; transform: translateX(0); }
   to { opacity: 0; transform: translateX(20px); }
 }
+
+/* Message Status Indicators */
+.pending-message {
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.pending-message .status-indicator {
+  animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.status-indicator {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-weight: bold;
+}
 </style>
