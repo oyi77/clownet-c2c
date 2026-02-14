@@ -1,0 +1,57 @@
+<!-- OVERVIEW TAB -->
+<section id="overview" class="tab-content h-full p-6 overflow-y-auto hidden">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded text-center">
+      <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Total Tasks</div>
+      <div id="metric-tasks" class="text-3xl font-bold text-zinc-100">0</div>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded text-center">
+      <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Success Rate</div>
+      <div id="metric-success" class="text-3xl font-bold text-green-500">0%</div>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded text-center">
+      <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Messages</div>
+      <div id="metric-messages" class="text-3xl font-bold text-zinc-100">0</div>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded text-center">
+      <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Online Agents</div>
+      <div id="metric-agents" class="text-3xl font-bold text-zinc-100">0</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Task Success Rate Chart -->
+    <div class="bg-zinc-900 border border-zinc-800 p-4 rounded">
+      <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-4">Task Success Rate</div>
+      <div class="relative h-64">
+        <canvas id="chart-success-rate"></canvas>
+      </div>
+    </div>
+
+    <!-- Task Volume Chart -->
+    <div class="bg-zinc-900 border border-zinc-800 p-4 rounded">
+      <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-4">Task Volume (Last 7 Days)</div>
+      <div class="relative h-64">
+        <canvas id="chart-volume"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-zinc-900/50 border border-zinc-800 rounded p-6">
+    <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-4">System Status</div>
+    <div class="space-y-2">
+      <div class="flex justify-between items-center p-2 bg-black/40 rounded">
+        <span class="text-xs text-zinc-400">Database Connection</span>
+        <span class="text-[10px] text-green-500 font-bold">CONNECTED</span>
+      </div>
+      <div class="flex justify-between items-center p-2 bg-black/40 rounded">
+        <span class="text-xs text-zinc-400">WebSocket Server</span>
+        <span class="text-[10px] text-green-500 font-bold">ACTIVE</span>
+      </div>
+      <div class="flex justify-between items-center p-2 bg-black/40 rounded">
+        <span class="text-xs text-zinc-400">Uptime</span>
+        <span id="metric-uptime" class="text-[10px] text-zinc-300 font-mono">Calculating...</span>
+      </div>
+    </div>
+  </div>
+</section>

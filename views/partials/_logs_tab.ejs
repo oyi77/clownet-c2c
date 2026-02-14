@@ -1,0 +1,25 @@
+<!-- LOGS TAB -->
+<section id="logs" class="tab-content h-full p-6 overflow-y-auto hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded p-4 flex flex-col gap-3">
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <div class="text-[10px] uppercase tracking-widest text-zinc-500">Server Logs</div>
+        <input type="text" id="server-logs-search" placeholder="Search logs..." class="bg-black border border-zinc-800 rounded px-2 py-1 text-[10px] outline-none flex-1">
+        <button id="logs-refresh" class="text-[10px] uppercase text-green-500 whitespace-nowrap">Refresh</button>
+      </div>
+      <div id="server-logs"
+        class="h-72 bg-black/50 border border-zinc-800 rounded p-2 text-[10px] font-mono overflow-y-auto">
+      </div>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 rounded p-4 flex flex-col gap-3">
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <div class="text-[10px] uppercase tracking-widest text-zinc-500">Client Task Logs</div>
+        <input type="text" id="task-logs-search" placeholder="Search tasks..." class="bg-black border border-zinc-800 rounded px-2 py-1 text-[10px] outline-none flex-1">
+        <button id="task-logs-refresh" class="text-[10px] uppercase text-green-500 whitespace-nowrap">Refresh</button>
+      </div>
+      <div id="task-logs"
+        class="h-72 bg-black/50 border border-zinc-800 rounded p-2 text-[10px] font-mono overflow-y-auto">
+      </div>
+    </div>
+  </div>
+</section>

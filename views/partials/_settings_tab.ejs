@@ -1,0 +1,95 @@
+<!-- SETTINGS TAB -->
+<section id="settings" class="tab-content h-full p-6 overflow-y-auto hidden">
+  <form class="max-w-md bg-zinc-900 border border-zinc-800 p-6 rounded mb-6" method="POST" action="/api/settings">
+    <h3 class="text-zinc-100 font-bold mb-4 uppercase text-sm tracking-widest">Database_Config</h3>
+    <div class="space-y-4">
+      <input name="supabase_url" type="text" placeholder="Supabase URL"
+        value="<%= settings.supabase_url || '' %>"
+        class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none">
+      <input name="supabase_key" type="password" placeholder="Service Key"
+        value="<%= settings.supabase_key || '' %>"
+        class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none">
+      <button type="submit"
+        class="w-full bg-green-600 py-2 rounded text-[10px] font-bold text-black uppercase">Save_State</button>
+    </div>
+  </form>
+
+  <!-- Token Configuration -->
+  <div class="max-w-md bg-zinc-900 border border-zinc-800 p-6 rounded mb-6">
+    <h3 class="text-zinc-100 font-bold mb-4 uppercase text-sm tracking-widest">Access Token</h3>
+    <div class="space-y-4">
+      <div>
+        <label class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2 block">Current Token</label>
+        <div class="flex gap-2">
+          <input type="text" id="current-token" value="<%= secret %>" readonly
+            class="flex-1 bg-black border border-zinc-800 rounded p-2 text-xs font-mono text-zinc-400 outline-none">
+          <button onclick="copyCurrentToken()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-2 rounded text-[10px] uppercase">Copy</button>
+        </div>
+      </div>
+      <div>
+        <label class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2 block">New Token</label>
+        <input type="text" id="new-token" placeholder="Minimum 8 characters"
+          class="w-full bg-black border border-zinc-800 rounded p-2 text-xs font-mono text-zinc-100 outline-none focus:border-green-600">
+      </div>
+      <button onclick="rotateToken()" id="rotate-token-btn"
+        class="w-full bg-red-600 hover:bg-red-500 py-2 rounded text-[10px] font-bold text-black uppercase">Rotate Token</button>
+      <p class="text-[9px] text-zinc-500">Token change requires server restart to take effect.</p>
+    </div>
+
+    <div class="mt-4 pt-4 border-t border-zinc-800">
+      <button onclick="restartServer()" id="restart-server-btn"
+        class="w-full bg-yellow-600 hover:bg-yellow-500 py-2 rounded text-[10px] font-bold text-black uppercase">Restart Server</button>
+      <p class="text-[9px] text-zinc-500 mt-1">Sends SIGTERM. Requires process manager (Docker/pm2/systemd) to auto-restart.</p>
+    </div>
+  </div>
+
+  <!-- Advanced Settings -->
+  <form id="advanced-settings-form" class="max-w-md bg-zinc-900 border border-zinc-800 p-6 rounded mb-6">
+    <h3 class="text-zinc-100 font-bold mb-4 uppercase text-sm tracking-widest">Client_Security</h3>
+
+    <!-- Client Approval Mode -->
+    <div class="mb-4">
+      <label class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2 block">Approval_Mode</label>
+      <select id="approval-mode" name="clientApprovalMode" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none">
+        <option value="auto" <%= settings.clientApprovalMode === 'auto' ? 'selected' : '' %>>Auto Allow</option>
+        <option value="manual" <%= settings.clientApprovalMode === 'manual' ? 'selected' : '' %>>Manual Approval</option>
+      </select>
+    </div>
+
+    <!-- Whitelist -->
+    <div class="mb-4">
+      <label class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2 block">Whitelisted_Clients</label>
+      <textarea id="whitelist-input" name="whitelistedClients" rows="3" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none font-mono" placeholder="Comma separated client IDs"><%= settings.whitelistedClients ? settings.whitelistedClients.join(', ') : '' %></textarea>
+    </div>
+
+    <!-- Blacklist -->
+    <div class="mb-4">
+      <label class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2 block">Blacklisted_Clients</label>
+      <textarea id="blacklist-input" name="blacklistedClients" rows="3" class="w-full bg-black border border-zinc-800 rounded p-2 text-xs outline-none font-mono" placeholder="Comma separated client IDs"><%= settings.blacklistedClients ? settings.blacklistedClients.join(', ') : '' %></textarea>
+    </div>
+
+    <button type="submit" id="save-advanced-settings"
+      class="w-full bg-blue-600 py-2 rounded text-[10px] font-bold text-black uppercase">Save_Security_Settings</button>
+  </form>
+
+  <!-- Pending Clients Queue -->
+  <div id="pending-clients-section" class="bg-zinc-900 border border-zinc-800 p-6 rounded hidden">
+    <h3 class="text-zinc-100 font-bold mb-4 uppercase text-sm tracking-widest">Pending_Approval</h3>
+    <div id="pending-clients-list" class="space-y-2">
+      <!-- Populated by JS -->
+      <% if (pendingClients && pendingClients.length > 0) { %>
+        <% pendingClients.forEach(client => { %>
+          <div class="flex justify-between items-center bg-black/40 p-3 rounded border border-zinc-800">
+            <span class="text-xs font-mono text-zinc-300"><%= client.agentId %></span>
+            <div class="space-x-2">
+              <button onclick="approveClient('<%= client.agentId %>')" class="bg-green-600 hover:bg-green-500 text-black text-[9px] font-bold px-2 py-1 rounded uppercase">Approve</button>
+              <button onclick="denyClient('<%= client.agentId %>')" class="bg-red-600 hover:bg-red-500 text-black text-[9px] font-bold px-2 py-1 rounded uppercase">Deny</button>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="text-[10px] text-zinc-500 italic">No pending clients.</div>
+      <% } %>
+    </div>
+  </div>
+</section>
