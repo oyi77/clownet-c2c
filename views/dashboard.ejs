@@ -316,7 +316,7 @@
                 </section>
 
                 <!-- FLEET TAB -->
-        <section id="fleet" class="tab-content h-full p-6 overflow-y-auto">
+        <section id="fleet" class="tab-content h-full p-6 overflow-y-auto hidden">
             <div id="fleet-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Initial render from server -->
                 <% if (agents && agents.length > 0) { %>
@@ -364,8 +364,7 @@
                                     </div>
                                     <% if (agent.sessions && agent.sessions.length > 0) { %>
                                         <div class="mt-2">
-                                            <div class="text-[9px] text-zinc-500 mb-1 uppercase tracking-wider">Sessions
-                                            </div>
+                                            <div class="text-[9px] text-zinc-500 mb-1 uppercase tracking-wider">Sessions</div>
                                             <div class="flex flex-wrap gap-1">
                                                 <% agent.sessions.forEach(s => { %>
                                                     <span
@@ -397,7 +396,69 @@
 
         <!-- OPERATIONS TAB -->
         <section id="ops" class="tab-content h-full p-6 overflow-y-auto hidden">
-            <!-- ... existing content ... -->
+            <div class="max-w-6xl mx-auto space-y-8">
+                <!-- Command Dispatcher -->
+                <div class="bg-zinc-900/50 border border-zinc-800 p-6 rounded-lg terminal-glow">
+                    <h2 class="text-zinc-100 font-bold text-sm uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <span class="text-green-500">⚡</span> COMMAND_DISPATCH
+                    </h2>
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="w-full md:w-48">
+                            <label class="text-[9px] text-zinc-600 uppercase font-bold mb-1.5 block tracking-wider">Target Agent</label>
+                            <select id="ops-target" class="w-full bg-black border border-zinc-800 rounded p-2.5 text-xs text-zinc-300 outline-none focus:border-green-600">
+                                <option value="all">Broadcast (all)</option>
+                            </select>
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-[9px] text-zinc-600 uppercase font-bold mb-1.5 block tracking-wider">Command / Instruction</label>
+                            <input type="text" id="ops-command" placeholder="/exec <command> or instruction..." 
+                                class="w-full bg-black border border-zinc-800 rounded p-2.5 text-xs text-zinc-100 outline-none focus:border-green-600 font-mono">
+                        </div>
+                        <div class="md:pt-5">
+                            <button id="ops-dispatch" class="w-full md:w-auto bg-green-600 hover:bg-green-500 text-black font-bold py-2.5 px-6 rounded text-[10px] uppercase tracking-widest transition-all">
+                                DISPATCH
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    <!-- Templates -->
+                    <div class="lg:col-span-1 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-zinc-500 font-bold text-[10px] uppercase tracking-widest">TEMPLATES</h3>
+                            <button id="add-template-btn" class="text-green-500 text-xs hover:text-green-400">+ NEW</button>
+                        </div>
+                        <div id="templates-grid" class="space-y-3">
+                            <!-- Populated by JS -->
+                            <div class="text-center py-4 text-zinc-700 text-[10px] italic border border-dashed border-zinc-800 rounded">NO_TEMPLATES_DEFINED</div>
+                        </div>
+                    </div>
+
+                    <!-- Task Log -->
+                    <div class="lg:col-span-3 space-y-4">
+                        <h3 class="text-zinc-500 font-bold text-[10px] uppercase tracking-widest">ACTIVE_OPERATIONS_LOG</h3>
+                        <div class="bg-zinc-900/30 border border-zinc-800 rounded-lg overflow-hidden">
+                            <table class="w-full text-left">
+                                <thead class="bg-black/50 text-zinc-600 text-[9px] uppercase tracking-widest">
+                                    <tr>
+                                        <th class="p-4 font-bold">TASK_ID</th>
+                                        <th class="p-4 font-bold">AGENT</th>
+                                        <th class="p-4 font-bold">COMMAND</th>
+                                        <th class="p-4 font-bold">STATUS</th>
+                                        <th class="p-4 font-bold">LAST_OUTPUT</th>
+                                        <th class="p-4 font-bold"></th>
+                                        <th class="p-4 font-bold"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ops-body" class="divide-y divide-zinc-800/30">
+                                    <tr><td colspan="7" class="p-12 text-center text-zinc-700 text-xs italic">SCANNING_OPERATIONS_DB...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- OVERVIEW TAB -->
@@ -423,7 +484,7 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <!-- Task Success Rate Chart -->
-                <div class="bg-zinc-900 border border-zinc-800 rounded p-4">
+                <div class="bg-zinc-900 border border-zinc-800 p-4 rounded">
                     <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-4">Task Success Rate</div>
                     <div class="relative h-64">
                         <canvas id="chart-success-rate"></canvas>
@@ -431,7 +492,7 @@
                 </div>
 
                 <!-- Task Volume Chart -->
-                <div class="bg-zinc-900 border border-zinc-800 rounded p-4">
+                <div class="bg-zinc-900 border border-zinc-800 p-4 rounded">
                     <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-4">Task Volume (Last 7 Days)</div>
                     <div class="relative h-64">
                         <canvas id="chart-volume"></canvas>
@@ -465,7 +526,7 @@
                 <div
                     class="p-3 border-b border-zinc-800 text-[10px] uppercase font-bold text-zinc-500 flex justify-between items-center">
                     <span>Channels</span>
-                    <button onclick="joinNewRoom()" class="text-green-500 hover:text-green-400">+</button>
+                    <button onclick="joinNewRoom()" class="text-green-500 hover:text-green-400">+ NEW</button>
                 </div>
                 <div id="room-list" class="flex-1 overflow-y-auto">
                     <button onclick="selectRoom('all')"
@@ -875,6 +936,7 @@
 
         // --- 2. AUTHENTICATION LOGIC ---
         const secret = '<%= secret %>';
+
         let token = localStorage.getItem('clawnet_token') || secret;
         let socket = null;
 
@@ -1150,27 +1212,40 @@
                         <div>
                             <div class="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 class="text-zinc-100 font-bold text-lg mb-1">${a.id}</h3>
-                                    <div class="text-[10px] text-zinc-500 tracking-widest font-mono uppercase">ROLE: <span class="text-zinc-300">${a.role}</span></div>
+                                    <h3 class="text-zinc-100 font-bold text-lg mb-1">
+                                        ${a.id}
+                                    </h3>
+                                    <div class="text-[10px] text-zinc-500 tracking-widest font-mono">ROLE: <span
+                                                class="text-zinc-300">
+                                                ${a.role.toUpperCase()}
+                                            </span></div>
                                 </div>
-                                <div class="text-[10px] flex items-center gap-2 ${a.status === 'online' ? 'text-green-500' : 'text-red-500'}">
-                                    <span class="w-2 h-2 rounded-full ${a.status === 'online' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}"></span>
+                                <div
+                                    class="text-[10px] flex items-center gap-2 ${a.status === 'online' ? 'text-green-500' : 'text-red-500'}">
+                                    <span
+                                        class="w-2 h-2 rounded-full ${a.status === 'online' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}"></span>
                                     ${a.status.toUpperCase()}
                                 </div>
                             </div>
                             <div class="space-y-3">
                                 <div class="flex justify-between text-[10px] border-b border-zinc-800 pb-2">
                                     <span class="text-zinc-600">LAST_HEARTBEAT</span>
-                                    <span class="font-mono text-zinc-400">${new Date(a.last_seen).toLocaleTimeString()}</span>
+                                    <span class="font-mono text-zinc-400">
+                                        ${new Date(a.last_seen).toLocaleTimeString()}
+                                    </span>
                                 </div>
                                 <div class="bg-black/40 p-2 rounded border border-zinc-800/50">
-                                    <div class="text-[9px] text-zinc-600 mb-2 uppercase tracking-wider flex justify-between">
+                                    <div class="text-[9px] text-zinc-600 mb-1 uppercase tracking-wider flex justify-between">
                                         <span>Resources</span>
                                         <span class="text-zinc-800 text-[8px]">v${a.specs.version || '??'}</span>
                                     </div>
                                     <div class="grid grid-cols-2 gap-2 text-[10px] font-mono">
-                                        <div>CPU: <span class="text-zinc-300">${(a.specs && a.specs.cpu_percent) || 0}%</span></div>
-                                        <div>RAM: <span class="text-zinc-300">${(a.specs && a.specs.ram_percent) || 0}%</span></div>
+                                        <div>CPU: <span class="text-zinc-300">
+                                                ${(a.specs && a.specs.cpu_percent) || 0}%
+                                            </span></div>
+                                        <div>RAM: <span class="text-zinc-300">
+                                                ${(a.specs && a.specs.ram_percent) || 0}%
+                                            </span></div>
                                     </div>
                                 </div>
                                 ${(a.sessions && a.sessions.length > 0) ? `
@@ -1409,7 +1484,7 @@
                             </div>
                         `).join('');
                     } else {
-                        grid.innerHTML = '<div class="col-span-full text-center py-4 text-zinc-600 text-xs italic">No templates saved.</div>';
+                        grid.innerHTML = '<div class="col-span-full text-center py-4 text-zinc-700 text-[10px] italic border border-dashed border-zinc-800 rounded">NO_TEMPLATES_DEFINED</div>';
                     }
                 });
         }
@@ -1973,7 +2048,6 @@
             modalRoleApply.addEventListener('click', () => {
                 const newRole = document.getElementById('agent-modal-role-select').value;
                 if (!currentAgentId) return;
-                socket.emit('reassign_role', { agent_id: currentAgentId, role: newRole });
             });
         }
 
