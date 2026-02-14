@@ -19,18 +19,22 @@ const EXEC_DENYLIST = parseList(process.env.CLAWNET_EXEC_DENYLIST || '');
 const EXEC_TIMEOUT_SECONDS = parseInt(process.env.CLAWNET_EXEC_TIMEOUT || '30', 10);
 
 const args = {
-    url: process.env.CLAWNET_SERVER || DEFAULT_SERVER,
-    token: process.env.CLAWNET_SECRET_KEY || DEFAULT_TOKEN,
-    id: process.env.AGENT_ID || `node-${require('crypto').randomBytes(2).toString('hex')}`,
-    role: process.env.AGENT_ROLE || 'worker',
-    tenant: process.env.CLAWNET_TENANT_ID || ''
+  url: process.env.CLAWNET_SERVER || DEFAULT_SERVER,
+  token: process.env.CLAWNET_SECRET_KEY || DEFAULT_TOKEN,
+  id: process.env.AGENT_ID || `node-${require('crypto').randomBytes(2).toString('hex')}`,
+  role: process.env.AGENT_ROLE || 'worker',
+  tenant: process.env.CLAWNET_TENANT_ID || ''
 };
 
+const authPayload = { token: args.token, agent_id: args.id, role: args.role };
+if (args.tenant) authPayload.tenant_id = args.tenant;
+
 const sio = io(args.url, {
-    reconnection: true,
-    reconnectionAttempts: 0,
-    reconnectionDelay: 5000,
-    transports: ['websocket', 'polling']
+  reconnection: true,
+  reconnectionAttempts: 0,
+  reconnectionDelay: 5000,
+  transports: ['websocket', 'polling'],
+  auth: authPayload
 });
 
 const handledCommands = [];
@@ -246,11 +250,8 @@ function registerHandlers() {
 }
 
 function main() {
-    console.log(`[*] ClawNet Sidecar v3.9 (Node+Metrics) launching for ${args.id}...`);
-    registerHandlers();
-    const authPayload = { token: args.token, agent_id: args.id, role: args.role };
-    if (args.tenant) authPayload.tenant_id = args.tenant;
-    sio.connect(args.url, { auth: authPayload });
+  console.log(`[*] ClawNet Sidecar v3.9 (Node+Metrics) launching for ${args.id}...`);
+  registerHandlers();
 }
 
 if (require.main === module) {
