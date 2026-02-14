@@ -868,6 +868,69 @@
         let tasksCache = [];
         const agentCache = {};
         const chatHistory = {};
+
+        // Function to handle tab switching
+        function showTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tabContent => {
+                tabContent.classList.add('hidden');
+            });
+            // Deactivate all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(tabBtn => {
+                tabBtn.classList.remove('active');
+            });
+
+            // Show the selected tab content
+            const selectedTab = document.getElementById(tabId);
+            if (selectedTab) {
+                selectedTab.classList.remove('hidden');
+                if (tabId === 'intel') selectedTab.classList.add('flex'); // Specific for intel tab layout
+                // Activate the corresponding tab button
+                document.querySelectorAll(`.tab-btn[data-tab='${tabId}']`).forEach(tabBtn => tabBtn.classList.add('active'));
+            }
+        }
+
+        // Show default tab on load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check for a tab hash in the URL (e.g., #ops)
+            const urlHash = window.location.hash.substring(1); // Remove '#'
+            if (urlHash && document.getElementById(urlHash)) {
+                showTab(urlHash);
+            } else {
+                showTab('fleet'); // Default to 'fleet' tab
+            }
+        });
+
+        // Function to handle tab switching
+        function showTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tabContent => {
+                tabContent.classList.add('hidden');
+            });
+            // Deactivate all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(tabBtn => {
+                tabBtn.classList.remove('active');
+            });
+
+            // Show the selected tab content
+            const selectedTab = document.getElementById(tabId);
+            if (selectedTab) {
+                selectedTab.classList.remove('hidden');
+                // Activate the corresponding tab button
+                document.querySelector(`.tab-btn[data-tab='${tabId}']`).classList.add('active');
+            }
+        }
+
+        // Show default tab on load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check for a tab hash in the URL (e.g., #ops)
+            const urlHash = window.location.hash.substring(1); // Remove '#'
+            if (urlHash && document.getElementById(urlHash)) {
+                showTab(urlHash);
+            } else {
+                showTab('fleet'); // Default to 'fleet' tab
+            }
+        });
         const seenMessageKeys = new Set();
         const seenMessageQueue = [];
         const MAX_SEEN_MESSAGES = 200;
