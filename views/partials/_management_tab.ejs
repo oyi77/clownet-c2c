@@ -1,0 +1,153 @@
+<!-- MANAGEMENT TAB -->
+<section id="management" class="tab-content h-full p-6 overflow-y-auto hidden">
+  <div class="max-w-6xl mx-auto space-y-8">
+    <!-- Header -->
+    <div class="border-b border-zinc-800 pb-4">
+      <h1 class="text-zinc-100 font-bold text-xl uppercase tracking-widest flex items-center gap-3">
+        <span class="text-green-500">🎛️</span> AGENT MANAGEMENT
+      </h1>
+      <p class="text-zinc-500 text-sm mt-2">Task orchestration, session management, and agent configuration</p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-zinc-900 border border-zinc-800 p-4 rounded">
+        <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Active Orchestrations</div>
+        <div id="management-orchestrations-count" class="text-2xl font-bold text-zinc-100">0</div>
+      </div>
+      <div class="bg-zinc-900 border border-zinc-800 p-4 rounded">
+        <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Active Sessions</div>
+        <div id="management-sessions-count" class="text-2xl font-bold text-zinc-100">0</div>
+      </div>
+      <div class="bg-zinc-900 border border-zinc-800 p-4 rounded">
+        <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Managed Agents</div>
+        <div id="management-agents-count" class="text-2xl font-bold text-zinc-100">0</div>
+      </div>
+      <div class="bg-zinc-900 border border-zinc-800 p-4 rounded">
+        <div class="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Shared Configs</div>
+        <div id="management-configs-count" class="text-2xl font-bold text-zinc-100">0</div>
+      </div>
+    </div>
+
+    <!-- Orchestrations Section -->
+    <div class="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-zinc-100 font-bold text-sm uppercase tracking-widest flex items-center gap-2">
+          <span class="text-green-500">🔄</span> ORCHESTRATIONS
+        </h2>
+        <button id="create-orchestration-btn" class="bg-green-600 hover:bg-green-500 text-black text-[10px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition-all">
+          CREATE NEW
+        </button>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-[11px]">
+          <thead class="bg-zinc-900/50 text-zinc-500 uppercase tracking-wider">
+            <tr>
+              <th class="p-3 font-normal">Name</th>
+              <th class="p-3 font-normal">Status</th>
+              <th class="p-3 font-normal">Agents</th>
+              <th class="p-3 font-normal">Owner</th>
+              <th class="p-3 font-normal">Created</th>
+              <th class="p-3 font-normal">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="orchestrations-table-body" class="divide-y divide-zinc-800/30">
+            <tr>
+              <td colspan="6" class="p-8 text-center text-zinc-600 text-xs">No orchestrations found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Sessions Section -->
+    <div class="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-zinc-100 font-bold text-sm uppercase tracking-widest flex items-center gap-2">
+          <span class="text-blue-500">🔌</span> ACTIVE SESSIONS
+        </h2>
+        <button id="refresh-sessions-btn" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition-all">
+          REFRESH
+        </button>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-[11px]">
+          <thead class="bg-zinc-900/50 text-zinc-500 uppercase tracking-wider">
+            <tr>
+              <th class="p-3 font-normal">Agent</th>
+              <th class="p-3 font-normal">Session ID</th>
+              <th class="p-3 font-normal">Status</th>
+              <th class="p-3 font-normal">Connected</th>
+              <th class="p-3 font-normal">Last Activity</th>
+              <th class="p-3 font-normal">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="sessions-table-body" class="divide-y divide-zinc-800/30">
+            <tr>
+              <td colspan="6" class="p-8 text-center text-zinc-600 text-xs">No active sessions found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Shared Resources Section -->
+    <div class="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
+      <h2 class="text-zinc-100 font-bold text-sm uppercase tracking-widest mb-6 flex items-center gap-2">
+        <span class="text-purple-500">🔗</span> SHARED RESOURCES
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Shared Memory -->
+        <div class="bg-black/40 border border-zinc-800 rounded p-4">
+          <h3 class="text-zinc-300 font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+            <span class="text-orange-500">🧠</span> SHARED MEMORY
+          </h3>
+          <div class="space-y-2">
+            <div class="flex justify-between text-[10px]">
+              <span class="text-zinc-500">Entries</span>
+              <span id="shared-memory-count" class="text-zinc-300">0</span>
+            </div>
+            <button onclick="showSharedMemoryModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] font-bold py-1.5 rounded uppercase tracking-wider transition-all">
+              MANAGE
+            </button>
+          </div>
+        </div>
+        
+        <!-- Shared Files -->
+        <div class="bg-black/40 border border-zinc-800 rounded p-4">
+          <h3 class="text-zinc-300 font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+            <span class="text-yellow-500">📁</span> SHARED FILES
+          </h3>
+          <div class="space-y-2">
+            <div class="flex justify-between text-[10px]">
+              <span class="text-zinc-500">Files</span>
+              <span id="shared-files-count" class="text-zinc-300">0</span>
+            </div>
+            <button onclick="showSharedFilesModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] font-bold py-1.5 rounded uppercase tracking-wider transition-all">
+              MANAGE
+            </button>
+          </div>
+        </div>
+        
+        <!-- Shared Credentials -->
+        <div class="bg-black/40 border border-zinc-800 rounded p-4">
+          <h3 class="text-zinc-300 font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+            <span class="text-red-500">🔑</span> CREDENTIALS
+          </h3>
+          <div class="space-y-2">
+            <div class="flex justify-between text-[10px]">
+              <span class="text-zinc-500">Services</span>
+              <span id="shared-credentials-count" class="text-zinc-300">0</span>
+            </div>
+            <button onclick="showSharedCredentialsModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] font-bold py-1.5 rounded uppercase tracking-wider transition-all">
+              MANAGE
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

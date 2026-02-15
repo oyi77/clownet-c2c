@@ -166,4 +166,13 @@ form.addEventListener('submit', (e) => {
     connectSocket(code);
   }
 });
+
+// Load management data when management tab is shown
+document.addEventListener('tab-shown', (e) => {
+  if (e.detail.tabId === 'management') {
+    // Emit event to load management data
+    const event = new CustomEvent('load-management-data');
+    window.dispatchEvent(event);
+  }
+});
 </script>

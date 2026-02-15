@@ -1,0 +1,303 @@
+<script>
+// --- MANAGEMENT FUNCTIONS ---
+
+// Load management data when tab is shown
+document.addEventListener('tab-shown', (e) => {
+  if (e.detail.tabId === 'management') {
+    loadManagementData();
+  }
+});
+
+function loadManagementData() {
+  // Load orchestrations
+  socket.emit('list_orchestrations', {}, (response) => {
+    if (response && response.orchestrations) {
+      renderOrchestrations(response.orchestrations);
+      document.getElementById('management-orchestrations-count').textContent = response.orchestrations.length;
+    }
+  });
+  
+  // Load shared resources counts
+  socket.emit('list_shared_memory', {}, (response) => {
+    if (response && response.keys) {
+      document.getElementById('shared-memory-count').textContent = response.keys.length;
+    }
+  });
+  
+  socket.emit('list_files', {}, (response) => {
+    if (response && response.files) {
+      document.getElementById('shared-files-count').textContent = response.files.length;
+    }
+  });
+  
+  socket.emit('list_credentials', {}, (response) => {
+    if (response && response.credentials) {
+      document.getElementById('shared-credentials-count').textContent = response.credentials.length;
+    }
+  });
+  
+  // Update agent count
+  if (agentsCache) {
+    document.getElementById('management-agents-count').textContent = agentsCache.length;
+  }
+}
+
+function renderOrchestrations(orchestrations) {
+  const tbody = document.getElementById('orchestrations-table-body');
+  
+  if (!orchestrations || orchestrations.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-zinc-600 text-xs">No orchestrations found</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = orchestrations.map(orch => {
+    const statusClass = orch.status === 'running' ? 'text-green-500' : 
+                       orch.status === 'completed' ? 'text-blue-500' : 
+                       orch.status === 'cancelled' ? 'text-red-500' : 'text-zinc-500';
+    
+    return `
+      <tr class="hover:bg-zinc-800/30 transition-colors">
+        <td class="p-3 font-mono text-zinc-300">${orch.name}</td>
+        <td class="p-3"><span class="text-[9px] font-bold ${statusClass}">${orch.status.toUpperCase()}</span></td>
+        <td class="p-3 text-zinc-400">${orch.agents.length}</td>
+        <td class="p-3 text-zinc-400">${orch.owner}</td>
+        <td class="p-3 text-zinc-600 text-[10px] font-mono">${new Date(orch.timestamp).toLocaleDateString()}</td>
+        <td class="p-3">
+          <div class="flex gap-1">
+            <button onclick="viewOrchestration('${orch.orchId}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] px-2 py-1 rounded">View</button>
+            ${orch.status === 'created' ? 
+              `<button onclick="startOrchestration('${orch.orchId}')" class="bg-green-600 hover:bg-green-500 text-black text-[9px] px-2 py-1 rounded">Start</button>` : 
+              ''
+            }
+            ${orch.status === 'running' ? 
+              `<button onclick="cancelOrchestration('${orch.orchId}')" class="bg-red-600 hover:bg-red-500 text-black text-[9px] px-2 py-1 rounded">Cancel</button>` : 
+              ''
+            }
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function viewOrchestration(orchId) {
+  socket.emit('get_orchestration', { orchId: orchId }, (response) => {
+    if (response && !response.error) {
+      showOrchestrationModal(response);
+    } else {
+      showToast('Failed to load orchestration details', 'error');
+    }
+  });
+}
+
+function startOrchestration(orchId) {
+  socket.emit('start_orchestration', { orchId: orchId });
+  showToast('Orchestration started', 'success');
+  setTimeout(() => loadManagementData(), 1000);
+}
+
+function cancelOrchestration(orchId) {
+  if (confirm('Are you sure you want to cancel this orchestration?')) {
+    socket.emit('cancel_orchestration', { orchId: orchId });
+    showToast('Orchestration cancelled', 'warning');
+    setTimeout(() => loadManagementData(), 1000);
+  }
+}
+
+function showOrchestrationModal(orchestration) {
+  // Create modal dynamically
+  const modalId = 'orchestration-detail-modal';
+  let modal = document.getElementById(modalId);
+  
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = modalId;
+    modal.className = 'fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-[100]';
+    document.body.appendChild(modal);
+  }
+  
+  const statusClass = orchestration.status === 'running' ? 'text-green-500' : 
+                     orchestration.status === 'completed' ? 'text-blue-500' : 
+                     orchestration.status === 'cancelled' ? 'text-red-500' : 'text-zinc-500';
+  
+  modal.innerHTML = `
+    <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between mb-4 border-b border-zinc-800 pb-3">
+        <div>
+          <h2 class="text-zinc-100 font-bold text-lg">${orchestration.name}</h2>
+          <div class="flex gap-3 mt-1">
+            <span class="text-[10px] font-bold ${statusClass}">${orchestration.status.toUpperCase()}</span>
+            <span class="text-[10px] text-zinc-500">Owner: ${orchestration.owner}</span>
+          </div>
+        </div>
+        <button onclick="document.getElementById('${modalId}').classList.add('hidden');" class="text-zinc-500 text-xs">CLOSE</button>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-zinc-900/50 p-4 rounded border border-zinc-800">
+          <h3 class="text-[10px] uppercase tracking-widest text-zinc-500 mb-3">DETAILS</h3>
+          <div class="space-y-2 text-[11px]">
+            <div class="flex justify-between">
+              <span class="text-zinc-400">Created</span>
+              <span class="text-zinc-300">${new Date(orchestration.timestamp).toLocaleString()}</span>
+            </div>
+            ${orchestration.startedAt ? `
+            <div class="flex justify-between">
+              <span class="text-zinc-400">Started</span>
+              <span class="text-zinc-300">${new Date(orchestration.startedAt).toLocaleString()}</span>
+            </div>` : ''}
+            ${orchestration.completedAt ? `
+            <div class="flex justify-between">
+              <span class="text-zinc-400">Completed</span>
+              <span class="text-zinc-300">${new Date(orchestration.completedAt).toLocaleString()}</span>
+            </div>` : ''}
+            <div class="flex justify-between">
+              <span class="text-zinc-400">Agents</span>
+              <span class="text-zinc-300">${orchestration.agents.join(', ')}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-zinc-900/50 p-4 rounded border border-zinc-800">
+          <h3 class="text-[10px] uppercase tracking-widest text-zinc-500 mb-3">TASKS (${orchestration.tasks.length})</h3>
+          <div class="max-h-32 overflow-y-auto text-[11px]">
+            ${orchestration.tasks.map((task, index) => `
+              <div class="py-1 border-b border-zinc-800/50 last:border-0">
+                <div class="font-mono text-zinc-300">${index + 1}. ${task.description || task.command || 'Unnamed Task'}</div>
+                ${task.target ? `<div class="text-zinc-600 text-[10px]">Target: ${task.target}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      
+      ${Object.keys(orchestration.results).length > 0 ? `
+      <div class="flex-1 overflow-hidden flex flex-col">
+        <h3 class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">RESULTS</h3>
+        <div class="bg-black/40 border border-zinc-800 rounded flex-1 overflow-y-auto p-3 text-[10px] font-mono text-zinc-300">
+          ${Object.entries(orchestration.results).map(([taskIndex, results]) => `
+            <div class="mb-3">
+              <div class="text-zinc-500 mb-1">Task ${parseInt(taskIndex) + 1}:</div>
+              ${results.map(result => `
+                <div class="ml-2 mb-1">
+                  <span class="text-zinc-600">[${result.agentId}]</span>
+                  <span class="text-zinc-300">${JSON.stringify(result.result, null, 2)}</span>
+                </div>
+              `).join('')}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      ` : ''}
+    </div>
+  `;
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+// Shared Memory Modal
+function showSharedMemoryModal() {
+  socket.emit('list_shared_memory', {}, (response) => {
+    if (response && response.keys) {
+      renderSharedResourceModal('Shared Memory', response.keys, 'memory');
+    }
+  });
+}
+
+// Shared Files Modal
+function showSharedFilesModal() {
+  socket.emit('list_files', {}, (response) => {
+    if (response && response.files) {
+      renderSharedResourceModal('Shared Files', response.files, 'files');
+    }
+  });
+}
+
+// Shared Credentials Modal
+function showSharedCredentialsModal() {
+  socket.emit('list_credentials', {}, (response) => {
+    if (response && response.credentials) {
+      renderSharedResourceModal('Shared Credentials', response.credentials, 'credentials');
+    }
+  });
+}
+
+function renderSharedResourceModal(title, items, type) {
+  const modalId = `${type}-modal`;
+  let modal = document.getElementById(modalId);
+  
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = modalId;
+    modal.className = 'fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-[100]';
+    document.body.appendChild(modal);
+  }
+  
+  const content = items.map(item => {
+    switch (type) {
+      case 'memory':
+        return `
+          <div class="flex justify-between items-center p-2 border-b border-zinc-800/50">
+            <div>
+              <div class="font-mono text-zinc-300 text-[11px]">${item.key}</div>
+              <div class="text-zinc-600 text-[10px]">Owner: ${item.owner}</div>
+            </div>
+            <div class="text-zinc-500 text-[10px]">${new Date(item.timestamp).toLocaleDateString()}</div>
+          </div>
+        `;
+      case 'files':
+        return `
+          <div class="flex justify-between items-center p-2 border-b border-zinc-800/50">
+            <div>
+              <div class="font-mono text-zinc-300 text-[11px]">${item.filename}</div>
+              <div class="text-zinc-600 text-[10px]">${(item.size / 1024).toFixed(1)} KB • Owner: ${item.owner}</div>
+            </div>
+            <div class="text-zinc-500 text-[10px]">${new Date(item.timestamp).toLocaleDateString()}</div>
+          </div>
+        `;
+      case 'credentials':
+        return `
+          <div class="flex justify-between items-center p-2 border-b border-zinc-800/50">
+            <div>
+              <div class="font-mono text-zinc-300 text-[11px]">${item.service}</div>
+              <div class="text-zinc-600 text-[10px]">Owner: ${item.owner} • Shared with: ${item.sharedWith.length} agents</div>
+            </div>
+            <div class="text-zinc-500 text-[10px]">${new Date(item.timestamp).toLocaleDateString()}</div>
+          </div>
+        `;
+    }
+  }).join('');
+  
+  modal.innerHTML = `
+    <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-2xl p-5 max-h-[80vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between mb-4 border-b border-zinc-800 pb-3">
+        <div class="text-zinc-100 font-bold">${title}</div>
+        <button onclick="document.getElementById('${modalId}').classList.add('hidden');" class="text-zinc-500 text-xs">CLOSE</button>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        ${content || '<div class="text-zinc-600 text-center py-8 text-sm">No items found</div>'}
+      </div>
+    </div>
+  `;
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+// Button event listeners
+document.getElementById('create-orchestration-btn')?.addEventListener('click', () => {
+  showToast('Orchestration creation coming soon!', 'info');
+});
+
+document.getElementById('refresh-sessions-btn')?.addEventListener('click', () => {
+  loadManagementData();
+  showToast('Management data refreshed', 'success');
+});
+
+// Auto-refresh when orchestration events are received
+socket.on('orchestration_created', () => loadManagementData());
+socket.on('orchestration_started', () => loadManagementData());
+socket.on('orchestration_completed', () => loadManagementData());
+socket.on('orchestration_cancelled', () => loadManagementData());
+</script>

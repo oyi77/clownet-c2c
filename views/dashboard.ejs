@@ -39,15 +39,12 @@
         <%- include('partials/_intel_war_room') %>
 
         <!-- Settings Tab -->
-        <%- include('partials/_settings_tab') %>
+        <%- include('partials/_settings_tab.ejs') %>
 
-        <!-- Logs Tab -->
-        <%- include('partials/_logs_tab') %>
-      </div>
-    </main>
-  </div>
+        <!-- Management Tab -->
+        <%- include('partials/_management_tab.ejs') %>
 
-  <!-- Modals -->
+        <!-- Modals -->
   <%- include('partials/_modals') %>
 
   <!-- Scripts -->
@@ -62,6 +59,7 @@
 <%- include('partials/_scripts_logs') %>
 <%- include('partials/_scripts_agent_modal') %>
 <%- include('partials/_scripts_settings') %>
+<%- include('partials/_scripts_management') %>
 
 <script>
 // Setup socket listeners AFTER all handler functions are defined
