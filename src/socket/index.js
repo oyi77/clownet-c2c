@@ -6,6 +6,7 @@ const dispatch = require('./dispatch');
 const chat = require('./chat');
 const rooms = require('./rooms');
 const sharedMemory = require('./shared-memory');
+const credentials = require('./credentials');
 
 function setup(server) {
     const io = new socketio.Server(server, {
@@ -69,6 +70,7 @@ function setup(server) {
         chat.register(io, socket, ctx);
         rooms.register(io, socket, ctx);
         sharedMemory.register(io, socket, ctx);
+        credentials.register(io, socket, ctx);
 
         socket.on('disconnect', () => {
              s.connectionEvents.push({ type: 'disconnect', agentId: agent_id, timestamp: new Date() });
