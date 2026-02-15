@@ -13,8 +13,7 @@ function openAgentModal(agentId) {
   ['role', 'status', 'ip', 'last-seen', 'cpu', 'ram', 'hostname', 'uptime', 'version', 'os', 'sessions-count'].forEach(id => {
     document.getElementById(`agent-modal-${id}`).innerText = '...';
   });
-  document.getElementById('agent-modal-tasks').innerHTML = '<tr><td colspan="3" class="p-4 text-center text-zinc-600 text-xs">Loading tasks...</td></tr>';
-
+  // Only load agent details - no task logs in main modal
   fetch(`/api/agents/${agentId}`)
     .then(res => res.json())
     .then(data => {
@@ -38,20 +37,6 @@ function openAgentModal(agentId) {
       document.getElementById('agent-modal-version').innerText = (agent.specs && agent.specs.version) || 'Unknown';
       document.getElementById('agent-modal-os').innerText = (agent.specs && agent.specs.os) || 'Unknown';
       document.getElementById('agent-modal-sessions-count').innerText = (agent.sessions && agent.sessions.length) || 0;
-
-      // Render Tasks
-      const tasksBody = document.getElementById('agent-modal-tasks');
-      if (data.tasks && data.tasks.length > 0) {
-        tasksBody.innerHTML = data.tasks.slice().reverse().map(t => `
-          <tr class="hover:bg-zinc-800/30 transition-colors">
-            <td class="p-2 truncate max-w-[200px]" title="${t.cmd}">${t.cmd}</td>
-            <td class="p-2"><span class="${t.status === 'SUCCESS' ? 'text-green-500' : t.status === 'FAIL' ? 'text-red-500' : 'text-zinc-500'}">${t.status}</span></td>
-            <td class="p-2 text-zinc-600 font-mono">${new Date(t.created_at).toLocaleTimeString()}</td>
-          </tr>
-        `).join('');
-      } else {
-        tasksBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-zinc-600 text-xs">No recent tasks</td></tr>';
-      }
     })
     .catch(err => {
       console.error(err);
