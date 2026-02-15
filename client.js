@@ -260,7 +260,13 @@ function registerHandlers() {
       }
       sio.emit('command_ack', { id: cmdId });
     }
-    handleExecCommand(data.cmd, 'master-ui', cmdId);
+    
+    // Route command based on content
+    if (data.cmd.startsWith('/exec ')) {
+      handleExecCommand(data.cmd, 'master-ui', cmdId);
+    } else {
+      processInstruction(data.cmd, 'master-ui', cmdId);
+    }
   });
 }
 

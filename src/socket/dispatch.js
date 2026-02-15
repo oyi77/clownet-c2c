@@ -136,11 +136,7 @@ function deliverTask(io, socket, s, task, tenantId) {
         const target = s.agents[task.agent_id];
         if (target && target.status === 'online') {
             task.delivery_status = 'SENT';
-            if (task.cmd.startsWith('/exec ')) {
-  io.to(target.sid).emit('command', { id: task.id, cmd: task.cmd, trace_id: task.trace_id });
-} else {
-  io.to(target.sid).emit('chat', { to: task.agent_id, msg: task.cmd });
-}
+            io.to(target.sid).emit('command', { id: task.id, cmd: task.cmd, trace_id: task.trace_id });
         } else {
             // Agent offline — queue for delivery
             task.status = 'QUEUED';

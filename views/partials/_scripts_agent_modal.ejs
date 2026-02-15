@@ -134,7 +134,13 @@ function showAgentLogs(agentId) {
       return `
         <div class="border-b border-zinc-800/50 py-2">
           <div class="flex gap-2 text-[10px] mb-1">
-            <span class="text-zinc-500">${new Date(t.ts).toLocaleTimeString()}</span>
+            <span class="text-zinc-500">${(() => {
+  try {
+    return t.ts ? new Date(t.ts).toLocaleTimeString() : 'N/A';
+  } catch (e) {
+    return 'Invalid Date';
+  }
+})()}</span>
             <span class="${statusClass} font-bold">${status}</span>
             <span class="text-zinc-600 font-mono">#${t.id.substring(0, 8)}</span>
           </div>
