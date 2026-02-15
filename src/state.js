@@ -10,7 +10,13 @@ const defaultState = {
     metrics: { tasks_total: 0, tasks_success: 0, tasks_failed: 0, messages_total: 0 },
     connectionEvents: [], // { type: 'connect'|'disconnect', agentId: string, timestamp: Date }
     pendingClients: [], // { agentId: string, timestamp: Date }
-    commandTemplates: [] // { id: string, name: string, command: string }
+    commandTemplates: [], // { id: string, name: string, command: string }
+    sharedMemory: {}, // { key: { value: any, owner: agent_id, timestamp: Date, ttl: number } }
+    credentials: {}, // { service: { credentials: encrypted_data, owner: agent_id, sharedWith: [agent_ids] } }
+    files: {}, // { fileId: { name: string, data: buffer, owner: agent_id, sharedWith: [agent_ids], timestamp: Date } }
+    skills: {}, // { skillId: { name: string, data: any, owner: agent_id, sharedWith: [agent_ids], experience: number } }
+    orchestrations: {}, // { orchId: { name: string, agents: [agent_ids], tasks: [task_templates], status: string } }
+    configs: {} // { configId: { name: string, data: any, owner: agent_id, version: number, history: [versions] } }
 };
 
 // Per-tenant state storage
@@ -26,7 +32,13 @@ function createState() {
         metrics: { tasks_total: 0, tasks_success: 0, tasks_failed: 0, messages_total: 0 },
         connectionEvents: [],
         pendingClients: [],
-        commandTemplates: []
+        commandTemplates: [],
+        sharedMemory: {},
+        credentials: {},
+        files: {},
+        skills: {},
+        orchestrations: {},
+        configs: {}
     };
 }
 
