@@ -9,6 +9,7 @@ const sharedMemory = require('./shared-memory');
 const credentials = require('./credentials');
 const fileSharing = require('./file-sharing');
 const skills = require('./skills');
+const orchestration = require('./orchestration');
 
 function setup(server) {
     const io = new socketio.Server(server, {
@@ -75,6 +76,7 @@ function setup(server) {
         credentials.register(io, socket, ctx);
         fileSharing.register(io, socket, ctx);
         skills.register(io, socket, ctx);
+        orchestration.register(io, socket, ctx);
 
         socket.on('disconnect', () => {
              s.connectionEvents.push({ type: 'disconnect', agentId: agent_id, timestamp: new Date() });
