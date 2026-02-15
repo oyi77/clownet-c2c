@@ -7,6 +7,7 @@ const chat = require('./chat');
 const rooms = require('./rooms');
 const sharedMemory = require('./shared-memory');
 const credentials = require('./credentials');
+const fileSharing = require('./file-sharing');
 
 function setup(server) {
     const io = new socketio.Server(server, {
@@ -71,6 +72,7 @@ function setup(server) {
         rooms.register(io, socket, ctx);
         sharedMemory.register(io, socket, ctx);
         credentials.register(io, socket, ctx);
+        fileSharing.register(io, socket, ctx);
 
         socket.on('disconnect', () => {
              s.connectionEvents.push({ type: 'disconnect', agentId: agent_id, timestamp: new Date() });
