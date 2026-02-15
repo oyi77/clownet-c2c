@@ -40,6 +40,9 @@ const sio = io(args.url, {
 const handledCommands = [];
 const HANDLED_COMMAND_LIMIT = 200;
 
+// OpenCLAW session for master-ui communication
+let masterSessionId = null;
+
 function rememberCommand(commandId) {
     if (!commandId) return true;
     if (handledCommands.includes(commandId)) return false;
@@ -181,9 +184,14 @@ function processInstruction(msg, replyTo, taskId = null) {
             sio.emit('join_room', { room: parts[1].trim() });
             sendReply(`Joining ${parts[1]}...`, replyTo, taskId);
         } else {
+            // Create or reuse session for master-ui communication
+            if (!masterSessionId) {
+                masterSessionId = `clownet-${args.id}-master-ui`;
+            }
+
             const child = spawn(OPENCLAW_BIN, [
                 'agent',
-                '--session-id', 'clownet-sidecar',
+                '--session-id', masterSessionId,
                 '--message', msg,
                 '--local',
                 '--json'
