@@ -17,6 +17,7 @@ function register(io, socket, ctx) {
             to: payload.to || 'all',
             msg: payload.msg || payload.message,
             ts: new Date().toISOString(),
+            localId: payload.localId || null,
         };
 
         s.messages.push(msg);

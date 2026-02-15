@@ -119,6 +119,7 @@ function addLog(sender, text, isMe, options = {}) {
   line.className = `flex gap-4 message-in ${isPending ? 'opacity-50 pending-message' : ''}`;
   line.dataset.msgId = msgId;
   if (isPending) line.dataset.status = 'pending';
+  if (options.id) line.dataset.localId = options.id;
 
   const time = document.createElement('span');
   time.className = 'text-zinc-700 min-w-[60px] text-[10px] font-mono pt-1';
@@ -149,14 +150,6 @@ function addLog(sender, text, isMe, options = {}) {
     typeText(message, text, { onUpdate: () => { box.scrollTop = box.scrollHeight; } });
   } else {
     message.textContent = text || '';
-    // Re-append status indicator if pending
-    if (isPending) {
-      const statusIndicator = document.createElement('span');
-      statusIndicator.className = 'ml-2 text-zinc-600 text-[8px] status-indicator';
-      statusIndicator.innerHTML = '◐';
-      statusIndicator.title = 'Sending...';
-      message.appendChild(statusIndicator);
-    }
   }
   requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
 }
@@ -165,39 +158,55 @@ function handleChatMessage(msg) {
   if (!msg || !msg.msg) return;
   const key = getMessageKey(msg);
 
+  // Handle messages from master-ui (sent by this dashboard)
   if (msg.from === 'master-ui') {
-    // Find the most recent pending message and mark it as sent
-    const pending = document.querySelector('.pending-message');
-    if (pending) {
-      pending.classList.remove('opacity-50', 'pending-message');
-      pending.dataset.status = 'sent';
-      // Update status indicator to checkmark
-      const statusIndicator = pending.querySelector('.status-indicator');
+    // Try to match by localId first (for deduplication)
+    let matchedPending = null;
+    if (msg.localId) {
+      matchedPending = document.querySelector(`.pending-message[data-local-id="${msg.localId}"]`);
+    }
+    // Fallback to most recent pending if no localId match
+    if (!matchedPending) {
+      matchedPending = document.querySelector('.pending-message');
+    }
+
+    if (matchedPending) {
+      matchedPending.classList.remove('opacity-50', 'pending-message');
+      matchedPending.dataset.status = 'sent';
+      const statusIndicator = matchedPending.querySelector('.status-indicator');
       if (statusIndicator) {
         statusIndicator.innerHTML = '✓';
         statusIndicator.className = 'ml-2 text-green-500 text-[8px] status-indicator';
         statusIndicator.title = 'Sent';
-        // Fade out after 2 seconds
         setTimeout(() => {
           statusIndicator.style.opacity = '0';
           statusIndicator.style.transition = 'opacity 0.5s';
         }, 2000);
       }
+      // Don't add duplicate - just update the pending message
+      return;
     }
   }
 
   if (!rememberMessage(key)) return;
 
-  const room = msg.to === 'all' ? 'all' : (msg.from === 'master-ui' ? msg.to : msg.from);
+  // Determine the room for this message
+  const room = msg.to === 'all' ? 'all' : (msg.to && msg.to.startsWith('#') ? msg.to : (msg.from === 'master-ui' ? msg.to : msg.from));
   if (!chatHistory[room]) chatHistory[room] = [];
   chatHistory[room].push(msg);
 
-  if (room === currentRoom || (currentRoom === 'all' && msg.to === 'all')) {
+  // Only display if we're in the target room or in 'all' room receiving a broadcast
+  const shouldDisplay = room === currentRoom || (currentRoom === 'all' && msg.to === 'all');
+
+  if (shouldDisplay) {
     if (msg.from !== 'master-ui') {
       addLog(msg.from, msg.msg, false, { timestamp: msg.ts });
     }
-  } else {
-    console.log(`Msg in ${room} while in ${currentRoom}`);
+  } else if (msg.to && msg.to.startsWith('#')) {
+    // For room messages, also check if we're in that room
+    if (currentRoom === msg.to && msg.from !== 'master-ui') {
+      addLog(msg.from, msg.msg, false, { timestamp: msg.ts });
+    }
   }
 }
 
@@ -336,15 +345,17 @@ if (masterInput) {
         socket.emit('dispatch', { to: currentRoom === 'all' ? 'all' : currentRoom, cmd: cmd });
         addLog('SYSTEM', `Dispatching command to ${currentRoom}: ${cmd}`, true, { animate: false });
       } else {
-        socket.emit('chat', { to: currentRoom, msg: msg });
-        addLog('YOU', msg, true, { status: 'pending', animate: false });
+        const msgId = `local-${++localMessageCounter}`;
+        socket.emit('chat', { to: currentRoom, msg: msg, localId: msgId });
+        addLog('YOU', msg, true, { id: msgId, status: 'pending', animate: false });
 
         if (!chatHistory[currentRoom]) chatHistory[currentRoom] = [];
         chatHistory[currentRoom].push({
           from: 'master-ui',
           to: currentRoom,
           msg: msg,
-          ts: new Date().toISOString()
+          ts: new Date().toISOString(),
+          localId: msgId
         });
       }
       masterInput.value = '';
