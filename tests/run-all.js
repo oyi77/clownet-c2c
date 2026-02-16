@@ -13,6 +13,8 @@ const tests = [
     'safety.test.js',
     'audit-metrics.test.js',
     'tenant.test.js',
+    // v3.5 feature tests (combined)
+    'v3.5-feature-tests.js',
 ];
 
 // Tests that need an external server running first

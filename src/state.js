@@ -16,7 +16,13 @@ const defaultState = {
     files: {}, // { fileId: { name: string, data: buffer, owner: agent_id, sharedWith: [agent_ids], timestamp: Date } }
     skills: {}, // { skillId: { name: string, data: any, owner: agent_id, sharedWith: [agent_ids], experience: number } }
     orchestrations: {}, // { orchId: { name: string, agents: [agent_ids], tasks: [task_templates], status: string } }
-    configs: {} // { configId: { name: string, data: any, owner: agent_id, version: number, history: [versions] } }
+    configs: {}, // { configId: { name: string, data: any, owner: agent_id, version: number, history: [versions] } }
+    // Auto orchestration state (NEW)
+    roles: {}, // { roleId: { name, description, createdAt } }
+    agentRoles: {}, // { agentId: [roleId, roleId, ...] }
+    autoOrchestrations: {}, // { orchestrationId: { name, tasks, loadBalanceStrategy, status } }
+    taskQueue: [], // [{ id, name, requirements: { roles: [] }, priority, createdAt }]
+    loadBalancers: {} // { roleId: { strategy, index: 0, lastUsed: timestamp } }
 };
 
 // Per-tenant state storage
@@ -38,7 +44,12 @@ function createState() {
         files: {},
         skills: {},
         orchestrations: {},
-        configs: {}
+        configs: {},
+        roles: {},
+        agentRoles: {},
+        autoOrchestrations: {},
+        taskQueue: [],
+        loadBalancers: {}
     };
 }
 
@@ -71,10 +82,24 @@ let settings = {
 function getSettings() { return settings; }
 function setSettings(s) { settings = s; }
 
+state.getAgentsByRole = function(tenantId, roleId) {
+    const tenantState = state.getTenantState(tenantId);
+    if (!tenantState.agentRoles) return [];
+
+    const agentsWithRole = [];
+    for (const [agentId, roleIds] of Object.entries(tenantState.agentRoles)) {
+        if (roleIds.includes(roleId) && tenantState.agents[agentId]) {
+            agentsWithRole.push(agentId);
+        }
+    }
+    return agentsWithRole;
+};
+
 module.exports = {
     getTenantState,
     setTenantState,
     getSettings,
     setSettings,
     tenantStates,
+    getAgentsByRole: state.getAgentsByRole,
 };
