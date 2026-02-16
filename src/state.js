@@ -82,9 +82,10 @@ let settings = {
 function getSettings() { return settings; }
 function setSettings(s) { settings = s; }
 
-state.getAgentsByRole = function(tenantId, roleId) {
-    const tenantState = state.getTenantState(tenantId);
-    if (!tenantState.agentRoles) return [];
+function getAgentsByRole(tenantId, roleId) {
+    const tid = tenantId || 'default';
+    const tenantState = tenantStates[tid];
+    if (!tenantState || !tenantState.agentRoles) return [];
 
     const agentsWithRole = [];
     for (const [agentId, roleIds] of Object.entries(tenantState.agentRoles)) {
@@ -93,7 +94,7 @@ state.getAgentsByRole = function(tenantId, roleId) {
         }
     }
     return agentsWithRole;
-};
+}
 
 module.exports = {
     getTenantState,
@@ -101,5 +102,5 @@ module.exports = {
     getSettings,
     setSettings,
     tenantStates,
-    getAgentsByRole: state.getAgentsByRole,
+    getAgentsByRole,
 };
