@@ -10,6 +10,7 @@ const credentials = require('./credentials');
 const fileSharing = require('./file-sharing');
 const skills = require('./skills');
 const orchestration = require('./orchestration');
+const config = require('./config');
 
 function setup(server) {
     const io = new socketio.Server(server, {
@@ -77,6 +78,7 @@ function setup(server) {
         fileSharing.register(io, socket, ctx);
         skills.register(io, socket, ctx);
         orchestration.register(io, socket, ctx);
+        config.register(io, socket, ctx);
 
         socket.on('disconnect', () => {
              s.connectionEvents.push({ type: 'disconnect', agentId: agent_id, timestamp: new Date() });

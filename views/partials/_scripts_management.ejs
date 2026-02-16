@@ -36,6 +36,15 @@ function loadManagementData() {
     }
   });
   
+  // Load agent configurations
+  socket.emit('list_agent_configs', {}, (response) => {
+    if (response && response.configs) {
+      renderAgentConfigs(response.configs);
+      document.getElementById('agent-configs-count').textContent = response.configs.length;
+      document.getElementById('management-configs-count').textContent = response.configs.length;
+    }
+  });
+  
   // Update agent count
   if (agentsCache) {
     document.getElementById('management-agents-count').textContent = agentsCache.length;
@@ -80,6 +89,31 @@ function renderOrchestrations(orchestrations) {
   }).join('');
 }
 
+function renderAgentConfigs(configs) {
+  const tbody = document.getElementById('configs-table-body');
+  
+  if (!configs || configs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-zinc-600 text-xs">No configurations found</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = configs.map(config => `
+    <tr class="hover:bg-zinc-800/30 transition-colors">
+      <td class="p-3 font-mono text-zinc-300">${config.name}</td>
+      <td class="p-3 text-zinc-400">v${config.version}</td>
+      <td class="p-3 text-zinc-400">${config.owner}</td>
+      <td class="p-3 text-zinc-600 text-[10px] font-mono">${new Date(config.timestamp).toLocaleDateString()}</td>
+      <td class="p-3">
+        <div class="flex gap-1">
+          <button onclick="viewAgentConfig('${config.configId}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] px-2 py-1 rounded">View</button>
+          <button onclick="cloneAgentConfig('${config.configId}')" class="bg-blue-600 hover:bg-blue-500 text-black text-[9px] px-2 py-1 rounded">Clone</button>
+          <button onclick="deleteAgentConfig('${config.configId}')" class="bg-red-600 hover:bg-red-500 text-black text-[9px] px-2 py-1 rounded">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
 function viewOrchestration(orchId) {
   socket.emit('get_orchestration', { orchId: orchId }, (response) => {
     if (response && !response.error) {
@@ -88,6 +122,38 @@ function viewOrchestration(orchId) {
       showToast('Failed to load orchestration details', 'error');
     }
   });
+}
+
+function viewAgentConfig(configId) {
+  socket.emit('get_agent_config', { configId: configId }, (response) => {
+    if (response && !response.error) {
+      showAgentConfigModal(response);
+    } else {
+      showToast('Failed to load configuration details', 'error');
+    }
+  });
+}
+
+function cloneAgentConfig(configId) {
+  const newName = prompt('Enter name for cloned configuration:');
+  if (newName) {
+    socket.emit('clone_agent_config', { configId: configId, newName: newName }, (response) => {
+      if (response && !response.error) {
+        showToast('Configuration cloned successfully', 'success');
+        loadManagementData(); // Refresh the list
+      } else {
+        showToast('Failed to clone configuration: ' + (response?.error || 'Unknown error'), 'error');
+      }
+    });
+  }
+}
+
+function deleteAgentConfig(configId) {
+  if (confirm('Are you sure you want to delete this configuration?')) {
+    socket.emit('delete_agent_config', { configId: configId });
+    showToast('Configuration deleted', 'warning');
+    setTimeout(() => loadManagementData(), 1000);
+  }
 }
 
 function startOrchestration(orchId) {
@@ -196,6 +262,110 @@ function showOrchestrationModal(orchestration) {
   modal.classList.add('flex');
 }
 
+function showAgentConfigModal(config) {
+  const modalId = 'agent-config-detail-modal';
+  let modal = document.getElementById(modalId);
+  
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = modalId;
+    modal.className = 'fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-[100]';
+    document.body.appendChild(modal);
+  }
+  
+  // Format the config data for display
+  const formattedData = JSON.stringify(config.data, null, 2);
+  
+  // Create version history
+  const versionHistory = config.history.map(version => `
+    <div class="py-2 border-b border-zinc-800/50 last:border-0">
+      <div class="flex justify-between items-center">
+        <div class="font-mono text-zinc-300 text-[11px]">Version ${version.version}</div>
+        <div class="text-zinc-500 text-[10px]">${new Date(version.timestamp).toLocaleString()}</div>
+      </div>
+      <div class="text-zinc-600 text-[10px] mt-1">Author: ${version.author}${version.revertedFrom ? ` (Reverted from v${version.revertedFrom})` : ''}</div>
+      <button onclick="revertToConfigVersion('${config.configId}', ${version.version})" class="mt-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] px-2 py-1 rounded">Revert to this version</button>
+    </div>
+  `).join('');
+  
+  modal.innerHTML = `
+    <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between mb-4 border-b border-zinc-800 pb-3">
+        <div>
+          <h2 class="text-zinc-100 font-bold text-lg">${config.name}</h2>
+          <div class="flex gap-3 mt-1">
+            <span class="text-[10px] font-bold text-blue-500">VERSION ${config.version}</span>
+            <span class="text-[10px] text-zinc-500">Owner: ${config.owner}</span>
+          </div>
+        </div>
+        <button onclick="document.getElementById('${modalId}').classList.add('hidden');" class="text-zinc-500 text-xs">CLOSE</button>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-zinc-900/50 p-4 rounded border border-zinc-800">
+          <h3 class="text-[10px] uppercase tracking-widest text-zinc-500 mb-3">CONFIGURATION DATA</h3>
+          <div class="max-h-48 overflow-y-auto bg-black/40 border border-zinc-800 rounded p-3 text-[10px] font-mono text-zinc-300">
+            <pre>${formattedData}</pre>
+          </div>
+        </div>
+        
+        <div class="bg-zinc-900/50 p-4 rounded border border-zinc-800">
+          <h3 class="text-[10px] uppercase tracking-widest text-zinc-500 mb-3">DETAILS</h3>
+          <div class="space-y-2 text-[11px]">
+            <div class="flex justify-between">
+              <span class="text-zinc-400">Created</span>
+              <span class="text-zinc-300">${new Date(config.timestamp).toLocaleString()}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-zinc-400">Config ID</span>
+              <span class="text-zinc-300 font-mono text-[9px]">${config.configId}</span>
+            </div>
+            ${config.clonedFrom ? `
+            <div class="flex justify-between">
+              <span class="text-zinc-400">Cloned From</span>
+              <span class="text-zinc-300 font-mono text-[9px]">${config.clonedFrom}</span>
+            </div>` : ''}
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex-1 overflow-hidden flex flex-col">
+        <h3 class="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">VERSION HISTORY</h3>
+        <div class="bg-black/40 border border-zinc-800 rounded flex-1 overflow-y-auto p-3 text-[10px]">
+          ${versionHistory || '<div class="text-zinc-600 text-center py-4">No version history</div>'}
+        </div>
+      </div>
+      
+      <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-zinc-800">
+        <button onclick="cloneAgentConfig('${config.configId}')" class="bg-blue-600 hover:bg-blue-500 text-black text-[10px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition-all">
+          CLONE
+        </button>
+        <button onclick="deleteAgentConfig('${config.configId}')" class="bg-red-600 hover:bg-red-500 text-black text-[10px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition-all">
+          DELETE
+        </button>
+      </div>
+    </div>
+  `;
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function revertToConfigVersion(configId, version) {
+  if (confirm(`Are you sure you want to revert to version ${version}?`)) {
+    socket.emit('revert_agent_config', { configId: configId, version: version }, (response) => {
+      if (response && !response.error) {
+        showToast('Configuration reverted successfully', 'success');
+        // Close the modal and refresh
+        document.getElementById('agent-config-detail-modal')?.classList.add('hidden');
+        loadManagementData();
+      } else {
+        showToast('Failed to revert configuration: ' + (response?.error || 'Unknown error'), 'error');
+      }
+    });
+  }
+}
+
 // Shared Memory Modal
 function showSharedMemoryModal() {
   socket.emit('list_shared_memory', {}, (response) => {
@@ -285,9 +455,94 @@ function renderSharedResourceModal(title, items, type) {
   modal.classList.add('flex');
 }
 
+// Agent Configs Modal
+function showAgentConfigsModal() {
+  socket.emit('list_agent_configs', {}, (response) => {
+    if (response && response.configs) {
+      renderSharedResourceModal('Agent Configurations', response.configs, 'configs');
+    }
+  });
+}
+
+function renderSharedResourceModal(title, items, type) {
+  const modalId = `${type}-modal`;
+  let modal = document.getElementById(modalId);
+  
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = modalId;
+    modal.className = 'fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-[100]';
+    document.body.appendChild(modal);
+  }
+  
+  const content = items.map(item => {
+    switch (type) {
+      case 'memory':
+        return `
+          <div class="flex justify-between items-center p-2 border-b border-zinc-800/50">
+            <div>
+              <div class="font-mono text-zinc-300 text-[11px]">${item.key}</div>
+              <div class="text-zinc-600 text-[10px]">Owner: ${item.owner}</div>
+            </div>
+            <div class="text-zinc-500 text-[10px]">${new Date(item.timestamp).toLocaleDateString()}</div>
+          </div>
+        `;
+      case 'files':
+        return `
+          <div class="flex justify-between items-center p-2 border-b border-zinc-800/50">
+            <div>
+              <div class="font-mono text-zinc-300 text-[11px]">${item.filename}</div>
+              <div class="text-zinc-600 text-[10px]">${(item.size / 1024).toFixed(1)} KB • Owner: ${item.owner}</div>
+            </div>
+            <div class="text-zinc-500 text-[10px]">${new Date(item.timestamp).toLocaleDateString()}</div>
+          </div>
+        `;
+      case 'credentials':
+        return `
+          <div class="flex justify-between items-center p-2 border-b border-zinc-800/50">
+            <div>
+              <div class="font-mono text-zinc-300 text-[11px]">${item.service}</div>
+              <div class="text-zinc-600 text-[10px]">Owner: ${item.owner} • Shared with: ${item.sharedWith.length} agents</div>
+            </div>
+            <div class="text-zinc-500 text-[10px]">${new Date(item.timestamp).toLocaleDateString()}</div>
+          </div>
+        `;
+      case 'configs':
+        return `
+          <div class="flex justify-between items-center p-2 border-b border-zinc-800/50">
+            <div>
+              <div class="font-mono text-zinc-300 text-[11px]">${item.name}</div>
+              <div class="text-zinc-600 text-[10px]">Owner: ${item.owner} • Version: ${item.version}</div>
+            </div>
+            <div class="text-zinc-500 text-[10px]">${new Date(item.timestamp).toLocaleDateString()}</div>
+          </div>
+        `;
+    }
+  }).join('');
+  
+  modal.innerHTML = `
+    <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-2xl p-5 max-h-[80vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between mb-4 border-b border-zinc-800 pb-3">
+        <div class="text-zinc-100 font-bold">${title}</div>
+        <button onclick="document.getElementById('${modalId}').classList.add('hidden');" class="text-zinc-500 text-xs">CLOSE</button>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        ${content || '<div class="text-zinc-600 text-center py-8 text-sm">No items found</div>'}
+      </div>
+    </div>
+  `;
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
 // Button event listeners
 document.getElementById('create-orchestration-btn')?.addEventListener('click', () => {
   showToast('Orchestration creation coming soon!', 'info');
+});
+
+document.getElementById('create-config-btn')?.addEventListener('click', () => {
+  showToast('Configuration creation coming soon!', 'info');
 });
 
 document.getElementById('refresh-sessions-btn')?.addEventListener('click', () => {
