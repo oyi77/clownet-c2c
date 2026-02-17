@@ -1,0 +1,27 @@
+<div id="roles" class="tab-content hidden">
+  <div class="container mx-auto p-4">
+    <h2 class="text-2xl font-bold mb-6 terminal-text">Role Management</h2>
+    
+    <!-- Roles Section -->
+    <div class="mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-semibold">Roles</h3>
+        <button onclick="showCreateRoleModal()" class="btn-primary">
+          + Create Role
+        </button>
+      </div>
+      
+      <div id="roles-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="empty-state">No roles defined. Create your first role!</div>
+      </div>
+    </div>
+    
+    <!-- Agent Roles Section -->
+    <div>
+      <h3 class="text-xl font-semibold mb-4">Agent Roles</h3>
+      <div id="agent-roles-list" class="space-y-2">
+        <div class="empty-state">No agents connected</div>
+      </div>
+    </div>
+  </div>
+</div>

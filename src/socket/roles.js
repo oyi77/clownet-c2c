@@ -6,8 +6,9 @@
 const state = require('../state.js');
 const { v4: generateId } = require('uuid');
 
-module.exports = function(io, socket, agentStore) {
-  const tenantState = state.getTenantState(socket.tenantId);
+function register(io, socket, ctx) {
+  const { tenantId } = ctx;
+  const tenantState = state.getTenantState(tenantId);
   
   // Register role
   socket.on('create_role', (payload, callback) => {
@@ -25,7 +26,7 @@ module.exports = function(io, socket, agentStore) {
       createdAt: Date.now()
     };
     
-    socket.to(`tenant:${socket.tenantId}`).emit('roles_updated', {});
+    socket.to(`tenant:${tenantId}`).emit('roles_updated', {});
     
     callback({
       success: true,
@@ -60,7 +61,7 @@ module.exports = function(io, socket, agentStore) {
       }
     });
     
-    socket.to(`tenant:${socket.tenantId}`).emit('roles_updated', {});
+    socket.to(`tenant:${tenantId}`).emit('roles_updated', {});
     
     callback({ success: true, message: 'Role deleted successfully' });
   });
@@ -141,3 +142,5 @@ module.exports = function(io, socket, agentStore) {
     });
   });
 };
+
+module.exports = { register };
