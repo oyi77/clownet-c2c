@@ -289,9 +289,8 @@ function registerHandlers() {
         const to = data.to || 'all';
         console.log(`[CHAT] From ${sender} to ${to}: ${msg}`);
         if ((to === args.id || to === 'all') && sender !== args.id) {
-            if (sender === 'master-ui') {
-                processInstruction(msg, sender);
-            }
+            // Process instructions from any sender (master-ui or other agents)
+            processInstruction(msg, sender);
         }
     });
 
