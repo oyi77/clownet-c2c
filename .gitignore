@@ -8,6 +8,6 @@ __pycache__/
 .legacy/
 .pytest_cache/
 .ruff_cache/
-data-test/
-data-persist-test/
+data-test*
+data-persist-test*
 *.db

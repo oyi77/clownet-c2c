@@ -1,26 +1,26 @@
 <script>
-// --- FLEET MANAGEMENT FUNCTIONS ---
+  // --- FLEET MANAGEMENT FUNCTIONS ---
 
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text).then(() => {
-    const toast = document.createElement('div');
-    toast.className = "fixed bottom-4 right-4 bg-green-600 text-black text-[10px] font-bold px-4 py-2 rounded shadow-lg z-[10000] animate-bounce";
-    toast.innerText = "COPIED_TO_CLIPBOARD";
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2000);
-  });
-}
+  function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+      const toast = document.createElement('div');
+      toast.className = "fixed bottom-4 right-4 bg-green-600 text-black text-[10px] font-bold px-4 py-2 rounded shadow-lg z-[10000] animate-bounce";
+      toast.innerText = "COPIED_TO_CLIPBOARD";
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+    });
+  }
 
-function handleFleetUpdate(agents) {
-  agentsCache = agents;
-  const grid = document.getElementById('fleet-grid');
-  agents.forEach(a => { agentCache[a.id] = a; });
-  updateTargetOptions(agents);
+  function handleFleetUpdate(agents) {
+    agentsCache = agents;
+    const grid = document.getElementById('fleet-grid');
+    agents.forEach(a => { agentCache[a.id] = a; });
+    updateTargetOptions(agents);
 
-  if (agents.length === 0) {
-    grid.innerHTML = '<div class="col-span-3 text-center py-20 text-zinc-600">NO AGENTS ONLINE</div>';
-  } else {
-    grid.innerHTML = agents.map(a => `
+    if (agents.length === 0) {
+      grid.innerHTML = '<div class="col-span-3 text-center py-20 text-zinc-600">NO AGENTS ONLINE</div>';
+    } else {
+      grid.innerHTML = agents.map(a => `
       <div class="bg-zinc-900 border border-zinc-800 p-5 rounded terminal-glow relative group flex flex-col justify-between" data-agent-id="${a.id}">
         <div>
           <div class="flex justify-between items-start mb-4">
@@ -66,98 +66,100 @@ function handleFleetUpdate(agents) {
       </div>
     `).join('');
 
-    document.querySelectorAll('.agent-actions').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const card = e.target.closest('[data-agent-id]');
-        if (!card) return;
-        const agentId = card.dataset.agentId;
-        if (!agentId) return;
-        openAgentModal(agentId);
+      document.querySelectorAll('.agent-actions').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const card = e.target.closest('[data-agent-id]');
+          if (!card) return;
+          const agentId = card.dataset.agentId;
+          if (!agentId) return;
+          openAgentModal(agentId);
+        });
       });
-    });
-  }
+    }
 
-  const roomList = document.getElementById('room-list');
-  let roomsHtml = `<button onclick="selectRoom('all')" class="chat-room ${currentRoom === 'all' ? 'active' : ''} w-full text-left px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-zinc-800/50"># BROADCAST_ALL</button>`;
+    const roomList = document.getElementById('room-list');
+    let roomsHtml = `<button onclick="selectRoom('all')" class="chat-room ${currentRoom === 'all' ? 'active' : ''} w-full text-left px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-zinc-800/50"># BROADCAST_ALL</button>`;
 
-  agents.forEach(a => {
-    if (a.id !== 'master-ui') {
-      // Escape single quotes in agent ID for the onclick attribute
-      const escapedId = a.id.replace(/'/g, "\\'");
-      roomsHtml += `<button onclick="selectRoom('${escapedId}')" class="chat-room ${currentRoom === a.id ? 'active' : ''} w-full text-left px-4 py-3 text-xs text-zinc-400 hover:bg-zinc-800 border-b border-zinc-800/50 flex justify-between">
+    agents.forEach(a => {
+      if (a.id !== 'master-ui') {
+        // Escape single quotes in agent ID for the onclick attribute
+        const escapedId = a.id.replace(/'/g, "\\'");
+        roomsHtml += `<button onclick="selectRoom('${escapedId}')" class="chat-room ${currentRoom === a.id ? 'active' : ''} w-full text-left px-4 py-3 text-xs text-zinc-400 hover:bg-zinc-800 border-b border-zinc-800/50 flex justify-between">
         <span>@ ${a.id}</span>
         <span class="w-1.5 h-1.5 rounded-full ${a.status === 'online' ? 'bg-green-500' : 'bg-zinc-600'}"></span>
       </button>`;
-    }
-  });
-  roomList.innerHTML = roomsHtml;
-}
-
-function updateTargetOptions(agents) {
-  const targets = [document.getElementById('ops-target')].filter(Boolean);
-  targets.forEach(select => {
-    const current = select.value;
-    select.innerHTML = '<option value="all">Broadcast (all)</option>';
-    agents.forEach(a => {
-      const opt = document.createElement('option');
-      opt.value = a.id;
-      opt.textContent = a.id;
-      select.appendChild(opt);
+      }
     });
-    if (current) select.value = current;
-  });
-}
-
-async function approveClient(agentId) {
-  if (!confirm(`Approve client ${agentId}?`)) return;
-  try {
-    const res = await fetch('/api/client/approve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId })
-    });
-    const data = await res.json();
-    if (data.success) {
-      handlePendingClientsUpdate(data.pendingClients);
-      showToast(`Client ${agentId} approved successfully.`, 'success');
-    } else {
-      showToast('Failed to approve client.', 'error');
-    }
-  } catch (e) {
-    console.error(e);
-    showToast('Network error while approving client.', 'error');
+    roomList.innerHTML = roomsHtml;
   }
-}
 
-async function denyClient(agentId) {
-  if (!confirm(`Deny client ${agentId}?`)) return;
-  try {
-    const res = await fetch('/api/client/deny', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId })
+  function updateTargetOptions(agents) {
+    const targets = [document.getElementById('ops-target')].filter(Boolean);
+    targets.forEach(select => {
+      const current = select.value;
+      select.innerHTML = '<option value="all">Broadcast (all)</option>';
+      agents.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = a.id;
+        select.appendChild(opt);
+      });
+      if (current) select.value = current;
     });
-    const data = await res.json();
-    if (data.success) {
-      handlePendingClientsUpdate(data.pendingClients);
-      showToast(`Client ${agentId} denied.`, 'warning');
-    } else {
-      showToast('Failed to deny client.', 'error');
-    }
-  } catch (e) {
-    console.error(e);
-    showToast('Network error while denying client.', 'error');
   }
-}
 
-function handlePendingClientsUpdate(pendingClients) {
-  const section = document.getElementById('pending-clients-section');
-  const list = document.getElementById('pending-clients-list');
-  if (!section || !list) return;
+  async function approveClient(agentId) {
+    const ok = await showConfirm('APPROVE AGENT', `Are you sure you want to approve agent ${agentId}?`);
+    if (!ok) return;
+    try {
+      const res = await fetch('/api/client/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        handlePendingClientsUpdate(data.pendingClients);
+        showToast(`Client ${agentId} approved successfully.`, 'success');
+      } else {
+        showToast('Failed to approve client.', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Network error while approving client.', 'error');
+    }
+  }
 
-  if (pendingClients && pendingClients.length > 0) {
-    section.classList.remove('hidden');
-    list.innerHTML = pendingClients.map(c => `
+  async function denyClient(agentId) {
+    const ok = await showConfirm('DENY AGENT', `Are you sure you want to deny agent ${agentId}?`);
+    if (!ok) return;
+    try {
+      const res = await fetch('/api/client/deny', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        handlePendingClientsUpdate(data.pendingClients);
+        showToast(`Client ${agentId} denied.`, 'warning');
+      } else {
+        showToast('Failed to deny client.', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Network error while denying client.', 'error');
+    }
+  }
+
+  function handlePendingClientsUpdate(pendingClients) {
+    const section = document.getElementById('pending-clients-section');
+    const list = document.getElementById('pending-clients-list');
+    if (!section || !list) return;
+
+    if (pendingClients && pendingClients.length > 0) {
+      section.classList.remove('hidden');
+      list.innerHTML = pendingClients.map(c => `
       <div class="flex justify-between items-center bg-black/40 p-3 rounded border border-zinc-800">
         <span class="text-xs font-mono text-zinc-300">${c.agentId}</span>
         <div class="space-x-2">
@@ -166,18 +168,18 @@ function handlePendingClientsUpdate(pendingClients) {
         </div>
       </div>
     `).join('');
-  } else {
-    section.classList.add('hidden');
-    list.innerHTML = '';
+    } else {
+      section.classList.add('hidden');
+      list.innerHTML = '';
+    }
   }
-}
 
-function handleConnectionEventsUpdate(events) {
-  const list = document.getElementById('connection-events-list');
-  if (!list) return;
+  function handleConnectionEventsUpdate(events) {
+    const list = document.getElementById('connection-events-list');
+    if (!list) return;
 
-  if (events && events.length > 0) {
-    list.innerHTML = events.slice().reverse().slice(0, 20).map(e => `
+    if (events && events.length > 0) {
+      list.innerHTML = events.slice().reverse().slice(0, 20).map(e => `
       <div class="flex justify-between items-center bg-black/40 p-2 rounded border border-zinc-800/50">
         <span class="text-[10px] font-mono ${e.type === 'connect' ? 'text-green-500' : 'text-red-500'}">
           ${e.type === 'connect' ? '[CONNECTED]' : '[DISCONNECTED]'}
@@ -186,8 +188,8 @@ function handleConnectionEventsUpdate(events) {
         <span class="text-[9px] text-zinc-600">${new Date(e.timestamp).toLocaleTimeString()}</span>
       </div>
     `).join('');
-  } else {
-    list.innerHTML = '<div class="text-[10px] text-zinc-600 italic text-center p-2">No recent connection events</div>';
+    } else {
+      list.innerHTML = '<div class="text-[10px] text-zinc-600 italic text-center p-2">No recent connection events</div>';
+    }
   }
-}
 </script>

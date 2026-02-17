@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node tests/run-all.js"
+    "test": "node tests/run-all.js",
+    "build:css": "npx tailwindcss -i ./src/styles.css -o ./public/css/output.css --minify"
   },
   "dependencies": {
     "@fastify/formbody": "^7.4.0",
@@ -19,6 +20,7 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "cheerio": "^1.2.0"
+    "cheerio": "^1.2.0",
+    "tailwindcss": "^4.1.18"
   }
 }

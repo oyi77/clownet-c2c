@@ -3,19 +3,25 @@
 
 <!-- TASK OUTPUT MODAL -->
 <div id="task-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4">
-  <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-2xl p-5 max-h-[80vh] overflow-hidden flex flex-col">
+  <div
+    class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-2xl p-5 max-h-[80vh] overflow-hidden flex flex-col">
     <div class="flex items-center justify-between mb-4 border-b border-zinc-800 pb-3">
       <div class="text-zinc-100 font-bold">TASK OUTPUT</div>
       <button id="task-modal-close" class="text-zinc-500 text-xs">CLOSE</button>
     </div>
     <div class="space-y-2 text-xs mb-3">
-      <div class="flex justify-between"><span class="text-zinc-500">Task ID</span><span id="task-modal-id" class="text-zinc-200 font-mono"></span></div>
-      <div class="flex justify-between"><span class="text-zinc-500">Agent</span><span id="task-modal-agent" class="text-zinc-200 font-bold"></span></div>
-      <div class="flex justify-between"><span class="text-zinc-500">Command</span><span id="task-modal-cmd" class="text-zinc-200 font-mono"></span></div>
-      <div class="flex justify-between"><span class="text-zinc-500">Status</span><span id="task-modal-status" class="text-zinc-200"></span></div>
+      <div class="flex justify-between"><span class="text-zinc-500">Task ID</span><span id="task-modal-id"
+          class="text-zinc-200 font-mono"></span></div>
+      <div class="flex justify-between"><span class="text-zinc-500">Agent</span><span id="task-modal-agent"
+          class="text-zinc-200 font-bold"></span></div>
+      <div class="flex justify-between"><span class="text-zinc-500">Command</span><span id="task-modal-cmd"
+          class="text-zinc-200 font-mono"></span></div>
+      <div class="flex justify-between"><span class="text-zinc-500">Status</span><span id="task-modal-status"
+          class="text-zinc-200"></span></div>
     </div>
     <div class="flex-1 overflow-y-auto">
-      <div id="task-modal-output" class="bg-black/50 border border-zinc-800 rounded p-4 text-[10px] font-mono text-zinc-300 whitespace-pre-wrap break-all">
+      <div id="task-modal-output"
+        class="bg-black/50 border border-zinc-800 rounded p-4 text-[10px] font-mono text-zinc-300 whitespace-pre-wrap break-all">
       </div>
     </div>
   </div>
@@ -23,7 +29,8 @@
 
 <!-- AGENT LOGS MODAL -->
 <div id="agent-logs-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4">
-  <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-2xl p-5 max-h-[80vh] overflow-hidden flex flex-col">
+  <div
+    class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-2xl p-5 max-h-[80vh] overflow-hidden flex flex-col">
     <div class="flex items-center justify-between mb-4 border-b border-zinc-800 pb-3">
       <div>
         <span class="text-zinc-100 font-bold text-xs uppercase tracking-widest">Agent Logs</span>
@@ -37,15 +44,18 @@
 
 <!-- AGENT MODAL -->
 <div id="agent-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4">
-  <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-2xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
+  <div
+    class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-2xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
     <div class="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
       <div>
         <h2 class="text-zinc-100 font-bold text-lg uppercase tracking-widest flex items-center gap-2">
           <span class="text-green-500">●</span> <span id="agent-modal-title">AGENT</span>
         </h2>
-        <div id="agent-modal-subtitle" class="text-xs text-zinc-500 font-mono mt-1">ID: <span id="agent-modal-id"></span></div>
+        <div id="agent-modal-subtitle" class="text-xs text-zinc-500 font-mono mt-1">ID: <span
+            id="agent-modal-id"></span></div>
       </div>
-      <button id="agent-modal-close" class="text-zinc-500 text-xs hover:text-zinc-300 uppercase tracking-wider">Close [ESC]</button>
+      <button id="agent-modal-close" class="text-zinc-500 text-xs hover:text-zinc-300 uppercase tracking-wider">Close
+        [ESC]</button>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -123,18 +133,22 @@
     <!-- Actions -->
     <div class="grid grid-cols-2 gap-4 border-t border-zinc-800 pt-4 mt-auto">
       <div class="flex gap-2">
-        <button id="agent-modal-logs" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-colors">
+        <button id="agent-modal-logs"
+          class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-colors">
           View Logs
         </button>
-        <button id="agent-modal-restart" class="flex-1 bg-zinc-800 hover:bg-red-900/50 text-zinc-200 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-colors">
+        <button id="agent-modal-restart"
+          class="flex-1 bg-zinc-800 hover:bg-red-900/50 text-zinc-200 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-colors">
           Restart
         </button>
       </div>
       <div class="flex gap-2">
-        <button id="agent-modal-update" class="flex-1 bg-zinc-800 hover:bg-green-900/50 text-green-500 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-colors">
+        <button id="agent-modal-update"
+          class="flex-1 bg-zinc-800 hover:bg-green-900/50 text-green-500 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-colors">
           Update
         </button>
-        <button id="agent-modal-inspect" class="flex-1 bg-zinc-800 hover:bg-blue-900/50 text-blue-500 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-colors">
+        <button id="agent-modal-inspect"
+          class="flex-1 bg-zinc-800 hover:bg-blue-900/50 text-blue-500 py-2 rounded text-[10px] font-bold uppercase tracking-wider transition-colors">
           Shell
         </button>
       </div>
@@ -170,11 +184,34 @@
           class="w-full bg-black border border-zinc-800 rounded p-2 text-xs text-zinc-100 outline-none focus:border-green-600 font-mono">
       </div>
       <div class="flex gap-2 pt-2">
-        <button onclick="document.getElementById('template-modal').classList.add('hidden'); document.getElementById('template-modal').classList.remove('flex');"
+        <button
+          onclick="document.getElementById('template-modal').classList.add('hidden'); document.getElementById('template-modal').classList.remove('flex');"
           class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-2 rounded text-[10px] font-bold uppercase">Cancel</button>
         <button onclick="saveTemplate()"
           class="flex-1 bg-green-600 hover:bg-green-500 text-black py-2 rounded text-[10px] font-bold uppercase">Save</button>
       </div>
+    </div>
+  </div>
+</div>
+<!-- GLOBAL PROMPT / CONFIRM MODAL -->
+<div id="global-prompt-modal"
+  class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-[200] backdrop-blur-sm">
+  <div class="bg-zinc-950 border border-zinc-800 rounded w-full max-w-sm p-6 shadow-2xl terminal-glow">
+    <div class="mb-6">
+      <h3 id="prompt-modal-title" class="text-zinc-100 font-bold text-sm uppercase tracking-widest mb-2 text-green-500">
+        PROMPT</h3>
+      <p id="prompt-modal-message" class="text-zinc-400 text-xs leading-relaxed"></p>
+    </div>
+    <div id="prompt-modal-input-container" class="mb-6 hidden">
+      <input type="text" id="prompt-modal-input"
+        class="w-full bg-black border border-zinc-800 rounded px-4 py-2.5 text-xs outline-none focus:border-green-600 text-zinc-100 font-mono shadow-inner"
+        placeholder="Enter value...">
+    </div>
+    <div class="flex gap-3">
+      <button id="prompt-modal-cancel"
+        class="flex-1 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 py-2.5 rounded text-[10px] font-bold uppercase transition-all tracking-wider">Cancel</button>
+      <button id="prompt-modal-confirm"
+        class="flex-1 bg-green-600 hover:bg-green-500 text-black py-2.5 rounded text-[10px] font-bold uppercase transition-all shadow-lg tracking-wider">Confirm</button>
     </div>
   </div>
 </div>

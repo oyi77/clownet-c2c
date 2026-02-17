@@ -1,365 +1,389 @@
 <script>
-// --- CHAT & INTEL FUNCTIONS ---
+  // --- CHAT & INTEL FUNCTIONS ---
 
-function handleChatUpdate(msg) {
-  handleChatMessage(msg);
-}
-
-function handleTypingUpdate(msg) {
-  if (!msg || !msg.from) return;
-  if (msg.from === 'master-ui') return;
-  const key = typingKey(msg);
-  if (msg.isTyping) {
-    if (activeTypers.has(key)) {
-      clearTimeout(activeTypers.get(key).timeoutId);
-    }
-    const timeoutId = setTimeout(() => {
-      activeTypers.delete(key);
-      renderTypingIndicator();
-    }, TYPING_TTL_MS);
-    activeTypers.set(key, { from: msg.from, to: msg.to || 'all', timeoutId });
-  } else {
-    if (activeTypers.has(key)) {
-      clearTimeout(activeTypers.get(key).timeoutId);
-      activeTypers.delete(key);
-    }
-  }
-  renderTypingIndicator();
-}
-
-function typingKey(msg) {
-  return `${msg.from || ''}|${msg.to || 'all'}`;
-}
-
-function renderTypingIndicator() {
-  const indicator = document.getElementById('typing-indicator');
-  if (!indicator) return;
-  const relevant = Array.from(activeTypers.values()).filter(entry => {
-    return entry.to === 'all' || entry.to === currentRoom || entry.from === currentRoom;
-  });
-  if (relevant.length === 0) {
-    indicator.innerHTML = '';
-    return;
-  }
-  const names = relevant.map(entry => entry.from).join(', ');
-  indicator.innerHTML = '';
-  const text = document.createElement('span');
-  text.textContent = `${names} typing`;
-  const dots = document.createElement('span');
-  dots.className = 'typing-dots';
-  for (let i = 0; i < 3; i += 1) {
-    const dot = document.createElement('span');
-    dots.appendChild(dot);
-  }
-  indicator.appendChild(text);
-  indicator.appendChild(dots);
-}
-
-function appendIntel(entry) {
-  if (entry.type === 'chat') {
-    const msg = entry.message;
+  function handleChatUpdate(msg) {
     handleChatMessage(msg);
   }
-}
 
-function formatTime(ts) {
-  const date = ts ? new Date(ts) : new Date();
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
-function getMessageKey(msg) {
-  return `${msg.ts || ''}|${msg.from || ''}|${msg.to || ''}|${msg.msg || ''}`;
-}
-
-function rememberMessage(key) {
-  if (seenMessageKeys.has(key)) return false;
-  seenMessageKeys.add(key);
-  seenMessageQueue.push(key);
-  if (seenMessageQueue.length > MAX_SEEN_MESSAGES) {
-    const oldest = seenMessageQueue.shift();
-    if (oldest) seenMessageKeys.delete(oldest);
-  }
-  return true;
-}
-
-function typeText(container, text, options = {}) {
-  const safeText = text || '';
-  const maxDuration = 900;
-  const minSpeed = 8;
-  const maxSpeed = 28;
-  const speed = Math.min(maxSpeed, Math.max(minSpeed, Math.floor(maxDuration / Math.max(safeText.length, 1))));
-  const caret = document.createElement('span');
-  caret.className = 'typing-caret';
-  container.textContent = '';
-  container.appendChild(caret);
-
-  let index = 0;
-  const step = () => {
-    if (index < safeText.length) {
-      container.insertBefore(document.createTextNode(safeText[index]), caret);
-      index += 1;
-      if (options.onUpdate) options.onUpdate();
-      setTimeout(step, options.speed || speed);
-    } else {
-      caret.remove();
-      if (options.onDone) options.onDone();
-    }
-  };
-  step();
-}
-
-function addLog(sender, text, isMe, options = {}) {
-  const box = document.getElementById('chat-box');
-  if (!box) return;
-
-  const msgId = options.id || 'temp-' + Date.now();
-  const isPending = options.status === 'pending';
-
-  const line = document.createElement('div');
-  line.className = `flex gap-4 message-in ${isPending ? 'opacity-50 pending-message' : ''}`;
-  line.dataset.msgId = msgId;
-  if (isPending) line.dataset.status = 'pending';
-  if (options.id) line.dataset.localId = options.id;
-
-  const time = document.createElement('span');
-  time.className = 'text-zinc-700 min-w-[60px] text-[10px] font-mono pt-1';
-  time.textContent = `[${formatTime(options.timestamp)}]`;
-
-  const name = document.createElement('span');
-  name.className = `${isMe ? 'text-blue-500' : 'text-green-500'} font-bold uppercase min-w-[80px] text-right text-xs pt-0.5`;
-  name.textContent = `${sender}:`;
-
-  const message = document.createElement('div');
-  message.className = 'text-zinc-300 flex-1 break-words text-xs leading-relaxed whitespace-pre-wrap';
-
-  // Add status indicator for pending messages
-  if (isPending) {
-    const statusIndicator = document.createElement('span');
-    statusIndicator.className = 'ml-2 text-zinc-600 text-[8px] status-indicator';
-    statusIndicator.innerHTML = '◐'; // Pending symbol
-    statusIndicator.title = 'Sending...';
-    message.appendChild(statusIndicator);
-  }
-
-  line.appendChild(time);
-  line.appendChild(name);
-  line.appendChild(message);
-  box.appendChild(line);
-
-  if (options.animate !== false && (text || '').length <= 800 && !isPending) {
-    typeText(message, text, { onUpdate: () => { box.scrollTop = box.scrollHeight; } });
-  } else {
-    message.textContent = text || '';
-  }
-  requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
-}
-
-function handleChatMessage(msg) {
-  if (!msg || !msg.msg) return;
-  const key = getMessageKey(msg);
-
-  // Handle messages from master-ui (sent by this dashboard)
-  if (msg.from === 'master-ui') {
-    // Try to match by localId first (for deduplication)
-    let matchedPending = null;
-    if (msg.localId) {
-      matchedPending = document.querySelector(`.pending-message[data-local-id="${msg.localId}"]`);
-    }
-    // Fallback to most recent pending if no localId match
-    if (!matchedPending) {
-      matchedPending = document.querySelector('.pending-message');
-    }
-
-    if (matchedPending) {
-      matchedPending.classList.remove('opacity-50', 'pending-message');
-      matchedPending.dataset.status = 'sent';
-      const statusIndicator = matchedPending.querySelector('.status-indicator');
-      if (statusIndicator) {
-        statusIndicator.innerHTML = '✓';
-        statusIndicator.className = 'ml-2 text-green-500 text-[8px] status-indicator';
-        statusIndicator.title = 'Sent';
-        setTimeout(() => {
-          statusIndicator.style.opacity = '0';
-          statusIndicator.style.transition = 'opacity 0.5s';
-        }, 2000);
+  function handleTypingUpdate(msg) {
+    if (!msg || !msg.from) return;
+    if (msg.from === 'master-ui') return;
+    const key = typingKey(msg);
+    if (msg.isTyping) {
+      if (activeTypers.has(key)) {
+        clearTimeout(activeTypers.get(key).timeoutId);
       }
-      // Don't add duplicate - just update the pending message
+      const timeoutId = setTimeout(() => {
+        activeTypers.delete(key);
+        renderTypingIndicator();
+      }, TYPING_TTL_MS);
+      activeTypers.set(key, { from: msg.from, to: msg.to || 'all', timeoutId });
+    } else {
+      if (activeTypers.has(key)) {
+        clearTimeout(activeTypers.get(key).timeoutId);
+        activeTypers.delete(key);
+      }
+    }
+    renderTypingIndicator();
+  }
+
+  function typingKey(msg) {
+    return `${msg.from || ''}|${msg.to || 'all'}`;
+  }
+
+  function renderTypingIndicator() {
+    const indicator = document.getElementById('typing-indicator');
+    if (!indicator) return;
+    const relevant = Array.from(activeTypers.values()).filter(entry => {
+      return entry.to === 'all' || entry.to === currentRoom || entry.from === currentRoom;
+    });
+    if (relevant.length === 0) {
+      indicator.innerHTML = '';
       return;
     }
+    const names = relevant.map(entry => entry.from).join(', ');
+    indicator.innerHTML = '';
+    const text = document.createElement('span');
+    text.textContent = `${names} typing`;
+    const dots = document.createElement('span');
+    dots.className = 'typing-dots';
+    for (let i = 0; i < 3; i += 1) {
+      const dot = document.createElement('span');
+      dots.appendChild(dot);
+    }
+    indicator.appendChild(text);
+    indicator.appendChild(dots);
   }
 
-  if (!rememberMessage(key)) return;
-
-  // Determine the room for this message
-  const room = msg.to === 'all' ? 'all' : (msg.to && msg.to.startsWith('#') ? msg.to : (msg.from === 'master-ui' ? msg.to : msg.from));
-  if (!chatHistory[room]) chatHistory[room] = [];
-  chatHistory[room].push(msg);
-
-  // Only display if we're in the target room or in 'all' room receiving a broadcast
-  const shouldDisplay = room === currentRoom || (currentRoom === 'all' && msg.to === 'all');
-
-  if (shouldDisplay) {
-    if (msg.from !== 'master-ui') {
-      addLog(msg.from, msg.msg, false, { timestamp: msg.ts });
-    }
-  } else if (msg.to && msg.to.startsWith('#')) {
-    // For room messages, also check if we're in that room
-    if (currentRoom === msg.to && msg.from !== 'master-ui') {
-      addLog(msg.from, msg.msg, false, { timestamp: msg.ts });
+  function appendIntel(entry) {
+    if (entry.type === 'chat') {
+      const msg = entry.message;
+      handleChatMessage(msg);
     }
   }
-}
 
-function handleRoomUpdate(data) {
-  if (data.room === currentRoom) {
-    updateMemberList(data.members);
+  function formatTime(ts) {
+    const date = ts ? new Date(ts) : new Date();
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
-}
 
-function updateMemberList(members) {
-  const list = document.getElementById('member-list');
-  if (!list) return;
-  if (!members || members.length === 0) {
-    list.innerHTML = '<div class="text-[10px] text-zinc-700 italic text-center mt-4">No members online</div>';
-    return;
+  function getMessageKey(msg) {
+    return `${msg.ts || ''}|${msg.from || ''}|${msg.to || ''}|${msg.msg || ''}`;
   }
-  list.innerHTML = members.map(m => `
+
+  function rememberMessage(key) {
+    if (seenMessageKeys.has(key)) return false;
+    seenMessageKeys.add(key);
+    seenMessageQueue.push(key);
+    if (seenMessageQueue.length > MAX_SEEN_MESSAGES) {
+      const oldest = seenMessageQueue.shift();
+      if (oldest) seenMessageKeys.delete(oldest);
+    }
+    return true;
+  }
+
+  function typeText(container, text, options = {}) {
+    const safeText = text || '';
+    const maxDuration = 900;
+    const minSpeed = 8;
+    const maxSpeed = 28;
+    const speed = Math.min(maxSpeed, Math.max(minSpeed, Math.floor(maxDuration / Math.max(safeText.length, 1))));
+    const caret = document.createElement('span');
+    caret.className = 'typing-caret';
+    container.textContent = '';
+    container.appendChild(caret);
+
+    let index = 0;
+    const step = () => {
+      if (index < safeText.length) {
+        container.insertBefore(document.createTextNode(safeText[index]), caret);
+        index += 1;
+        if (options.onUpdate) options.onUpdate();
+        setTimeout(step, options.speed || speed);
+      } else {
+        caret.remove();
+        if (options.onDone) options.onDone();
+      }
+    };
+    step();
+  }
+
+  function addLog(sender, text, isMe, options = {}) {
+    const box = document.getElementById('chat-box');
+    if (!box) return;
+
+    const msgId = options.id || 'temp-' + Date.now();
+    const isPending = options.status === 'pending';
+
+    const line = document.createElement('div');
+    line.className = `flex gap-4 message-in ${isPending ? 'opacity-50 pending-message' : ''}`;
+    line.dataset.msgId = msgId;
+    if (isPending) line.dataset.status = 'pending';
+    if (options.id) line.dataset.localId = options.id;
+
+    const time = document.createElement('span');
+    time.className = 'text-zinc-700 min-w-[60px] text-[10px] font-mono pt-1';
+    time.textContent = `[${formatTime(options.timestamp)}]`;
+
+    const name = document.createElement('span');
+    name.className = `${isMe ? 'text-blue-500' : 'text-green-500'} font-bold uppercase min-w-[80px] text-right text-xs pt-0.5`;
+    name.textContent = `${sender}:`;
+
+    const message = document.createElement('div');
+    message.className = 'text-zinc-300 flex-1 break-words text-xs leading-relaxed whitespace-pre-wrap';
+
+    // Add status indicator for pending messages
+    if (isPending) {
+      const statusIndicator = document.createElement('span');
+      statusIndicator.className = 'ml-2 text-zinc-600 text-[8px] status-indicator';
+      statusIndicator.innerHTML = '◐'; // Pending symbol
+      statusIndicator.title = 'Sending...';
+      message.appendChild(statusIndicator);
+    }
+
+    line.appendChild(time);
+    line.appendChild(name);
+    line.appendChild(message);
+    box.appendChild(line);
+
+    if (options.animate !== false && (text || '').length <= 800 && !isPending) {
+      typeText(message, text, { onUpdate: () => { box.scrollTop = box.scrollHeight; } });
+    } else {
+      message.textContent = text || '';
+    }
+    requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
+  }
+
+  function handleChatMessage(msg) {
+    if (!msg || !msg.msg) return;
+    const key = getMessageKey(msg);
+
+    if (msg.from === 'master-ui') {
+      let matchedPending = msg.localId ? document.querySelector(`.pending-message[data-local-id="${msg.localId}"]`) : null;
+      if (!matchedPending) matchedPending = document.querySelector('.pending-message');
+
+      if (matchedPending) {
+        matchedPending.classList.remove('opacity-50', 'pending-message');
+        matchedPending.dataset.status = 'sent';
+        const statusIndicator = matchedPending.querySelector('.status-indicator');
+        if (statusIndicator) {
+          statusIndicator.innerHTML = '✓';
+          statusIndicator.className = 'ml-2 text-green-500 text-[8px] status-indicator';
+          statusIndicator.title = 'Sent';
+          setTimeout(() => { if (statusIndicator) { statusIndicator.style.opacity = '0'; statusIndicator.style.transition = 'opacity 0.5s'; } }, 2000);
+        }
+        return;
+      }
+    }
+
+    if (!rememberMessage(key)) return;
+
+    const room = msg.to === 'all' ? 'all' : (msg.to && msg.to.startsWith('#') ? msg.to : (msg.from === 'master-ui' ? msg.to : msg.from));
+    if (!chatHistory[room]) chatHistory[room] = [];
+    chatHistory[room].push(msg);
+
+    const shouldDisplay = room === currentRoom || (currentRoom === 'all' && msg.to === 'all');
+    if (shouldDisplay && msg.from !== 'master-ui') {
+      addLog(msg.from, msg.msg, false, { timestamp: msg.ts });
+    }
+  }
+
+  function handleRoomUpdate(data) {
+    if (data.room === currentRoom) {
+      updateMemberList(data.members);
+    }
+  }
+
+  function updateMemberList(members) {
+    const list = document.getElementById('member-list');
+    if (!list) return;
+    if (!members || members.length === 0) {
+      list.innerHTML = '<div class="text-[10px] text-zinc-700 italic text-center mt-4">No members online</div>';
+      return;
+    }
+    list.innerHTML = members.map(m => `
     <div class="flex items-center gap-2 px-2 py-1 member-item">
       <span class="w-1.5 h-1.5 rounded-full ${m.status === 'online' ? 'bg-green-500' : 'bg-zinc-600'}"></span>
       <span class="text-[11px] ${m.id === 'master-ui' ? 'text-blue-400 font-bold' : 'text-zinc-400'}">${m.id}</span>
       <span class="text-[8px] text-zinc-700 uppercase font-mono ml-auto">${m.role}</span>
     </div>
   `).join('');
-}
-
-function selectRoom(target) {
-  currentRoom = target;
-  document.querySelectorAll('.chat-room').forEach(r => r.classList.remove('active'));
-
-  // Find button by onclick attribute using attribute contains selector
-  // This avoids issues with quote escaping in the HTML
-  const btn = document.querySelector(`button[onclick*="selectRoom('${target}')"]`) || 
-              document.querySelector(`button[onclick*="selectRoom(&quot;${target}&quot;)"]`);
-  if (btn) btn.classList.add('active');
-
-  const label = target.startsWith('#') ? target : (target === 'all' ? '# BROADCAST_ALL' : `@ ${target.toUpperCase()}`);
-  document.getElementById('chat-title').innerText = label;
-  document.getElementById('master-input').placeholder = `Message ${label}...`;
-
-  const box = document.getElementById('chat-box');
-  box.innerHTML = '';
-
-  if (chatHistory[target] && chatHistory[target].length > 0) {
-    chatHistory[target].forEach(msg => {
-      addLog(msg.from, msg.msg, msg.from === 'master-ui', { timestamp: msg.ts, animate: false });
-    });
-  } else {
-    box.innerHTML = '<div class="text-zinc-700 italic mb-4 text-[10px] text-center mt-10">-- START OF ENCRYPTED CHANNEL --</div>';
   }
 
-  socket.emit('join_room', { room: target });
-  renderTypingIndicator();
-}
+  function selectRoom(target) {
+    currentRoom = target;
+    chatOffset = 0;
+    document.querySelectorAll('.chat-room').forEach(r => r.classList.remove('active'));
 
-function joinNewRoom() {
-  const name = prompt('ENTER_ROOM_NAME (e.g. #squad-alpha):');
-  if (name) {
-    const roomId = name.startsWith('#') ? name : '#' + name;
-    selectRoom(roomId);
-    const roomList = document.getElementById('room-list');
-    // Escape single quotes for the selector
-    const escapedRoomId = roomId.replace(/'/g, "\\'");
-    if (!document.querySelector(`button[onclick*="selectRoom('${escapedRoomId}')"]`)) {
-      const btn = document.createElement('button');
-      btn.onclick = () => selectRoom(roomId);
-      btn.className = "chat-room w-full text-left px-4 py-3 text-xs text-zinc-400 hover:bg-zinc-800 border-b border-zinc-800/50";
-      btn.innerText = roomId.toUpperCase();
-      roomList.appendChild(btn);
-    }
-  }
-}
+    const btn = document.querySelector(`button[onclick*="selectRoom('${target}')"]`) ||
+      document.querySelector(`button[onclick*="selectRoom(&quot;${target}&quot;)"]`);
+    if (btn) btn.classList.add('active');
 
-function handleTraffic(entry) {
-  const feed = document.getElementById('traffic-feed');
-  const lines = document.getElementById('traffic-lines');
-  if (!feed || !lines) return;
+    const label = target.startsWith('#') ? target : (target === 'all' ? '# BROADCAST_ALL' : `@ ${target.toUpperCase()}`);
+    document.getElementById('chat-title').innerText = label;
+    document.getElementById('master-input').placeholder = `Message ${label}...`;
 
-  feed.classList.remove('hidden');
-  const div = document.createElement('div');
-  const colorClass = entry.status === 'blocked' ? 'text-red-500' : (entry.status === 'flagged' ? 'text-yellow-500' : 'text-zinc-500');
-  div.className = `${colorClass} flex gap-2`;
-  div.innerHTML = `<span>[${new Date().toLocaleTimeString()}]</span> <span class="font-bold">${entry.agent_id}</span> <span>${entry.cmd}</span> <span class="italic">(${entry.status})</span>`;
+    const box = document.getElementById('chat-box');
+    box.innerHTML = '';
 
-  lines.prepend(div);
-  if (lines.children.length > 50) lines.lastChild.remove();
-}
-
-// Master Input Handler
-if (masterInput) {
-  let typingActive = false;
-  let typingTimeoutId = null;
-  let lastTypingSent = 0;
-
-  const sendTyping = (isTyping) => {
-    socket.emit('typing', { to: currentRoom, isTyping: isTyping });
-  };
-
-  const stopTyping = () => {
-    if (!typingActive) return;
-    typingActive = false;
-    if (typingTimeoutId) clearTimeout(typingTimeoutId);
-    typingTimeoutId = null;
-    sendTyping(false);
-  };
-
-  masterInput.addEventListener('input', () => {
-    const hasText = masterInput.value.trim().length > 0;
-    const now = Date.now();
-    if (hasText) {
-      if (!typingActive) {
-        typingActive = true;
-        sendTyping(true);
-        lastTypingSent = now;
-      } else if (now - lastTypingSent > TYPING_THROTTLE_MS) {
-        sendTyping(true);
-        lastTypingSent = now;
-      }
-      if (typingTimeoutId) clearTimeout(typingTimeoutId);
-      typingTimeoutId = setTimeout(() => { stopTyping(); }, TYPING_TTL_MS);
+    if (chatHistory[target] && chatHistory[target].length > 0) {
+      renderChatBatch(target, true);
     } else {
-      stopTyping();
+      box.innerHTML = '<div class="text-zinc-700 italic mb-4 text-[10px] text-center mt-10">-- START OF ENCRYPTED CHANNEL --</div>';
+    }
+
+    socket.emit('join_room', { room: target });
+    renderTypingIndicator();
+  }
+
+  function renderChatBatch(room, isInitial = false) {
+    const box = document.getElementById('chat-box');
+    const history = chatHistory[room] || [];
+    const start = Math.max(0, history.length - (chatOffset + CHAT_BATCH_SIZE));
+    const end = history.length - chatOffset;
+    const batch = history.slice(start, end);
+
+    if (batch.length === 0) return;
+
+    const fragment = document.createDocumentFragment();
+    batch.forEach(msg => {
+      const el = createMessageElement(msg.from, msg.msg, msg.from === 'master-ui', { timestamp: msg.ts });
+      fragment.appendChild(el);
+    });
+
+    const oldScrollHeight = box.scrollHeight;
+    if (isInitial) {
+      box.appendChild(fragment);
+      box.scrollTop = box.scrollHeight;
+    } else {
+      box.prepend(fragment);
+      box.scrollTop = box.scrollHeight - oldScrollHeight;
+    }
+    chatOffset += batch.length;
+  }
+
+  function createMessageElement(sender, text, isMe, options = {}) {
+    const line = document.createElement('div');
+    line.className = 'flex gap-4 message-in';
+    const time = document.createElement('span');
+    time.className = 'text-zinc-700 min-w-[60px] text-[10px] font-mono pt-1';
+    time.textContent = `[${formatTime(options.timestamp)}]`;
+    const name = document.createElement('span');
+    name.className = `${isMe ? 'text-blue-500' : 'text-green-500'} font-bold uppercase min-w-[80px] text-right text-xs pt-0.5`;
+    name.textContent = `${sender}:`;
+    const message = document.createElement('div');
+    message.className = 'text-zinc-300 flex-1 break-words text-xs leading-relaxed whitespace-pre-wrap';
+    message.textContent = text || '';
+    line.appendChild(time);
+    line.appendChild(name);
+    line.appendChild(message);
+    return line;
+  }
+
+  document.getElementById('chat-box').addEventListener('scroll', (e) => {
+    if (e.target.scrollTop === 0 && chatOffset < (chatHistory[currentRoom] || []).length) {
+      renderChatBatch(currentRoom);
     }
   });
 
-  masterInput.addEventListener('blur', () => { stopTyping(); });
-
-  masterInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      const msg = masterInput.value.trim();
-      if (!msg) return;
-
-      stopTyping();
-
-      if (msg.startsWith('/exec ')) {
-        const cmd = msg.replace('/exec ', '');
-        socket.emit('dispatch', { to: currentRoom === 'all' ? 'all' : currentRoom, cmd: cmd });
-        addLog('SYSTEM', `Dispatching command to ${currentRoom}: ${cmd}`, true, { animate: false });
-      } else {
-        const msgId = `local-${++localMessageCounter}`;
-        socket.emit('chat', { to: currentRoom, msg: msg, localId: msgId });
-        addLog('YOU', msg, true, { id: msgId, status: 'pending', animate: false });
-
-        if (!chatHistory[currentRoom]) chatHistory[currentRoom] = [];
-        chatHistory[currentRoom].push({
-          from: 'master-ui',
-          to: currentRoom,
-          msg: msg,
-          ts: new Date().toISOString(),
-          localId: msgId
-        });
+  async function joinNewRoom() {
+    const name = await showPrompt('JOIN ROOM', 'Enter room name (e.g. #squad-alpha):', '#');
+    if (name) {
+      const roomId = name.startsWith('#') ? name : '#' + name;
+      selectRoom(roomId);
+      const roomList = document.getElementById('room-list');
+      const escapedRoomId = roomId.replace(/'/g, "\\'");
+      if (!document.querySelector(`button[onclick*="selectRoom('${escapedRoomId}')"]`)) {
+        const btn = document.createElement('button');
+        btn.onclick = () => selectRoom(roomId);
+        btn.className = "chat-room w-full text-left px-4 py-3 text-xs text-zinc-400 hover:bg-zinc-800 border-b border-zinc-800/50 uppercase";
+        btn.innerText = roomId;
+        roomList.appendChild(btn);
       }
-      masterInput.value = '';
     }
-  });
-}
+  }
+
+  function handleTraffic(entry) {
+    const feed = document.getElementById('traffic-feed');
+    const lines = document.getElementById('traffic-lines');
+    if (!feed || !lines) return;
+
+    feed.classList.remove('hidden');
+    const div = document.createElement('div');
+    const colorClass = entry.status === 'blocked' ? 'text-red-500' : (entry.status === 'flagged' ? 'text-yellow-500' : 'text-zinc-500');
+    div.className = `${colorClass} flex gap-2`;
+    div.innerHTML = `<span>[${new Date().toLocaleTimeString()}]</span> <span class="font-bold">${entry.agent_id}</span> <span>${entry.cmd}</span> <span class="italic">(${entry.status})</span>`;
+
+    lines.prepend(div);
+    if (lines.children.length > 50) lines.lastChild.remove();
+  }
+
+  // Master Input Handler
+  if (masterInput) {
+    let typingActive = false;
+    let typingTimeoutId = null;
+    let lastTypingSent = 0;
+
+    const sendTyping = (isTyping) => {
+      socket.emit('typing', { to: currentRoom, isTyping: isTyping });
+    };
+
+    const stopTyping = () => {
+      if (!typingActive) return;
+      typingActive = false;
+      if (typingTimeoutId) clearTimeout(typingTimeoutId);
+      typingTimeoutId = null;
+      sendTyping(false);
+    };
+
+    masterInput.addEventListener('input', () => {
+      const hasText = masterInput.value.trim().length > 0;
+      const now = Date.now();
+      if (hasText) {
+        if (!typingActive) {
+          typingActive = true;
+          sendTyping(true);
+          lastTypingSent = now;
+        } else if (now - lastTypingSent > TYPING_THROTTLE_MS) {
+          sendTyping(true);
+          lastTypingSent = now;
+        }
+        if (typingTimeoutId) clearTimeout(typingTimeoutId);
+        typingTimeoutId = setTimeout(() => { stopTyping(); }, TYPING_TTL_MS);
+      } else {
+        stopTyping();
+      }
+    });
+
+    masterInput.addEventListener('blur', () => { stopTyping(); });
+
+    masterInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const msg = masterInput.value.trim();
+        if (!msg) return;
+
+        stopTyping();
+
+        if (msg.startsWith('/exec ')) {
+          const cmd = msg.replace('/exec ', '');
+          socket.emit('dispatch', { to: currentRoom === 'all' ? 'all' : currentRoom, cmd: cmd });
+          addLog('SYSTEM', `Dispatching command to ${currentRoom}: ${cmd}`, true, { animate: false });
+        } else {
+          const msgId = `local-${++localMessageCounter}`;
+          socket.emit('chat', { to: currentRoom, msg: msg, localId: msgId });
+          addLog('YOU', msg, true, { id: msgId, status: 'pending', animate: false });
+
+          if (!chatHistory[currentRoom]) chatHistory[currentRoom] = [];
+          chatHistory[currentRoom].push({
+            from: 'master-ui',
+            to: currentRoom,
+            msg: msg,
+            ts: new Date().toISOString(),
+            localId: msgId
+          });
+        }
+        masterInput.value = '';
+      }
+    });
+  }
 </script>
