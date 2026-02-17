@@ -6,8 +6,9 @@
 const state = require('../state.js');
 const { v4: generateId } = require('uuid');
 
-module.exports = function(io, socket, agentStore) {
-  const tenantState = state.getTenantState(socket.tenantId);
+function register(io, socket, ctx) {
+  const { tenantId } = ctx;
+  const tenantState = state.getTenantState(tenantId);
   
   const loadBalancers = {
     'round-robin': (agents, roleId) => {
@@ -69,7 +70,7 @@ module.exports = function(io, socket, agentStore) {
       let availableAgents = [];
       
       for (const roleId of requiredRoles) {
-        const agentsForRole = state.getAgentsByRole(socket.tenantId, roleId);
+        const agentsForRole = state.getAgentsByRole(tenantId, roleId);
         availableAgents = [...availableAgents, ...agentsForRole];
       }
       
@@ -107,7 +108,7 @@ module.exports = function(io, socket, agentStore) {
       });
     });
     
-    socket.to(`tenant:${socket.tenantId}`).emit('auto_orchestrations_updated', {});
+    socket.to(`tenant:${tenantId}`).emit('auto_orchestrations_updated', {});
   }
   
   socket.on('create_auto_orchestration', (payload, callback) => {
@@ -145,7 +146,7 @@ module.exports = function(io, socket, agentStore) {
       completedAt: null
     };
     
-    socket.to(`tenant:${socket.tenantId}`).emit('auto_orchestrations_updated', {});
+    socket.to(`tenant:${tenantId}`).emit('auto_orchestrations_updated', {});
     
     callback({
       success: true,
@@ -203,7 +204,7 @@ module.exports = function(io, socket, agentStore) {
       orchestration.completedAt = Date.now();
     }
     
-    socket.to(`tenant:${socket.tenantId}`).emit('auto_orchestrations_updated', {});
+    socket.to(`tenant:${tenantId}`).emit('auto_orchestrations_updated', {});
     
     callback({ success: true, message: 'Task result recorded' });
   });
@@ -249,8 +250,10 @@ module.exports = function(io, socket, agentStore) {
       }
     });
     
-    socket.to(`tenant:${socket.tenantId}`).emit('auto_orchestrations_updated', {});
+    socket.to(`tenant:${tenantId}`).emit('auto_orchestrations_updated', {});
     
     callback({ success: true, message: 'Orchestration cancelled successfully' });
   });
-};
+}
+
+module.exports = { register };
