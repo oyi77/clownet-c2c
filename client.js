@@ -170,6 +170,39 @@ function processInstruction(msg, replyTo, taskId = null) {
                 stdio: 'ignore'
             });
             updater.unref();
+        } else if (msg === '/status') {
+            const statusInfo = {
+                agent_id: args.id,
+                role: args.role,
+                version: VERSION,
+                uptime: process.uptime(),
+                memory: {
+                    rss: Math.round(process.memoryUsage().rss / 1024 / 1024) + ' MB',
+                    heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB',
+                    heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB'
+                },
+                cpu: getCpuUsage().toFixed(1) + '%',
+                platform: os.platform(),
+                arch: os.arch(),
+                hostname: os.hostname()
+            };
+            
+            const response = `STATUS REPORT:
+Agent ID: ${statusInfo.agent_id}
+Role: ${statusInfo.role}
+Version: ${statusInfo.version}
+Uptime: ${Math.floor(statusInfo.uptime)} seconds
+Platform: ${statusInfo.platform} (${statusInfo.arch})
+Hostname: ${statusInfo.hostname}
+
+Memory Usage:
+  RSS: ${statusInfo.memory.rss}
+  Heap Total: ${statusInfo.memory.heapTotal}
+  Heap Used: ${statusInfo.memory.heapUsed}
+
+CPU Usage: ${statusInfo.cpu}`;
+            
+            sendReply(response, replyTo, taskId);
         } else if (msg === '/restart') {
             sendReply('Restarting client...', replyTo, taskId);
             setTimeout(() => {
