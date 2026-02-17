@@ -10,63 +10,66 @@
   <!-- Login Modal -->
   <%- include('partials/_login_modal') %>
 
-  <!-- Header -->
-  <%- include('partials/_header') %>
+    <!-- Header -->
+    <%- include('partials/_header') %>
 
-  <div class="flex-1 flex overflow-hidden">
-    <!-- Sidebar -->
-    <%- include('partials/_sidebar') %>
+      <div class="flex-1 flex overflow-hidden">
+        <!-- Sidebar -->
+        <%- include('partials/_sidebar') %>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col min-w-0 bg-black/20 relative">
-      <!-- Mobile Navigation -->
-      <%- include('partials/_mobile_nav') %>
+          <!-- Main Content -->
+          <main class="flex-1 flex flex-col min-w-0 bg-black/20 relative">
+            <!-- Mobile Navigation -->
+            <%- include('partials/_mobile_nav') %>
 
-      <div class="flex-1 overflow-y-auto relative">
-        <!-- Docs Tab -->
-        <%- include('partials/_docs') %>
+              <div class="flex-1 overflow-y-auto relative">
+                <!-- Docs Tab -->
+                <%- include('partials/_docs') %>
 
-        <!-- Fleet Tab -->
-        <%- include('partials/_fleet_tab') %>
+                  <!-- Fleet Tab -->
+                  <%- include('partials/_fleet_tab') %>
 
-        <!-- Operations Tab -->
-        <%- include('partials/_ops_tab') %>
+                    <!-- Operations Tab -->
+                    <%- include('partials/_ops_tab') %>
 
-        <!-- Overview Tab -->
-        <%- include('partials/_overview_tab') %>
+                      <!-- Overview Tab -->
+                      <%- include('partials/_overview_tab') %>
 
-        <!-- Intel Tab -->
-        <%- include('partials/_intel_war_room') %>
+                        <!-- Intel Tab -->
+                        <%- include('partials/_intel_war_room') %>
 
-        <!-- Settings Tab -->
-        <%- include('partials/_settings_tab.ejs') %>
+                          <!-- Settings Tab -->
+                          <%- include('partials/_settings_tab.ejs') %>
 
-        <!-- Management Tab -->
-        <%- include('partials/_management_tab.ejs') %>
+                            <!-- Logs Tab -->
+                            <%- include('partials/_logs_tab.ejs') %>
 
-        <!-- Modals -->
-  <%- include('partials/_modals') %>
+                              <!-- Management Tab -->
+                              <%- include('partials/_management_tab.ejs') %>
 
-  <!-- Scripts -->
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
-<%- include('partials/_scripts_core') %>
-<%- include('partials/_scripts_fleet') %>
-<%- include('partials/_scripts_ops') %>
-<%- include('partials/_scripts_overview') %>
-<%- include('partials/_scripts_chat') %>
-<%- include('partials/_scripts_logs') %>
-<%- include('partials/_scripts_agent_modal') %>
-<%- include('partials/_scripts_settings') %>
-<%- include('partials/_scripts_management') %>
+                                <!-- Modals -->
+                                <%- include('partials/_modals') %>
 
-<script>
-// Setup socket listeners AFTER all handler functions are defined
-if (typeof setupSocketListeners === 'function' && socket) {
-  setupSocketListeners();
-}
-</script>
+                                  <!-- Scripts -->
+                                  <script src="/socket.io/socket.io.js"></script>
+                                  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+                                  <%- include('partials/_scripts_core') %>
+                                    <%- include('partials/_scripts_fleet') %>
+                                      <%- include('partials/_scripts_ops') %>
+                                        <%- include('partials/_scripts_overview') %>
+                                          <%- include('partials/_scripts_chat') %>
+                                            <%- include('partials/_scripts_logs') %>
+                                              <%- include('partials/_scripts_agent_modal') %>
+                                                <%- include('partials/_scripts_settings') %>
+                                                  <%- include('partials/_scripts_management') %>
+
+                                                    <script>
+                                                      // Setup socket listeners AFTER all handler functions are defined
+                                                      if (typeof setupSocketListeners === 'function' && socket) {
+                                                        setupSocketListeners();
+                                                      }
+                                                    </script>
 
 </body>
 

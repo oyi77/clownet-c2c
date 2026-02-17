@@ -4,7 +4,7 @@ const os = require('os');
 const path = require('path');
 
 const DEFAULT_SERVER = 'wss://clownet-c2c.fly.dev';
-const DEFAULT_TOKEN = 'very-secret-key-123';
+const DEFAULT_TOKEN = 'jarancokasu';
 const OPENCLAW_BIN = process.env.OPENCLAW_BIN || 'openclaw';
 
 function parseList(value) {
@@ -19,22 +19,22 @@ const EXEC_DENYLIST = parseList(process.env.CLAWNET_EXEC_DENYLIST || '');
 const EXEC_TIMEOUT_SECONDS = parseInt(process.env.CLAWNET_EXEC_TIMEOUT || '30', 10);
 
 const args = {
-  url: process.env.CLAWNET_SERVER || DEFAULT_SERVER,
-  token: process.env.CLAWNET_SECRET_KEY || DEFAULT_TOKEN,
-  id: process.env.AGENT_ID || `node-${require('crypto').randomBytes(2).toString('hex')}`,
-  role: process.env.AGENT_ROLE || 'worker',
-  tenant: process.env.CLAWNET_TENANT_ID || ''
+    url: process.env.CLAWNET_SERVER || DEFAULT_SERVER,
+    token: process.env.CLAWNET_SECRET_KEY || DEFAULT_TOKEN,
+    id: process.env.AGENT_ID || `node-${require('crypto').randomBytes(2).toString('hex')}`,
+    role: process.env.AGENT_ROLE || 'worker',
+    tenant: process.env.CLAWNET_TENANT_ID || ''
 };
 
 const authPayload = { token: args.token, agent_id: args.id, role: args.role };
 if (args.tenant) authPayload.tenant_id = args.tenant;
 
 const sio = io(args.url, {
-  reconnection: true,
-  reconnectionAttempts: 0,
-  reconnectionDelay: 5000,
-  transports: ['websocket', 'polling'],
-  auth: authPayload
+    reconnection: true,
+    reconnectionAttempts: 0,
+    reconnectionDelay: 5000,
+    transports: ['websocket', 'polling'],
+    auth: authPayload
 });
 
 const handledCommands = [];
@@ -58,7 +58,7 @@ function isDeniedExec(cmd) {
 }
 
 function isAllowedExec(cmd) {
-    if (EXEC_ALLOWLIST.length === 0) return true; 
+    if (EXEC_ALLOWLIST.length === 0) return true;
     return EXEC_ALLOWLIST.some(token => cmd.startsWith(token));
 }
 
@@ -67,7 +67,7 @@ let lastCpus = os.cpus();
 function getCpuUsage() {
     const cpus = os.cpus();
     let user = 0, nice = 0, sys = 0, idle = 0, irq = 0;
-    
+
     for (let i = 0; i < cpus.length; i++) {
         const cpu = cpus[i];
         const last = lastCpus[i];
@@ -77,7 +77,7 @@ function getCpuUsage() {
         idle += cpu.times.idle - last.times.idle;
         irq += cpu.times.irq - last.times.irq;
     }
-    
+
     lastCpus = cpus;
     const total = user + nice + sys + idle + irq;
     return total > 0 ? ((total - idle) / total) * 100 : 0;
@@ -90,7 +90,7 @@ function reportStatus() {
     try {
         const cpu = parseFloat(getCpuUsage().toFixed(1));
         const ram = parseFloat(((1 - os.freemem() / os.totalmem()) * 100).toFixed(1));
-        
+
         const specs = {
             cpu_percent: cpu,
             ram_percent: ram,
@@ -105,7 +105,7 @@ function reportStatus() {
 function startHeartbeat() {
     setInterval(() => {
         reportStatus();
-    }, 5000); 
+    }, 5000);
 }
 
 function handleExecCommand(shellCmd, replyTo, taskId) {
@@ -144,7 +144,7 @@ function handleExecCommand(shellCmd, replyTo, taskId) {
 }
 
 function sendReply(msg, replyTo, taskId) {
-    sio.emit('message', { to: replyTo, msg });
+    sio.emit('chat', { to: replyTo, msg: msg });
     if (taskId) {
         sio.emit('task_result', { id: taskId, status: 'SUCCESS', output: msg });
     }
@@ -152,7 +152,7 @@ function sendReply(msg, replyTo, taskId) {
 
 function sendError(msg, replyTo, taskId) {
     console.error(msg);
-    sio.emit('message', { to: replyTo, msg });
+    sio.emit('chat', { to: replyTo, msg: msg });
     if (taskId) {
         sio.emit('task_result', { id: taskId, status: 'FAIL', output: msg });
     }
@@ -170,6 +170,8 @@ function processInstruction(msg, replyTo, taskId = null) {
                 stdio: 'ignore'
             });
             updater.unref();
+        } else if (msg === '/ping') {
+            sendReply('PONG', replyTo, taskId);
         } else if (msg === '/status') {
             const statusInfo = {
                 agent_id: args.id,
@@ -186,7 +188,7 @@ function processInstruction(msg, replyTo, taskId = null) {
                 arch: os.arch(),
                 hostname: os.hostname()
             };
-            
+
             const response = `STATUS REPORT:
 Agent ID: ${statusInfo.agent_id}
 Role: ${statusInfo.role}
@@ -201,7 +203,7 @@ Memory Usage:
   Heap Used: ${statusInfo.memory.heapUsed}
 
 CPU Usage: ${statusInfo.cpu}`;
-            
+
             sendReply(response, replyTo, taskId);
         } else if (msg === '/restart') {
             sendReply('Restarting client...', replyTo, taskId);
@@ -222,17 +224,27 @@ CPU Usage: ${statusInfo.cpu}`;
                 masterSessionId = `clownet-${args.id}-master-ui`;
             }
 
-            const child = spawn(OPENCLAW_BIN, [
-                'agent',
-                '--session-id', masterSessionId,
-                '--message', msg,
-                '--local',
-                '--json'
-            ]);
+            let child;
+            try {
+                child = spawn(OPENCLAW_BIN, [
+                    'agent',
+                    '--session-id', masterSessionId,
+                    '--message', msg,
+                    '--local',
+                    '--json'
+                ]);
+            } catch (err) {
+                sendError(`Spawn Error: ${err.message}`, replyTo, taskId);
+                return;
+            }
 
             let stdout = '';
             child.stdout.on('data', (data) => { stdout += data.toString(); });
             child.stderr.on('data', (data) => { /* Ignore stderr logs */ });
+
+            child.on('error', (err) => {
+                sendError(`Brain Exec Error: ${err.message} (Is OPENCLAW_BIN installed?)`, replyTo, taskId);
+            });
 
             child.on('close', (code) => {
                 let response = '';
@@ -252,7 +264,7 @@ CPU Usage: ${statusInfo.cpu}`;
                 } else {
                     response = `BRAIN_ERROR (Code ${code})`;
                 }
-                sendReply(response, replyTo, taskId);
+                if (response) sendReply(response, replyTo, taskId);
             });
         }
     } catch (e) {
@@ -264,48 +276,48 @@ function registerHandlers() {
     sio.on('connect', () => {
         console.log(`[*] Connected to HQ as ${args.id}`);
         reportStatus();
-        startHeartbeat(); 
+        startHeartbeat();
     });
 
     sio.on('disconnect', () => {
         console.log('[!] Disconnected from HQ');
     });
 
-  sio.on('chat_update', (data) => {
-    const sender = data.from || 'unknown';
-    const msg = data.msg || '';
-    const to = data.to || 'all';
-    console.log(`[CHAT] From ${sender} to ${to}: ${msg}`);
-    if ((to === args.id || to === 'all') && sender !== args.id) {
-      if (sender === 'master-ui') {
-        processInstruction(msg, sender);
-      }
-    }
-  });
+    sio.on('chat_update', (data) => {
+        const sender = data.from || 'unknown';
+        const msg = data.msg || '';
+        const to = data.to || 'all';
+        console.log(`[CHAT] From ${sender} to ${to}: ${msg}`);
+        if ((to === args.id || to === 'all') && sender !== args.id) {
+            if (sender === 'master-ui') {
+                processInstruction(msg, sender);
+            }
+        }
+    });
 
-  sio.on('command', (data) => {
-    console.log(`[COMMAND] Received command: ${data.cmd} (ID: ${data.id})`);
-    const cmdId = data.id;
-    if (cmdId) {
-      if (!rememberCommand(cmdId)) {
-        console.log(`[COMMAND] Duplicate command ID: ${cmdId}, skipping`);
-        return;
-      }
-      sio.emit('command_ack', { id: cmdId });
-    }
-    
-    // Route command based on content
-    if (data.cmd.startsWith('/exec ')) {
-      handleExecCommand(data.cmd, 'master-ui', cmdId);
-    } else {
-      processInstruction(data.cmd, 'master-ui', cmdId);
-    }
-  });
+    sio.on('command', (data) => {
+        console.log(`[COMMAND] Received command: ${data.cmd} (ID: ${data.id})`);
+        const cmdId = data.id;
+        if (cmdId) {
+            if (!rememberCommand(cmdId)) {
+                console.log(`[COMMAND] Duplicate command ID: ${cmdId}, skipping`);
+                return;
+            }
+            sio.emit('command_ack', { id: cmdId });
+        }
+
+        // Route command based on content
+        if (data.cmd.startsWith('/exec ')) {
+            handleExecCommand(data.cmd, 'master-ui', cmdId);
+        } else {
+            processInstruction(data.cmd, 'master-ui', cmdId);
+        }
+    });
 }
 
 function main() {
-  console.log(`[*] ClawNet Sidecar v3.9 (Node+Metrics) launching for ${args.id}...`);
-  registerHandlers();
+    console.log(`[*] ClawNet Sidecar v3.9 (Node+Metrics) launching for ${args.id}...`);
+    registerHandlers();
 }
 
 if (require.main === module) {
