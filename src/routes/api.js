@@ -1,7 +1,7 @@
 const state = require('../state');
 const persistence = require('../persistence');
 const config = require('../config');
-const { readLastLines } = require('../utils/logger');
+const { readLastLines, readAuditLogs } = require('../utils/logger');
 const { getRecentTraffic } = require('../utils/audit');
 const { getServerStats } = require('../utils/server-monitor');
 
@@ -91,6 +91,20 @@ function register(fastify) {
         }
 
         return reply.send({ lines });
+    });
+
+    // Audit logs
+    fastify.get('/api/logs/audit', async (req, reply) => {
+        let limit = Math.min(parseInt(req.query.limit || '100', 10), 500);
+        const eventType = req.query.type || null;
+
+        let entries = readAuditLogs(limit);
+
+        if (eventType) {
+            entries = entries.filter(e => e.type === eventType);
+        }
+
+        return reply.send({ entries });
     });
 
     // Task logs

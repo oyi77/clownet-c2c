@@ -11,6 +11,7 @@ const DB_PATH = path.join(DATA_DIR, 'clownet_v3.json');
 const SETTINGS_PATH = path.join(DATA_DIR, 'settings.json');
 const SERVER_LOG_PATH = path.join(DATA_DIR, 'server.log');
 const TRAFFIC_LOG_PATH = path.join(DATA_DIR, 'traffic.log');
+const AUDIT_LOG_PATH = path.join(DATA_DIR, 'audit.log');
 
 // Safety controls
 function parseList(value) {
@@ -47,6 +48,7 @@ module.exports = {
     SETTINGS_PATH,
     SERVER_LOG_PATH,
     TRAFFIC_LOG_PATH,
+    AUDIT_LOG_PATH,
     COMMAND_DENYLIST,
     COMMAND_RISKYLIST,
     ACK_TIMEOUT_MS,

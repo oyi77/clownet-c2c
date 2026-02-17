@@ -187,7 +187,7 @@ Wave 5 (Integration + Testing):
 
 ## TODOs
 
-- [ ] 1. Server-side dashboard authentication middleware
+- [x] 1. Server-side dashboard authentication middleware
 
   **What to do**:
   - Create `src/middleware/auth.js` with JWT-based session validation
@@ -309,7 +309,7 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 3. Enhanced security audit logging
+- [x] 3. Enhanced security audit logging
 
   **What to do**:
   - Extend `src/utils/logger.js` with audit-specific logging

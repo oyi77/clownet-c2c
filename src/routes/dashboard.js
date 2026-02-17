@@ -11,7 +11,7 @@ function register(fastify) {
             agents: Object.values(s.agents),
             tasks: s.tasks.slice(-20),
             messages: s.messages.slice(-50),
-            secret: process.env.CLAWNET_SECRET_KEY || 'very-secret-key-123',
+            authEnabled: true,
             serverUrl: serverUrl,
             accessCodeRequired: false,
             isAccessCode: false,

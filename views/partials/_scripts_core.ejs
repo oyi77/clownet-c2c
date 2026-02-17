@@ -81,9 +81,7 @@
 <% } %>
 
 // --- 2. AUTHENTICATION LOGIC ---
-const secret = '<%= secret %>';
-
-  let token = localStorage.getItem('clawnet_token') || secret;
+  let token = sessionStorage.getItem('clawnet_token');
   let socket = null;
 
   const modal = document.getElementById('login-overlay');
@@ -124,7 +122,7 @@ const secret = '<%= secret %>';
       hideLogin();
       document.getElementById('status-dot').className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
       document.getElementById('status-text').innerText = 'ONLINE (' + socket.io.engine.transport.name.toUpperCase() + ')';
-      localStorage.setItem('clawnet_token', socket.auth.token);
+      sessionStorage.setItem('clawnet_token', socket.auth.token);
     });
 
     socket.on('connect_error', (err) => {
@@ -133,7 +131,7 @@ const secret = '<%= secret %>';
       document.getElementById('status-dot').className = 'w-2 h-2 bg-red-600 rounded-full';
 
       if (err.message === 'Unauthorized' || err.message.includes('auth')) {
-        localStorage.removeItem('clawnet_token');
+        sessionStorage.removeItem('clawnet_token');
         showLogin("ACCESS DENIED. INVALID CODE.");
       }
     });
@@ -156,14 +154,37 @@ const secret = '<%= secret %>';
     connectSocket(token);
   }
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const code = input.value.trim();
     if (code) {
       msg.innerText = "VERIFYING CREDENTIALS...";
       msg.classList.remove('text-red-400');
       msg.classList.add('text-yellow-400');
-      connectSocket(code);
+
+      try {
+        const response = await fetch('/api/auth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessCode: code })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const jwtToken = data.token;
+          sessionStorage.setItem('clawnet_token', jwtToken);
+          connectSocket(jwtToken);
+        } else {
+          msg.innerText = "ACCESS DENIED. INVALID CODE.";
+          msg.classList.remove('text-yellow-400');
+          msg.classList.add('text-red-400');
+        }
+      } catch (err) {
+        console.error("Auth error:", err);
+        msg.innerText = "AUTHENTICATION ERROR";
+        msg.classList.remove('text-yellow-400');
+        msg.classList.add('text-red-400');
+      }
     }
   });
 
