@@ -11,7 +11,16 @@ let masterSocket, workerASocket, workerBSocket;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+async function clearPort(port) {
+    const { exec } = require('child_process');
+    await new Promise((resolve) => {
+        exec(`lsof -t -i:${port} | xargs kill -9 2>/dev/null`, () => resolve());
+    });
+    await new Promise((resolve) => setTimeout(resolve, 150));
+}
+
 async function startServer() {
+    await clearPort(PORT);
     return new Promise((resolve, reject) => {
         serverProcess = spawn('node', [path.join(__dirname, '..', 'server.js')], {
             env: { ...process.env, PORT, CLAWNET_SECRET_KEY: SECRET_KEY },
@@ -56,6 +65,7 @@ function connectAgent(agentId, role) {
 }
 
 async function runTests() {
+    let exitCode = 0;
     try {
         console.log('🚀 Starting server...');
         await startServer();
@@ -117,7 +127,8 @@ async function runTests() {
             console.log('  ✓ Both workers received room chat');
         } else {
             console.log(`  ✗ FAIL: Only ${chatCount}/2 workers received chat`);
-            process.exit(1);
+            exitCode = 1;
+            return;
         }
 
         // TEST 3: Worker A leaves #squad-alpha
@@ -164,20 +175,21 @@ async function runTests() {
             console.log('  ✓ Only Worker B received (Worker A correctly excluded)');
         } else {
             console.log(`  ✗ FAIL: ${finalChatCount} agents received (expected 1)`);
-            process.exit(1);
+            exitCode = 1;
+            return;
         }
 
         console.log('\n✅ All tests passed!');
-        process.exit(0);
 
     } catch (err) {
         console.error('❌ Test failed:', err.message);
-        process.exit(1);
+        exitCode = 1;
     } finally {
         if (masterSocket) masterSocket.disconnect();
         if (workerASocket) workerASocket.disconnect();
         if (workerBSocket) workerBSocket.disconnect();
         if (serverProcess) serverProcess.kill();
+        process.exit(exitCode);
     }
 }
 

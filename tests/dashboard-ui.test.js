@@ -11,8 +11,17 @@ const DATA_DIR = path.join(__dirname, '..', 'data-test');
 
 let serverProcess = null;
 
+async function clearPort(port) {
+    const { exec } = require('child_process');
+    await new Promise((resolve) => {
+        exec(`lsof -t -i:${port} | xargs kill -9 2>/dev/null`, () => resolve());
+    });
+    await new Promise((resolve) => setTimeout(resolve, 150));
+}
+
 // Helper: Start server on TEST_PORT
 async function startServer() {
+    await clearPort(TEST_PORT);
     return new Promise((resolve, reject) => {
         // Clean test data directory
         if (fs.existsSync(DATA_DIR)) {
@@ -83,6 +92,8 @@ async function runTests() {
     let passed = 0;
     let failed = 0;
 
+    let exitCode = 0;
+
     try {
         // Start server
         console.log('Starting server on port', TEST_PORT);
@@ -92,6 +103,26 @@ async function runTests() {
         // Test 1: Dashboard HTML Structure
         console.log('Test 1: Dashboard HTML Structure');
         try {
+            const sentinelKey = 'SENSITIVE_TEST_KEY_DO_NOT_LEAK';
+
+            await axios.post(
+                `${BASE_URL}/api/settings`,
+                { supabase_url: 'https://example.supabase.co', supabase_key: sentinelKey },
+                { maxRedirects: 0, validateStatus: () => true }
+            );
+
+            const unauthResponse = await axios.get(`${BASE_URL}/dashboard`, {
+                validateStatus: () => true,
+            });
+
+            if (unauthResponse.status === 200 && !unauthResponse.data.includes(sentinelKey)) {
+                console.log('  ✓ Unauthenticated dashboard does not leak sensitive settings');
+                passed++;
+            } else {
+                console.log('  ✗ Unauthenticated dashboard leaked sensitive settings or returned bad status');
+                failed++;
+            }
+
             const response = await axios.get(`${BASE_URL}/dashboard`, {
                 headers: {
                     'Authorization': `Bearer ${AUTH_TOKEN}`
@@ -149,6 +180,84 @@ async function runTests() {
                 failed++;
             }
 
+            const authPayloadUsesSecret = response.data.includes('JSON.stringify({ secret: code })');
+            if (authPayloadUsesSecret) {
+                console.log('  ✓ Auth token request uses JSON.stringify({ secret: code })');
+                passed++;
+            } else {
+                console.log('  ✗ Auth token request does not use JSON.stringify({ secret: code })');
+                failed++;
+            }
+
+            const hasHardReconnectionCap = /reconnectionAttempts\s*:\s*\d+/.test(response.data);
+            if (!hasHardReconnectionCap) {
+                console.log('  ✓ Socket.IO client has no hard reconnectionAttempts cap');
+                passed++;
+            } else {
+                console.log('  ✗ Socket.IO client contains hard reconnectionAttempts cap');
+                failed++;
+            }
+
+            const hasUnsafeMemberInnerHtml = /function\s+updateMemberList\s*\([\s\S]*?list\.innerHTML\s*=\s*members\.map\(m\s*=>\s*`[\s\S]*?\$\{m\.id\}[\s\S]*?\$\{m\.role\}[\s\S]*?`\)\.join\(''\)/.test(response.data);
+            if (!hasUnsafeMemberInnerHtml) {
+                console.log('  ✓ Member list rendering avoids unsafe innerHTML interpolation');
+                passed++;
+            } else {
+                console.log('  ✗ Member list rendering uses unsafe innerHTML interpolation');
+                failed++;
+            }
+
+            const hasUnsafeTrafficInnerHtml = /function\s+handleTraffic\s*\([\s\S]*?innerHTML\s*=\s*`[\s\S]*?\$\{entry\.agent_id\}[\s\S]*?\$\{entry\.cmd\}[\s\S]*?\$\{entry\.status\}[\s\S]*?`/.test(response.data);
+            if (!hasUnsafeTrafficInnerHtml) {
+                console.log('  ✓ Traffic feed rendering avoids unsafe innerHTML interpolation');
+                passed++;
+            } else {
+                console.log('  ✗ Traffic feed rendering uses unsafe innerHTML interpolation');
+                failed++;
+            }
+
+            const hasUnsafeTaskLogsInnerHtml = /taskLogsEl\.innerHTML\s*=\s*\(data\.tasks\s*\|\|\s*\[\]\)\.map\(t\s*=>\s*`[\s\S]*?\$\{t\.id\.substring\(0,\s*8\)\}[\s\S]*?\$\{t\.cmd\}[\s\S]*?\$\{typeof t\.result === 'object' \? JSON\.stringify\(t\.result\) : t\.result \|\| 'Pending'\}[\s\S]*?`\)\.join\(''\)/.test(response.data);
+            if (!hasUnsafeTaskLogsInnerHtml) {
+                console.log('  ✓ Task logs rendering avoids unsafe innerHTML interpolation');
+                passed++;
+            } else {
+                console.log('  ✗ Task logs rendering uses unsafe innerHTML interpolation');
+                failed++;
+            }
+
+            const hasUnsafeAgentLogsInnerHtml = /logsBox\.innerHTML\s*=\s*agentTasks\.map\(t\s*=>/.test(response.data)
+                && /\$\{t\.cmd\}/.test(response.data)
+                && /\$\{output\s*\?/.test(response.data);
+            if (!hasUnsafeAgentLogsInnerHtml) {
+                console.log('  ✓ Agent logs modal rendering avoids unsafe innerHTML interpolation');
+                passed++;
+            } else {
+                console.log('  ✗ Agent logs modal rendering uses unsafe innerHTML interpolation');
+                failed++;
+            }
+
+            const hasUnsafeOpsTableInnerHtml = /body\.innerHTML\s*=\s*tasks\.slice\(\)\.reverse\(\)\.map\(/.test(response.data)
+                && /\$\{t\.agent_id\}/.test(response.data)
+                && /\$\{t\.cmd\}/.test(response.data);
+            if (!hasUnsafeOpsTableInnerHtml) {
+                console.log('  ✓ Ops task table avoids unsafe innerHTML interpolation for task fields');
+                passed++;
+            } else {
+                console.log('  ✗ Ops task table uses unsafe innerHTML interpolation for task fields');
+                failed++;
+            }
+
+            const hasUnsafeTemplatesGridInnerHtml = /grid\.innerHTML\s*=\s*data\.templates\.map\(/.test(response.data)
+                && /\$\{t\.name\}/.test(response.data)
+                && /\$\{t\.command\}/.test(response.data);
+            if (!hasUnsafeTemplatesGridInnerHtml) {
+                console.log('  ✓ Templates grid avoids unsafe innerHTML interpolation for template fields');
+                passed++;
+            } else {
+                console.log('  ✗ Templates grid uses unsafe innerHTML interpolation for template fields');
+                failed++;
+            }
+
             // Check for agent grid container
             const agentGrid = $('.agent-grid, [class*="grid"], [class*="agent"]').length > 0;
             if (agentGrid) {
@@ -164,17 +273,15 @@ async function runTests() {
             failed++;
         }
 
+    } catch (error) {
+        console.error('Test suite error:', error);
+        exitCode = 1;
+    } finally {
+        await stopServer();
         console.log('\n' + '='.repeat(50));
         console.log(`Results: ${passed} passed, ${failed} failed`);
         console.log('='.repeat(50));
-
-        process.exit(failed > 0 ? 1 : 0);
-
-    } catch (error) {
-        console.error('Test suite error:', error);
-        process.exit(1);
-    } finally {
-        await stopServer();
+        process.exit(exitCode || (failed > 0 ? 1 : 0));
     }
 }
 

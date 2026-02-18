@@ -13,8 +13,17 @@ const DB_PATH = path.join(DATA_DIR, 'clownet_v3.json');
 
 let serverProcess = null;
 
+async function clearPort(port) {
+    const { exec } = require('child_process');
+    await new Promise((resolve) => {
+        exec(`lsof -t -i:${port} | xargs kill -9 2>/dev/null`, () => resolve());
+    });
+    await new Promise((resolve) => setTimeout(resolve, 150));
+}
+
 // Helper: Start server on TEST_PORT
 async function startServer() {
+    await clearPort(TEST_PORT);
     return new Promise((resolve, reject) => {
         // Ensure data directory exists
         if (!fs.existsSync(DATA_DIR)) {
@@ -77,6 +86,8 @@ async function runTests() {
 
     let passed = 0;
     let failed = 0;
+
+    let exitCode = 0;
 
     try {
         // Clean up before test (remove old DB file if it exists)
@@ -180,21 +191,20 @@ async function runTests() {
             failed++;
         }
 
-        console.log('\n' + '='.repeat(50));
-        console.log(`Results: ${passed} passed, ${failed} failed`);
-        console.log('='.repeat(50));
-
-        process.exit(failed > 0 ? 1 : 0);
-
     } catch (error) {
         console.error('Test suite error:', error);
-        process.exit(1);
+        exitCode = 1;
     } finally {
         await stopServer();
         // Clean up test data (only remove the DB file, not the entire data dir)
         if (fs.existsSync(DB_PATH)) {
             fs.unlinkSync(DB_PATH);
         }
+
+        console.log('\n' + '='.repeat(50));
+        console.log(`Results: ${passed} passed, ${failed} failed`);
+        console.log('='.repeat(50));
+        process.exit(exitCode || (failed > 0 ? 1 : 0));
     }
 }
 
