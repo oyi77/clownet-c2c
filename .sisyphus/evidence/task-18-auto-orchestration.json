@@ -1,0 +1,334 @@
+{
+  "generatedAt": "2026-02-18T03:02:00.628Z",
+  "port": 45347,
+  "server": {
+    "baseUrl": "http://127.0.0.1:45347"
+  },
+  "emitted": [
+    {
+      "at": "2026-02-18T03:02:01.879Z",
+      "socket": "master-ui",
+      "event": "create_role",
+      "payload": {
+        "name": "auto-task-role",
+        "description": "Role for auto orchestration evidence"
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:01.881Z",
+      "socket": "master-ui",
+      "event": "assign_role_to_agent",
+      "payload": {
+        "agentId": "worker-auto-1",
+        "roleId": "e62e2dd5-55ce-48e9-9b10-652f7fde5146"
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:01.882Z",
+      "socket": "master-ui",
+      "event": "create_auto_orchestration",
+      "payload": {
+        "name": "task-18-primary",
+        "tasks": [
+          {
+            "description": "Execute auto task",
+            "command": "echo auto-task-1",
+            "requiredRoles": [
+              "e62e2dd5-55ce-48e9-9b10-652f7fde5146"
+            ]
+          }
+        ],
+        "loadBalanceStrategy": "round-robin"
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:01.883Z",
+      "socket": "master-ui",
+      "event": "start_auto_orchestration",
+      "payload": {
+        "orchestrationId": "46ba1249-e5e4-456a-ae30-198cd742ed7e"
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:01.884Z",
+      "socket": "worker-auto-1",
+      "event": "report_auto_task_result",
+      "payload": {
+        "orchestrationId": "46ba1249-e5e4-456a-ae30-198cd742ed7e",
+        "taskId": "23920204-74e8-4056-9a25-99fa7c4f33cd",
+        "status": "completed",
+        "result": "worker-auto-1 completed task"
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:02.087Z",
+      "socket": "master-ui",
+      "event": "get_auto_orchestration",
+      "payload": {
+        "orchestrationId": "46ba1249-e5e4-456a-ae30-198cd742ed7e"
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:02.093Z",
+      "socket": "master-ui",
+      "event": "create_auto_orchestration",
+      "payload": {
+        "name": "task-18-cancel",
+        "tasks": [
+          {
+            "description": "Task to cancel",
+            "command": "echo cancel-me",
+            "requiredRoles": [
+              "e62e2dd5-55ce-48e9-9b10-652f7fde5146"
+            ]
+          }
+        ],
+        "loadBalanceStrategy": "round-robin"
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:02.095Z",
+      "socket": "master-ui",
+      "event": "cancel_auto_orchestration",
+      "payload": {
+        "orchestrationId": "fad8591b-89b2-4eb7-a0e7-e751200a42f4"
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:02.097Z",
+      "socket": "master-ui",
+      "event": "get_auto_orchestration",
+      "payload": {
+        "orchestrationId": "fad8591b-89b2-4eb7-a0e7-e751200a42f4"
+      }
+    }
+  ],
+  "acks": [
+    {
+      "at": "2026-02-18T03:02:01.881Z",
+      "socket": "master-ui",
+      "event": "create_role",
+      "timeoutMs": 3000,
+      "response": {
+        "success": true,
+        "roleId": "e62e2dd5-55ce-48e9-9b10-652f7fde5146",
+        "message": "Role created successfully",
+        "timedOut": false,
+        "timeoutMs": 3000
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:01.882Z",
+      "socket": "master-ui",
+      "event": "assign_role_to_agent",
+      "timeoutMs": 3000,
+      "response": {
+        "success": true,
+        "message": "Role assigned successfully",
+        "timedOut": false,
+        "timeoutMs": 3000
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:01.883Z",
+      "socket": "master-ui",
+      "event": "create_auto_orchestration",
+      "timeoutMs": 3000,
+      "response": {
+        "success": true,
+        "orchestrationId": "46ba1249-e5e4-456a-ae30-198cd742ed7e",
+        "message": "Auto orchestration created successfully",
+        "timedOut": false,
+        "timeoutMs": 3000
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:01.884Z",
+      "socket": "master-ui",
+      "event": "start_auto_orchestration",
+      "timeoutMs": 3000,
+      "response": {
+        "success": true,
+        "message": "Auto orchestration started successfully",
+        "timedOut": false,
+        "timeoutMs": 3000
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:01.885Z",
+      "socket": "worker-auto-1",
+      "event": "report_auto_task_result",
+      "timeoutMs": 3000,
+      "response": {
+        "success": true,
+        "message": "Task result recorded",
+        "timedOut": false,
+        "timeoutMs": 3000
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:02.093Z",
+      "socket": "master-ui",
+      "event": "get_auto_orchestration",
+      "timeoutMs": 3000,
+      "response": {
+        "success": true,
+        "data": {
+          "orchestrationId": "46ba1249-e5e4-456a-ae30-198cd742ed7e",
+          "name": "task-18-primary",
+          "tasks": [
+            {
+              "taskId": "23920204-74e8-4056-9a25-99fa7c4f33cd",
+              "description": "Execute auto task",
+              "command": "echo auto-task-1",
+              "requiredRoles": [
+                "e62e2dd5-55ce-48e9-9b10-652f7fde5146"
+              ],
+              "status": "completed",
+              "assignedAgentId": "worker-auto-1",
+              "result": "worker-auto-1 completed task",
+              "startedAt": 1771383721884,
+              "completedAt": 1771383721884,
+              "retryCount": 0
+            }
+          ],
+          "loadBalanceStrategy": "round-robin",
+          "maxAgentsPerRole": null,
+          "status": "completed",
+          "createdAt": 1771383721883,
+          "startedAt": 1771383721883,
+          "completedAt": 1771383721884
+        },
+        "timedOut": false,
+        "timeoutMs": 3000
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:02.095Z",
+      "socket": "master-ui",
+      "event": "create_auto_orchestration",
+      "timeoutMs": 3000,
+      "response": {
+        "success": true,
+        "orchestrationId": "fad8591b-89b2-4eb7-a0e7-e751200a42f4",
+        "message": "Auto orchestration created successfully",
+        "timedOut": false,
+        "timeoutMs": 3000
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:02.097Z",
+      "socket": "master-ui",
+      "event": "cancel_auto_orchestration",
+      "timeoutMs": 3000,
+      "response": {
+        "success": true,
+        "message": "Orchestration cancelled successfully",
+        "timedOut": false,
+        "timeoutMs": 3000
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:02.098Z",
+      "socket": "master-ui",
+      "event": "get_auto_orchestration",
+      "timeoutMs": 3000,
+      "response": {
+        "success": true,
+        "data": {
+          "orchestrationId": "fad8591b-89b2-4eb7-a0e7-e751200a42f4",
+          "name": "task-18-cancel",
+          "tasks": [
+            {
+              "taskId": "4bb125b4-fe53-44b6-b0e1-0de609641f9e",
+              "description": "Task to cancel",
+              "command": "echo cancel-me",
+              "requiredRoles": [
+                "e62e2dd5-55ce-48e9-9b10-652f7fde5146"
+              ],
+              "status": "failed",
+              "assignedAgentId": null,
+              "result": "Orchestration cancelled",
+              "startedAt": null,
+              "completedAt": 1771383722096,
+              "retryCount": 0
+            }
+          ],
+          "loadBalanceStrategy": "round-robin",
+          "maxAgentsPerRole": null,
+          "status": "cancelled",
+          "createdAt": 1771383722095,
+          "startedAt": null,
+          "completedAt": 1771383722096
+        },
+        "timedOut": false,
+        "timeoutMs": 3000
+      }
+    }
+  ],
+  "waits": [
+    {
+      "at": "2026-02-18T03:02:01.884Z",
+      "socket": "worker-auto-1",
+      "event": "exec_task",
+      "timeoutMs": 7000,
+      "waitedMs": 1,
+      "success": true
+    }
+  ],
+  "receivedEvents": [
+    {
+      "at": "2026-02-18T03:02:01.875Z",
+      "socket": "master-ui",
+      "event": "connect",
+      "payload": {
+        "id": "ccmARlIaz-QUWrd9AAAB"
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:01.879Z",
+      "socket": "worker-auto-1",
+      "event": "connect",
+      "payload": {
+        "id": "igWv8hVT8OJQLjovAAAD"
+      }
+    },
+    {
+      "at": "2026-02-18T03:02:01.884Z",
+      "socket": "worker-auto-1",
+      "event": "exec_task",
+      "payload": {
+        "orchestrationId": "46ba1249-e5e4-456a-ae30-198cd742ed7e",
+        "taskId": "23920204-74e8-4056-9a25-99fa7c4f33cd",
+        "description": "Execute auto task",
+        "command": "echo auto-task-1",
+        "agentId": "worker-auto-1"
+      },
+      "accepted": true
+    }
+  ],
+  "ids": {
+    "roleId": "e62e2dd5-55ce-48e9-9b10-652f7fde5146",
+    "primaryOrchestrationId": "46ba1249-e5e4-456a-ae30-198cd742ed7e",
+    "primaryTaskId": "23920204-74e8-4056-9a25-99fa7c4f33cd",
+    "execTaskAgentId": "worker-auto-1",
+    "cancelOrchestrationId": "fad8591b-89b2-4eb7-a0e7-e751200a42f4"
+  },
+  "checks": {
+    "roleSetup": true,
+    "createAutoOrchestration": true,
+    "startAutoOrchestration": true,
+    "execTaskReceived": true,
+    "reportAutoTaskResult": true,
+    "getAutoOrchestrationCompleted": true,
+    "cancelPath": true,
+    "ackCoverage": true,
+    "timeoutCoverage": true
+  },
+  "allRequiredPassed": true,
+  "error": null,
+  "serverLogsTail": [
+    "{\"level\":30,\"time\":1771383720836,\"pid\":82648,\"hostname\":\"MacBook-Air.local\",\"msg\":\"Server listening at http://0.0.0.0:45347\"}\n",
+    "ClawNet Relay v3.5 operational on port 45347\n"
+  ]
+}

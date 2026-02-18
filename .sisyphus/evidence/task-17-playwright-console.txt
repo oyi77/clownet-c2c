@@ -1,0 +1,35 @@
+Total messages: 20 (Errors: 17, Warnings: 0)
+
+[VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:3000/dashboard:0
+[ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico:0
+[VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:3000/dashboard:0
+[VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:3000/dashboard:0
+Unexpected token '<'
+ReferenceError: opsDispatch is not defined
+    at http://localhost:3000/dashboard:8069:1
+ReferenceError: masterInput is not defined
+    at http://localhost:3000/dashboard:8514:3
+ReferenceError: modalClose is not defined
+    at http://localhost:3000/dashboard:8748:1
+ReferenceError: socket is not defined
+    at http://localhost:3000/dashboard:9490:1
+ReferenceError: showTab is not defined
+    at HTMLButtonElement.onclick (http://localhost:3000/dashboard:257:38)
+Unexpected token '<'
+ReferenceError: opsDispatch is not defined
+    at http://localhost:3000/dashboard:8069:1
+ReferenceError: masterInput is not defined
+    at http://localhost:3000/dashboard:8514:3
+ReferenceError: modalClose is not defined
+    at http://localhost:3000/dashboard:8748:1
+ReferenceError: socket is not defined
+    at http://localhost:3000/dashboard:9490:1
+Unexpected token '<'
+ReferenceError: opsDispatch is not defined
+    at http://localhost:3000/dashboard:8069:1
+ReferenceError: masterInput is not defined
+    at http://localhost:3000/dashboard:8514:3
+ReferenceError: modalClose is not defined
+    at http://localhost:3000/dashboard:8748:1
+ReferenceError: socket is not defined
+    at http://localhost:3000/dashboard:9490:1

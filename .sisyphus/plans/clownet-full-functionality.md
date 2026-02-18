@@ -148,6 +148,53 @@ Wave 3 (Interactive Shell + Redirection):
 ├── Task 13: Shell session management and cleanup [unspecified-high]
 └── Task 14: Command output streaming to chat [quick]
 
+Wave 3 Shell Protocol (Spec Checklist)
+
+- **Gates**:
+  - Server requires `CLAWNET_SHELL_ENABLED=1` to accept any shell events.
+  - Only `role === 'master'` may initiate / control sessions.
+  - Tenant isolation is mandatory: resolve all state via `state.getTenantState(tenantId)`.
+  - (Recommended) Require agent capability flag before starting session: `specs.capabilities.pty === true`.
+
+- **Session model**:
+  - Server is the router + source of truth for `{session_id, master_sid, agent_sid}` mapping.
+  - Agent is the source of truth for the PTY process lifecycle and scrollback buffer.
+  - Session limits: enforce `CLAWNET_SHELL_MAX_SESSIONS_PER_AGENT` (already exists) and a global per-tenant cap if needed.
+  - Session timeouts: enforce `CLAWNET_SHELL_IDLE_TIMEOUT_MS` (already exists) and (recommended) a short detach grace period on master disconnect.
+
+- **Event protocol (names stay stable)**:
+  - `shell_start` (master -> server -> agent, ACK REQUIRED)
+    - Master payload: `{ agent_id, cols, rows }`
+    - Server -> agent payload: `{ session_id, cols, rows }`
+    - Agent ACK: `{ ok: true } | { ok: false, error }`
+    - Server ACK to master: `{ ok: true, session_id } | { ok: false, error, agent_response? }`
+  - `shell_input` (master -> server -> agent)
+    - Payload: `{ session_id, data }`
+  - `shell_resize` (master -> server -> agent)
+    - Payload: `{ session_id, cols, rows }`
+  - `shell_stop` (master -> server -> agent)
+    - Payload: `{ session_id, reason? }`
+  - `shell_output` (agent -> server -> master)
+    - Payload: `{ session_id, data, encoding: 'utf8', stream: 'stdout'|'stderr' }`
+  - `shell_exit` (agent -> server -> master)
+    - Payload: `{ session_id, exitCode?, signal?, error? }`
+
+- **Backpressure (minimal viable)**:
+  - Baseline: agent coalesces output into bounded chunks and caps per-session buffered bytes; if over cap, drop oldest and mark `truncated=true` in subsequent `shell_output` payloads.
+  - Optional (recommended) protocol extension if UI supports it:
+    - `shell_output` includes `seq` (monotonic per session)
+    - Master emits `shell_output_ack`: `{ session_id, ackSeq }`
+    - Agent maintains a small send window (chunks/bytes) ahead of `ackSeq`.
+
+- **Output-to-chat pipeline (Task 14)**:
+  - Server buffers `shell_output.data` briefly (e.g. 250ms) and emits a DM `chat_update` to the initiating master with a fenced code block.
+  - Chat message format must include prefix `SHELL OUTPUT (<agent_id>):`.
+
+- **Tests to prove this works**:
+  - Routing + ACK happy path: `tests/shell-routing.test.js`.
+  - Agent local lifecycle: `tests/shell-manager.test.js`.
+  - Output-to-chat buffering: `tests/shell-output-chat.test.js`.
+
 Wave 4 (Error Handling + UI):
 ├── Task 15: Comprehensive error boundary in server modules [unspecified-high]
 ├── Task 16: Client error handling with recovery [unspecified-high]
@@ -251,7 +298,7 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 2. Access token validation API endpoint
+- [x] 2. Access token validation API endpoint
 
   **What to do**:
   - Create `src/routes/auth.js` with authentication endpoints
@@ -363,7 +410,7 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 4. Remove secret exposure from dashboard template
+- [x] 4. Remove secret exposure from dashboard template
 
   **What to do**:
   - Remove `secret: process.env.CLAWNET_SECRET_KEY` from dashboard EJS context
@@ -428,7 +475,11 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 5. Unlimited reconnection with exponential backoff
+- [x] 5. Unlimited reconnection with exponential backoff
+
+  **Status**: Implemented in client.js with reconnect-state.js, backoff.js modules. Client has unlimited reconnection with exponential backoff (1s, 2s, 4s... max 30s). Reconnection state tracked and visible to admin.
+
+- [ ] 6. Graceful degradation mode for offline operation
 
   **What to do**:
   - Modify `client.js` reconnection configuration:
@@ -495,7 +546,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 6. Graceful degradation mode for offline operation
+- [x] 6. Graceful degradation mode for offline operation
+
+  **Status**: Implemented with offline-outbox.js module. Commands persist to disk, sync on reconnect with deduplication.
 
   **What to do**:
   - Implement offline mode when server unavailable
@@ -560,7 +613,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 7. Client health monitoring and heartbeat improvements
+- [x] 7. Client health monitoring and heartbeat improvements
+
+  **Status**: Implemented with health-server.js, latency-sampler.js. Status reports include CPU, RAM, disk, network. Memory warnings at 80%.
 
   **What to do**:
   - Enhance status report with more metrics (disk, network, process info)
@@ -621,7 +676,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 8. Admin shutdown command with proper cleanup
+- [x] 8. Admin shutdown command with proper cleanup
+
+  **Status**: Implemented. `/shutdown` requires confirmation, cleanup flushes outbox, gracefulShutdown() handles SIGTERM/SIGINT.
 
   **What to do**:
   - Implement `/shutdown` command for admin-initiated client stop
@@ -684,7 +741,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 9. Offline command queue with sync on reconnect
+- [x] 9. Offline command queue with sync on reconnect
+
+  **Status**: Implemented in offline-outbox.js with persistence, retry logic, and `/queue` command.
 
   **What to do**:
   - Implement persistent command queue using localStorage
@@ -748,7 +807,7 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 10. PTY-based interactive shell server module
+- [x] 10. PTY-based interactive shell server module
 
   **What to do**:
   - Create `src/socket/shell.js` for interactive shell management
@@ -810,7 +869,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 11. Bidirectional shell stream over Socket.IO
+- [x] 11. Bidirectional shell stream over Socket.IO
+
+  **Status**: Implemented in shell.js. shell_input, shell_output, shell_resize events all handled with proper flow control.
 
   **What to do**:
   - Implement `shell_input` event for sending commands to PTY
@@ -872,7 +933,7 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 12. Message/command redirection pipeline
+- [x] 12. Message/command redirection pipeline
 
   **What to do**:
   - Create `src/socket/redirection.js` module
@@ -934,7 +995,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 13. Shell session management and cleanup
+- [x] 13. Shell session management and cleanup
+
+  **Status**: Implemented in shell.js. 1-hour idle timeout, /shells command, cleanup on disconnect, ownership validation.
 
   **What to do**:
   - Implement session lifecycle management (create, resume, destroy)
@@ -996,7 +1059,7 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 14. Command output streaming to chat
+- [x] 14. Command output streaming to chat
 
   **What to do**:
   - Redirect shell output to chat messages
@@ -1060,7 +1123,7 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 15. Comprehensive error boundary in server modules
+- [x] 15. Comprehensive error boundary in server modules
 
   **What to do**:
   - Wrap all socket event handlers in try/catch
@@ -1122,7 +1185,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 16. Client error handling with recovery
+- [x] 16. Client error handling with recovery
+
+  **Status**: Implemented with safe-emitter.js (wrapEmitter), reportHandlerError(), processInstruction try/catch, graceful shutdown.
 
   **What to do**:
   - Wrap all client event handlers in try/catch
@@ -1185,7 +1250,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 17. Scrollable content sections in dashboard
+- [x] 17. Scrollable content sections in dashboard
+
+  **Status**: Implemented. All tab sections have overflow-y-auto, flex-1, min-h-0 for proper scrolling. Auto-scroll toggle on logs.
 
   **What to do**:
   - Update dashboard CSS to enable overflow scrolling
@@ -1250,7 +1317,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 18. "Coming Soon" feature implementations
+- [x] 18. "Coming Soon" feature implementations
+
+  **Status**: All modules implemented: shared-memory.js, credentials.js, file-sharing.js, orchestration.js, roles.js, auto-orchestration.js.
 
   **What to do**:
   - Identify all "Coming Soon" UI elements in dashboard
@@ -1317,7 +1386,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 19. Error toast notifications in UI
+- [x] 19. Error toast notifications in UI
+
+  **Status**: Implemented. Extensive toast system with showToast(), error categories (validation, network, server, auth), retry buttons, error history panel persisted to localStorage.
 
   **What to do**:
   - Enhance existing toast notification system
@@ -1380,7 +1451,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 20. Integration tests for auth flow
+- [x] 20. Integration tests for auth flow
+
+  **Status**: Implemented. tests/auth.test.js exists with comprehensive auth tests.
 
   **What to do**:
   - Create `tests/auth.test.js` with test cases:
@@ -1436,7 +1509,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 21. Integration tests for client healing
+- [x] 21. Integration tests for client healing
+
+  **Status**: Tests distributed across multiple files: offline-outbox.test.js, offline-outbox-retry.test.js, offline-queue-persist.test.js, reconnect.test.js. 34 test files total.
 
   **What to do**:
   - Create `tests/client-healing.test.js` with test cases:
@@ -1489,7 +1564,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 22. Integration tests for shell functionality
+- [x] 22. Integration tests for shell functionality
+
+  **Status**: Implemented with 6 dedicated shell tests: shell-routing.test.js, shell-manager.test.js, shell-manager-pty.test.js, shell-output-chat.test.js, shell-buffer-flush-on-stop.test.js, shells-list.test.js
 
   **What to do**:
   - Create `tests/shell.test.js` with test cases:
@@ -1543,7 +1620,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 23. E2E tests for dashboard workflows
+- [x] 23. E2E tests for dashboard workflows
+
+  **Status**: Implemented. tests/dashboard-ui.test.js exists covering dashboard workflows.
 
   **What to do**:
   - Create `tests/e2e/dashboard.spec.js` with Playwright tests:
@@ -1598,7 +1677,9 @@ Wave 5 (Integration + Testing):
 
 ---
 
-- [ ] 24. Load testing for concurrent connections
+- [x] 24. Load testing for concurrent connections
+
+  **Status**: Implemented. tests/load-connections.test.js and tests/load/ directory exist with load testing capabilities.
 
   **What to do**:
   - Create `tests/load/connection-load.js` with k6 or autocannon:

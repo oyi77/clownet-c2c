@@ -1,0 +1,7 @@
+Date: 2026-02-18
+
+Command: node tests/socket-error-boundary.test.js
+
+Expected: handler exceptions do not crash server
+
+Observed: PASS (server stayed alive; GET / returned 200)

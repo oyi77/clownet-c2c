@@ -1,0 +1,427 @@
+{
+  "recordedAt": "2026-02-18T02:44:34.084Z",
+  "port": 56930,
+  "auth": {
+    "tokenUsed": "[redacted]",
+    "clients": [
+      {
+        "agent_id": "master-ui",
+        "role": "master"
+      },
+      {
+        "agent_id": "worker-orch-1",
+        "role": "worker"
+      }
+    ]
+  },
+  "checks": {
+    "create_orchestration": true,
+    "list_orchestrations": true,
+    "get_orchestration": true,
+    "start_orchestration": true,
+    "orchestration_started_event": true,
+    "orchestration_task_event": true,
+    "report_task_result": true,
+    "orchestration_completed_event": true,
+    "cancel_orchestration": true,
+    "orchestration_cancelled_event": true,
+    "status_completed_confirmed": true,
+    "status_cancelled_confirmed": true
+  },
+  "allRequiredPassed": true,
+  "emitted": [
+    {
+      "at": "2026-02-18T02:44:34.360Z",
+      "client": "master-ui",
+      "event": "create_orchestration",
+      "payload": {
+        "name": "task18-evidence-main",
+        "agents": [
+          "worker-orch-1"
+        ],
+        "tasks": [
+          {
+            "action": "collect",
+            "target": "worker-orch-1",
+            "params": {
+              "stage": 0
+            }
+          },
+          {
+            "action": "complete-marker",
+            "target": "worker-orch-1",
+            "params": {
+              "stage": 1
+            }
+          }
+        ]
+      },
+      "expectsAck": false
+    },
+    {
+      "at": "2026-02-18T02:44:34.612Z",
+      "client": "master-ui",
+      "event": "list_orchestrations",
+      "payload": {},
+      "expectsAck": true
+    },
+    {
+      "at": "2026-02-18T02:44:34.614Z",
+      "client": "master-ui",
+      "event": "get_orchestration",
+      "payload": {
+        "orchId": "orch-1771382674361-task18-evidence-main"
+      },
+      "expectsAck": true
+    },
+    {
+      "at": "2026-02-18T02:44:34.615Z",
+      "client": "master-ui",
+      "event": "start_orchestration",
+      "payload": {
+        "orchId": "orch-1771382674361-task18-evidence-main"
+      },
+      "expectsAck": false
+    },
+    {
+      "at": "2026-02-18T02:44:34.616Z",
+      "client": "worker-orch-1",
+      "event": "report_task_result",
+      "payload": {
+        "orchId": "orch-1771382674361-task18-evidence-main",
+        "taskIndex": 1,
+        "result": {
+          "ok": true,
+          "fromTaskIndex": 0,
+          "worker": "worker-orch-1"
+        }
+      },
+      "expectsAck": false
+    },
+    {
+      "at": "2026-02-18T02:44:34.667Z",
+      "client": "master-ui",
+      "event": "create_orchestration",
+      "payload": {
+        "name": "task18-evidence-cancel",
+        "agents": [
+          "worker-orch-1"
+        ],
+        "tasks": [
+          {
+            "action": "noop",
+            "target": "worker-orch-1"
+          }
+        ]
+      },
+      "expectsAck": false
+    },
+    {
+      "at": "2026-02-18T02:44:34.920Z",
+      "client": "master-ui",
+      "event": "list_orchestrations",
+      "payload": {},
+      "expectsAck": true
+    },
+    {
+      "at": "2026-02-18T02:44:34.922Z",
+      "client": "master-ui",
+      "event": "cancel_orchestration",
+      "payload": {
+        "orchId": "orch-1771382674668-task18-evidence-cancel"
+      },
+      "expectsAck": false
+    },
+    {
+      "at": "2026-02-18T02:44:34.974Z",
+      "client": "master-ui",
+      "event": "get_orchestration",
+      "payload": {
+        "orchId": "orch-1771382674361-task18-evidence-main"
+      },
+      "expectsAck": true
+    },
+    {
+      "at": "2026-02-18T02:44:34.975Z",
+      "client": "master-ui",
+      "event": "get_orchestration",
+      "payload": {
+        "orchId": "orch-1771382674668-task18-evidence-cancel"
+      },
+      "expectsAck": true
+    }
+  ],
+  "ackResponses": [
+    {
+      "at": "2026-02-18T02:44:34.614Z",
+      "client": "master-ui",
+      "event": "list_orchestrations",
+      "response": {
+        "orchestrations": [
+          {
+            "orchId": "orch-1771382674361-task18-evidence-main",
+            "name": "task18-evidence-main",
+            "agents": [
+              "worker-orch-1"
+            ],
+            "status": "created",
+            "owner": "master-ui",
+            "timestamp": "2026-02-18T02:44:34.361Z",
+            "startedAt": null,
+            "completedAt": null
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-02-18T02:44:34.615Z",
+      "client": "master-ui",
+      "event": "get_orchestration",
+      "response": {
+        "orchId": "orch-1771382674361-task18-evidence-main",
+        "name": "task18-evidence-main",
+        "agents": [
+          "worker-orch-1"
+        ],
+        "tasks": [
+          {
+            "action": "collect",
+            "target": "worker-orch-1",
+            "params": {
+              "stage": 0
+            }
+          },
+          {
+            "action": "complete-marker",
+            "target": "worker-orch-1",
+            "params": {
+              "stage": 1
+            }
+          }
+        ],
+        "status": "created",
+        "owner": "master-ui",
+        "timestamp": "2026-02-18T02:44:34.361Z",
+        "startedAt": null,
+        "completedAt": null,
+        "results": {}
+      }
+    },
+    {
+      "at": "2026-02-18T02:44:34.922Z",
+      "client": "master-ui",
+      "event": "list_orchestrations",
+      "response": {
+        "orchestrations": [
+          {
+            "orchId": "orch-1771382674361-task18-evidence-main",
+            "name": "task18-evidence-main",
+            "agents": [
+              "worker-orch-1"
+            ],
+            "status": "completed",
+            "owner": "master-ui",
+            "timestamp": "2026-02-18T02:44:34.361Z",
+            "startedAt": "2026-02-18T02:44:34.615Z",
+            "completedAt": "2026-02-18T02:44:34.617Z"
+          },
+          {
+            "orchId": "orch-1771382674668-task18-evidence-cancel",
+            "name": "task18-evidence-cancel",
+            "agents": [
+              "worker-orch-1"
+            ],
+            "status": "created",
+            "owner": "master-ui",
+            "timestamp": "2026-02-18T02:44:34.668Z",
+            "startedAt": null,
+            "completedAt": null
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-02-18T02:44:34.975Z",
+      "client": "master-ui",
+      "event": "get_orchestration",
+      "response": {
+        "orchId": "orch-1771382674361-task18-evidence-main",
+        "name": "task18-evidence-main",
+        "agents": [
+          "worker-orch-1"
+        ],
+        "tasks": [
+          {
+            "action": "collect",
+            "target": "worker-orch-1",
+            "params": {
+              "stage": 0
+            }
+          },
+          {
+            "action": "complete-marker",
+            "target": "worker-orch-1",
+            "params": {
+              "stage": 1
+            }
+          }
+        ],
+        "status": "completed",
+        "owner": "master-ui",
+        "timestamp": "2026-02-18T02:44:34.361Z",
+        "startedAt": "2026-02-18T02:44:34.615Z",
+        "completedAt": "2026-02-18T02:44:34.617Z",
+        "results": {
+          "1": [
+            {
+              "agentId": "worker-orch-1",
+              "result": {
+                "ok": true,
+                "fromTaskIndex": 0,
+                "worker": "worker-orch-1"
+              },
+              "timestamp": "2026-02-18T02:44:34.617Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "at": "2026-02-18T02:44:34.976Z",
+      "client": "master-ui",
+      "event": "get_orchestration",
+      "response": {
+        "orchId": "orch-1771382674668-task18-evidence-cancel",
+        "name": "task18-evidence-cancel",
+        "agents": [
+          "worker-orch-1"
+        ],
+        "tasks": [
+          {
+            "action": "noop",
+            "target": "worker-orch-1"
+          }
+        ],
+        "status": "cancelled",
+        "owner": "master-ui",
+        "timestamp": "2026-02-18T02:44:34.668Z",
+        "startedAt": null,
+        "completedAt": "2026-02-18T02:44:34.923Z",
+        "results": {}
+      }
+    }
+  ],
+  "receivedEvents": [
+    {
+      "at": "2026-02-18T02:44:34.361Z",
+      "client": "worker-orch-1",
+      "event": "orchestration_created",
+      "payload": {
+        "orchId": "orch-1771382674361-task18-evidence-main",
+        "name": "task18-evidence-main",
+        "owner": "master-ui",
+        "timestamp": "2026-02-18T02:44:34.361Z"
+      }
+    },
+    {
+      "at": "2026-02-18T02:44:34.616Z",
+      "client": "worker-orch-1",
+      "event": "orchestration_started",
+      "payload": {
+        "orchId": "orch-1771382674361-task18-evidence-main",
+        "name": "task18-evidence-main",
+        "tasks": [
+          {
+            "action": "collect",
+            "target": "worker-orch-1",
+            "params": {
+              "stage": 0
+            }
+          },
+          {
+            "action": "complete-marker",
+            "target": "worker-orch-1",
+            "params": {
+              "stage": 1
+            }
+          }
+        ],
+        "timestamp": "2026-02-18T02:44:34.615Z"
+      }
+    },
+    {
+      "at": "2026-02-18T02:44:34.616Z",
+      "client": "worker-orch-1",
+      "event": "orchestration_task",
+      "payload": {
+        "orchId": "orch-1771382674361-task18-evidence-main",
+        "taskIndex": 0,
+        "task": {
+          "action": "collect",
+          "target": "worker-orch-1",
+          "params": {
+            "stage": 0
+          }
+        },
+        "timestamp": "2026-02-18T02:44:34.616Z"
+      }
+    },
+    {
+      "at": "2026-02-18T02:44:34.617Z",
+      "client": "worker-orch-1",
+      "event": "orchestration_completed",
+      "payload": {
+        "orchId": "orch-1771382674361-task18-evidence-main",
+        "name": "task18-evidence-main",
+        "results": {
+          "1": [
+            {
+              "agentId": "worker-orch-1",
+              "result": {
+                "ok": true,
+                "fromTaskIndex": 0,
+                "worker": "worker-orch-1"
+              },
+              "timestamp": "2026-02-18T02:44:34.617Z"
+            }
+          ]
+        },
+        "timestamp": "2026-02-18T02:44:34.617Z"
+      }
+    },
+    {
+      "at": "2026-02-18T02:44:34.670Z",
+      "client": "worker-orch-1",
+      "event": "orchestration_created",
+      "payload": {
+        "orchId": "orch-1771382674668-task18-evidence-cancel",
+        "name": "task18-evidence-cancel",
+        "owner": "master-ui",
+        "timestamp": "2026-02-18T02:44:34.668Z"
+      }
+    },
+    {
+      "at": "2026-02-18T02:44:34.923Z",
+      "client": "worker-orch-1",
+      "event": "orchestration_cancelled",
+      "payload": {
+        "orchId": "orch-1771382674668-task18-evidence-cancel",
+        "name": "task18-evidence-cancel",
+        "cancelledBy": "master-ui",
+        "timestamp": "2026-02-18T02:44:34.923Z"
+      }
+    }
+  ],
+  "notes": [
+    {
+      "at": "2026-02-18T02:44:34.321Z",
+      "source": "server.stdout",
+      "line": "{\"level\":30,\"time\":1771382674320,\"pid\":78181,\"hostname\":\"MacBook-Air.local\",\"msg\":\"Server listening at http://0.0.0.0:56930\"}"
+    },
+    {
+      "at": "2026-02-18T02:44:34.321Z",
+      "source": "server.stdout",
+      "line": "ClawNet Relay v3.5 operational on port 56930"
+    }
+  ]
+}

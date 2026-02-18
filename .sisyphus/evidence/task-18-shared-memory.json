@@ -1,0 +1,99 @@
+{
+  "task": 18,
+  "module": "shared-memory",
+  "generatedAt": "2026-02-18T01:51:56.143Z",
+  "connection": {
+    "url": "http://localhost:4118",
+    "auth": {
+      "token": "very-secret-key-123",
+      "agent_id": "evidence-shm",
+      "role": "tester"
+    }
+  },
+  "checks": {
+    "set": {
+      "event": "set_shared_memory",
+      "payload": {
+        "key": "test",
+        "value": "hello",
+        "ttl": 1
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "key": "test",
+          "value": "hello",
+          "owner": "evidence-shm",
+          "timestamp": "2026-02-18T01:51:54.834Z"
+        }
+      }
+    },
+    "getImmediate": {
+      "event": "get_shared_memory",
+      "payload": {
+        "key": "test"
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "key": "test",
+          "value": "hello",
+          "owner": "evidence-shm",
+          "timestamp": "2026-02-18T01:51:54.834Z"
+        }
+      }
+    },
+    "list": {
+      "event": "list_shared_memory",
+      "payload": {},
+      "response": {
+        "success": true,
+        "data": {
+          "keys": [
+            "test"
+          ]
+        }
+      },
+      "includesTestKey": true
+    },
+    "ttlExpiry": {
+      "waitedMs": 1300,
+      "event": "get_shared_memory",
+      "payload": {
+        "key": "test"
+      },
+      "response": {
+        "success": false,
+        "error": "Key expired"
+      }
+    },
+    "delete": {
+      "setupEvent": "set_shared_memory",
+      "setupPayload": {
+        "key": "delete-test",
+        "value": "bye",
+        "ttl": 60
+      },
+      "setupResponse": {
+        "success": true,
+        "data": {
+          "key": "delete-test",
+          "value": "bye",
+          "owner": "evidence-shm",
+          "timestamp": "2026-02-18T01:51:56.140Z"
+        }
+      },
+      "event": "delete_shared_memory",
+      "payload": {
+        "key": "delete-test"
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "key": "delete-test",
+          "deletedBy": "evidence-shm"
+        }
+      }
+    }
+  }
+}

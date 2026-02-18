@@ -1,0 +1,8 @@
+Date: 2026-02-18
+
+Command: node tests/dashboard-ui.test.js
+
+Observed: PASS
+
+Notes:
+- Added `min-h-0` to scrollable tab sections and set Intel tab container to `flex` so child panels can scroll independently.

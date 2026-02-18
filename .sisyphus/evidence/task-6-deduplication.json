@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-02-18T05:07:53.639Z",
+  "outboxFilePath": "data-test-evidence-offline-outbox-dedupe/outbox.json",
+  "count": 1,
+  "peek": [
+    {
+      "key": "task_result:t1",
+      "event": "task_result",
+      "createdAt": "2026-02-18T05:07:53.639Z",
+      "attempts": 0
+    }
+  ]
+}

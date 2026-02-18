@@ -1,0 +1,90 @@
+{
+  "task": "Task 18 - File sharing evidence",
+  "timestamp": "2026-02-18T01:59:53.172Z",
+  "connection": {
+    "url": "http://localhost:4118",
+    "auth": {
+      "token": "very-secret-key-123",
+      "agent_id": "evidence-file",
+      "role": "tester"
+    }
+  },
+  "payload": {
+    "filename": "task18.txt",
+    "text": "Task18 file payload",
+    "base64": "VGFzazE4IGZpbGUgcGF5bG9hZA=="
+  },
+  "evidence": {
+    "upload_file": {
+      "request": {
+        "filename": "task18.txt",
+        "data": "VGFzazE4IGZpbGUgcGF5bG9hZA=="
+      },
+      "response": {
+        "success": true,
+        "fileId": "evidence-file-1771379993379-task18.txt",
+        "filename": "task18.txt",
+        "size": 19,
+        "timestamp": "2026-02-18T01:59:53.379Z"
+      }
+    },
+    "download_file": {
+      "request": {
+        "fileId": "evidence-file-1771379993379-task18.txt"
+      },
+      "response": {
+        "success": true,
+        "fileId": "evidence-file-1771379993379-task18.txt",
+        "filename": "task18.txt",
+        "data": "VGFzazE4IGZpbGUgcGF5bG9hZA==",
+        "owner": "evidence-file",
+        "size": 19,
+        "timestamp": "2026-02-18T01:59:53.379Z"
+      },
+      "decodedText": "Task18 file payload",
+      "decodedMatchesOriginal": true
+    },
+    "list_files": {
+      "request": {},
+      "response": {
+        "success": true,
+        "files": [
+          {
+            "fileId": "evidence-file-1771379993379-task18.txt",
+            "filename": "task18.txt",
+            "owner": "evidence-file",
+            "size": 19,
+            "sharedWith": [],
+            "timestamp": "2026-02-18T01:59:53.379Z"
+          }
+        ]
+      },
+      "includesUploadedFile": true
+    },
+    "delete_file": {
+      "request": {
+        "fileId": "evidence-file-1771379993379-task18.txt"
+      },
+      "response": {
+        "success": true
+      }
+    },
+    "list_files_after_delete": {
+      "request": {},
+      "response": {
+        "success": true,
+        "files": []
+      },
+      "uploadedStillPresent": false
+    }
+  },
+  "assertions": {
+    "upload_returns_success_and_fileId": true,
+    "download_returns_success_and_data": true,
+    "download_decoded_data_matches_original": true,
+    "list_returns_success_and_files_with_uploaded_entry": true,
+    "delete_returns_success": true,
+    "uploaded_file_absent_after_delete": true
+  },
+  "overallSuccess": true
+}

@@ -1,0 +1,1 @@
+{"ok":true,"agent_id":"health-tester","role":"worker","version":"3.9.1","connected":true,"outbox":{"pending":0,"path":"/Users/paijo/.clownet/outbox.json"},"latency_ms":null,"disk_available_kb":15306344,"reconnect":{"reconnecting":false,"current_attempts":0,"last_attempts":0,"last_downtime_ms":0}}

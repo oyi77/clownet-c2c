@@ -1,0 +1,217 @@
+{
+  "generatedAt": "2026-02-18T02:27:45.981Z",
+  "serverPort": 56024,
+  "authMode": {
+    "transport": "socket.handshake.auth.token",
+    "tokenPreview": "ver...123"
+  },
+  "ackTimeoutMs": 2500,
+  "emittedEvents": [
+    {
+      "event": "create_role",
+      "payload": {
+        "name": "ops-runner",
+        "description": "Role evidence test"
+      }
+    },
+    {
+      "event": "list_roles",
+      "payload": null
+    },
+    {
+      "event": "assign_role_to_agent",
+      "payload": {
+        "agentId": "worker-roles-1",
+        "roleId": "ee53e311-7b7a-4962-be59-1b8075588f8e"
+      }
+    },
+    {
+      "event": "get_agent_roles",
+      "payload": {
+        "agentId": "worker-roles-1"
+      }
+    },
+    {
+      "event": "get_agents_by_role",
+      "payload": {
+        "roleId": "ee53e311-7b7a-4962-be59-1b8075588f8e"
+      }
+    },
+    {
+      "event": "remove_role_from_agent",
+      "payload": {
+        "agentId": "worker-roles-1",
+        "roleId": "ee53e311-7b7a-4962-be59-1b8075588f8e"
+      }
+    },
+    {
+      "event": "get_agent_roles",
+      "payload": {
+        "agentId": "worker-roles-1"
+      }
+    },
+    {
+      "event": "delete_role",
+      "payload": {
+        "roleId": "ee53e311-7b7a-4962-be59-1b8075588f8e"
+      }
+    },
+    {
+      "event": "list_roles",
+      "payload": null
+    }
+  ],
+  "steps": {
+    "create_role": {
+      "event": "create_role",
+      "payload": {
+        "name": "ops-runner",
+        "description": "Role evidence test"
+      },
+      "response": {
+        "success": true,
+        "roleId": "ee53e311-7b7a-4962-be59-1b8075588f8e",
+        "message": "Role created successfully"
+      },
+      "ok": true
+    },
+    "list_roles": {
+      "event": "list_roles",
+      "payload": null,
+      "response": {
+        "success": true,
+        "data": [
+          {
+            "roleId": "ee53e311-7b7a-4962-be59-1b8075588f8e",
+            "name": "ops-runner",
+            "description": "Role evidence test",
+            "createdAt": 1771381666244
+          }
+        ]
+      },
+      "ok": true
+    },
+    "assign_role_to_agent": {
+      "event": "assign_role_to_agent",
+      "payload": {
+        "agentId": "worker-roles-1",
+        "roleId": "ee53e311-7b7a-4962-be59-1b8075588f8e"
+      },
+      "response": {
+        "success": true,
+        "message": "Role assigned successfully"
+      },
+      "ok": true
+    },
+    "get_agent_roles": {
+      "event": "get_agent_roles",
+      "payload": {
+        "agentId": "worker-roles-1"
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "agentId": "worker-roles-1",
+          "roles": [
+            {
+              "roleId": "ee53e311-7b7a-4962-be59-1b8075588f8e",
+              "name": "ops-runner",
+              "description": "Role evidence test",
+              "createdAt": 1771381666244
+            }
+          ],
+          "roleIds": [
+            "ee53e311-7b7a-4962-be59-1b8075588f8e"
+          ]
+        }
+      },
+      "ok": true
+    },
+    "get_agents_by_role": {
+      "event": "get_agents_by_role",
+      "payload": {
+        "roleId": "ee53e311-7b7a-4962-be59-1b8075588f8e"
+      },
+      "response": {
+        "success": true,
+        "data": [
+          {
+            "agentId": "worker-roles-1",
+            "id": "worker-roles-1",
+            "role": "worker",
+            "status": "online",
+            "specs": {},
+            "last_seen": "2026-02-18T02:27:46.243Z",
+            "sid": "6hLaMAztW3S7nH4-AAAD",
+            "cron": [],
+            "sessions": [],
+            "ip": "127.0.0.1"
+          }
+        ]
+      },
+      "ok": true
+    },
+    "remove_role_from_agent": {
+      "event": "remove_role_from_agent",
+      "payload": {
+        "agentId": "worker-roles-1",
+        "roleId": "ee53e311-7b7a-4962-be59-1b8075588f8e"
+      },
+      "response": {
+        "success": true,
+        "message": "Role removed successfully"
+      },
+      "ok": true
+    },
+    "get_agent_roles_after_remove": {
+      "event": "get_agent_roles",
+      "payload": {
+        "agentId": "worker-roles-1"
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "agentId": "worker-roles-1",
+          "roles": [],
+          "roleIds": []
+        }
+      },
+      "ok": true
+    },
+    "delete_role": {
+      "event": "delete_role",
+      "payload": {
+        "roleId": "ee53e311-7b7a-4962-be59-1b8075588f8e"
+      },
+      "response": {
+        "success": true,
+        "message": "Role deleted successfully"
+      },
+      "ok": true
+    },
+    "list_roles_after_delete": {
+      "event": "list_roles",
+      "payload": null,
+      "response": {
+        "success": true,
+        "data": []
+      },
+      "ok": true
+    }
+  },
+  "summary": {
+    "create_role": true,
+    "list_roles": true,
+    "assign_role_to_agent": true,
+    "get_agent_roles": true,
+    "get_agents_by_role": true,
+    "remove_role_from_agent": true,
+    "delete_role": true,
+    "allRequiredPassed": true
+  },
+  "notes": [],
+  "serverLogs": {
+    "stdoutTail": "{\"level\":30,\"time\":1771381666191,\"pid\":73519,\"hostname\":\"MacBook-Air.local\",\"msg\":\"Server listening at http://0.0.0.0:56024\"}\nClawNet Relay v3.5 operational on port 56024\n",
+    "stderrTail": ""
+  }
+}

@@ -1,0 +1,9 @@
+Date: 2026-02-18
+
+Command: node tests/dashboard-ui.test.js
+
+Observed: PASS
+
+Notes:
+- Dashboard shows toasts for server-side handler errors emitted as chat messages (`from: server`, `msg: ERROR: ...`).
+- Dashboard shows toasts for sidecar handler errors reported as chat messages (`CLIENT_HANDLER_ERROR: ...`).

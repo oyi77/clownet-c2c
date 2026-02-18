@@ -1,0 +1,6 @@
+Date: 2026-02-18
+
+Smoke test (temporary PORT=3360):
+- GET / => 200
+- GET /dashboard (no Authorization header) => 200
+- GET /dashboard (Authorization: Bearer <secret>) => 200

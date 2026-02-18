@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-02-18T05:07:53.639Z",
+  "outboxFilePath": "data-test-evidence-offline-outbox/outbox.json",
+  "initialCount": 2,
+  "reloadedCountBeforeFlush": 2,
+  "flushResult": {
+    "sent": 2,
+    "remaining": 0
+  },
+  "sent": [
+    {
+      "event": "chat",
+      "payload": {
+        "to": "all",
+        "msg": "hello",
+        "localId": "c1"
+      }
+    },
+    {
+      "event": "task_result",
+      "payload": {
+        "id": "t1",
+        "status": "SUCCESS",
+        "output": "ok"
+      }
+    }
+  ],
+  "remainingAfterFlush": 0
+}

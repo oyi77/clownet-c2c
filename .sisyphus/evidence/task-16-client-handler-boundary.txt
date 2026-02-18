@@ -1,0 +1,7 @@
+Date: 2026-02-18
+
+Command: node tests/safe-emitter.test.js
+
+Expected: synchronous and async handler exceptions are caught and reported
+
+Observed: PASS

@@ -1,0 +1,62 @@
+{
+  "task": 24,
+  "generatedAt": "2026-02-18T10:33:19.889Z",
+  "config": {
+    "concurrentConnections": 100,
+    "throughputTargetMsgsPerSec": 1000,
+    "throughputMessagesPerClient": 10,
+    "connectTimeoutMs": 5000,
+    "ackTimeoutMs": 5000,
+    "serverStartTimeoutMs": 15000,
+    "shellAckTimeoutMs": 2500,
+    "evidencePath": "/Users/paijo/clownet-c2c/.sisyphus/evidence/task-24-load-test.json"
+  },
+  "server": {
+    "baseUrl": "http://127.0.0.1:57394",
+    "port": 57394
+  },
+  "startedAt": "2026-02-18T10:33:19.886Z",
+  "finishedAt": "2026-02-18T10:33:20.351Z",
+  "durationMs": 465,
+  "checks": {
+    "concurrentConnections": {
+      "required": 100,
+      "connected": 100,
+      "failed": 0,
+      "failures": [],
+      "durationMs": 258,
+      "pass": true
+    },
+    "throughput": {
+      "targetMsgsPerSec": 1000,
+      "totalMessages": 1000,
+      "acked": 1000,
+      "failed": 0,
+      "durationMs": 17,
+      "measuredMsgsPerSec": 58823.53,
+      "p95LatencyMs": 15,
+      "errorRate": 0,
+      "failures": [],
+      "pass": true
+    },
+    "shellSessionUnderLoad": {
+      "optional": true,
+      "attempted": true,
+      "pass": true,
+      "sessionId": "784e3246-537b-4255-bcc9-26fc0e73e074",
+      "workerAgentId": "load-worker-0",
+      "ack": {
+        "ok": true,
+        "session_id": "784e3246-537b-4255-bcc9-26fc0e73e074"
+      }
+    }
+  },
+  "metrics": {
+    "latencyP95Ms": 15,
+    "errorRate": 0,
+    "serverMemoryRssBeforeBytes": 72007680,
+    "serverMemoryRssAfterBytes": 90505216,
+    "serverMemoryDeltaBytes": 18497536
+  },
+  "result": "PASS"
+}
