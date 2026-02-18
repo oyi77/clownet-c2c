@@ -9,8 +9,21 @@ function register(io, socket, ctx) {
     const { agent_id, tenantId } = ctx;
     const s = state.getTenantState(tenantId);
 
-    socket.on('chat', (payload) => {
+    if (!s.recentChatLocalIds) s.recentChatLocalIds = [];
+
+    socket.on('chat', (payload, ack) => {
         if (!payload || typeof payload !== 'object') return;
+
+        if (typeof payload.localId === 'string' && payload.localId.length > 0) {
+            if (s.recentChatLocalIds.includes(payload.localId)) {
+                if (typeof ack === 'function') ack({ ok: true, deduped: true });
+                return;
+            }
+            s.recentChatLocalIds.push(payload.localId);
+            if (s.recentChatLocalIds.length > 500) {
+                s.recentChatLocalIds = s.recentChatLocalIds.slice(-500);
+            }
+        }
 
         const msg = {
             from: agent_id || 'master-ui',
@@ -43,6 +56,8 @@ function register(io, socket, ctx) {
         logEvent(`Chat: ${msg.from} -> ${msg.to}: ${msg.msg}`);
         recordTraffic({ type: 'chat', from: msg.from, to: msg.to, tenant_id: tenantId });
         emitTraffic(io, tenantId, { type: 'chat', from: msg.from, to: msg.to, msg: msg.msg });
+
+        if (typeof ack === 'function') ack({ ok: true });
     });
 }
 

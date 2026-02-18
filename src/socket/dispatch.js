@@ -7,21 +7,24 @@ const { emitTraffic } = require('./warden');
 const { emitToTenant } = require('./fleet');
 const { checkCommand } = require('./safety');
 
-// Queued tasks for offline agents: { agent_id: [task, ...] }
-const offlineQueues = {};
+function isQueuedForAgent(task, agentId) {
+    return !!task && task.agent_id === agentId && task.delivery_status === 'QUEUED';
+}
 
 function register(io, socket, ctx) {
     const { agent_id, tenantId } = ctx;
     const s = state.getTenantState(tenantId);
 
     // Flush queued tasks when an agent connects
-    if (agent_id && offlineQueues[agent_id] && offlineQueues[agent_id].length > 0) {
-        const queued = offlineQueues[agent_id];
-        offlineQueues[agent_id] = [];
-        for (const task of queued) {
-            task.status = 'PENDING';
-            task.delivery_status = 'SENT';
-            socket.emit('command', { id: task.id, cmd: task.cmd, trace_id: task.trace_id });
+    if (agent_id) {
+        const queued = s.tasks.filter((t) => isQueuedForAgent(t, agent_id));
+        if (queued.length > 0) {
+            for (const task of queued) {
+                task.status = 'PENDING';
+                task.delivery_status = 'SENT';
+                socket.emit('command', { id: task.id, cmd: task.cmd, trace_id: task.trace_id });
+            }
+            persistence.saveState(tenantId);
             emitToTenant(io, tenantId, 'task_update', s.tasks.slice(-20));
         }
     }
@@ -104,7 +107,7 @@ function register(io, socket, ctx) {
         }
     });
 
-    socket.on('task_result', (payload) => {
+    socket.on('task_result', (payload, ack) => {
         if (!payload || !payload.id) return;
         const task = s.tasks.find(t => t.id === payload.id);
         if (task) {
@@ -125,6 +128,8 @@ function register(io, socket, ctx) {
             recordTraffic({ type: 'task_result', task_id: task.id, status: task.status, agent_id: task.agent_id, tenant_id: tenantId });
             emitTraffic(io, tenantId, { type: 'task_result', task_id: task.id, status: task.status, agent_id: task.agent_id });
         }
+
+        if (typeof ack === 'function') ack({ ok: true });
     });
 }
 
@@ -141,8 +146,6 @@ function deliverTask(io, socket, s, task, tenantId) {
             // Agent offline — queue for delivery
             task.status = 'QUEUED';
             task.delivery_status = 'QUEUED';
-            if (!offlineQueues[task.agent_id]) offlineQueues[task.agent_id] = [];
-            offlineQueues[task.agent_id].push(task);
             logEvent(`Task queued (agent offline): ${task.id} to=${task.agent_id}`);
         }
     }

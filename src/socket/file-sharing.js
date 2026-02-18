@@ -5,8 +5,11 @@ function register(io, socket, ctx) {
     const { agent_id, tenantId } = ctx;
     const s = state.getTenantState(tenantId);
 
-    socket.on('upload_file', (payload) => {
-        if (!payload || !payload.filename || !payload.data) return;
+    socket.on('upload_file', (payload, callback) => {
+        if (!payload || !payload.filename || !payload.data) {
+            if (callback) callback({ success: false, error: 'Filename and data required' });
+            return;
+        }
         
         const buffer = Buffer.from(payload.data, 'base64');
         
@@ -38,22 +41,32 @@ function register(io, socket, ctx) {
                 });
             }
         });
+
+        if (callback) {
+            callback({
+                success: true,
+                fileId,
+                filename: payload.filename,
+                size: buffer.length,
+                timestamp: entry.timestamp
+            });
+        }
     });
 
     socket.on('download_file', (payload, callback) => {
         if (!payload || !payload.fileId) {
-            if (callback) callback({ error: 'File ID required' });
+            if (callback) callback({ success: false, error: 'File ID required' });
             return;
         }
         
         const entry = s.files[payload.fileId];
         if (!entry) {
-            if (callback) callback({ error: 'File not found' });
+            if (callback) callback({ success: false, error: 'File not found' });
             return;
         }
         
         if (entry.owner !== agent_id && !entry.sharedWith.includes(agent_id) && agent_id !== 'master-ui') {
-            if (callback) callback({ error: 'Access denied' });
+            if (callback) callback({ success: false, error: 'Access denied' });
             return;
         }
         
@@ -61,6 +74,7 @@ function register(io, socket, ctx) {
         
         if (callback) {
             callback({
+                success: true,
                 fileId: payload.fileId,
                 filename: entry.name,
                 data: base64Data,
@@ -122,7 +136,7 @@ function register(io, socket, ctx) {
             });
         
         if (callback) {
-            callback({ files: available });
+            callback({ success: true, files: available });
         }
     });
 
@@ -152,13 +166,22 @@ function register(io, socket, ctx) {
         logEvent(`File access revoked: ${entry.name} by ${agent_id} from ${agentsToRemove.join(', ')}`);
     });
 
-    socket.on('delete_file', (payload) => {
-        if (!payload || !payload.fileId) return;
+    socket.on('delete_file', (payload, callback) => {
+        if (!payload || !payload.fileId) {
+            if (callback) callback({ success: false, error: 'File ID required' });
+            return;
+        }
         
         const entry = s.files[payload.fileId];
-        if (!entry) return;
+        if (!entry) {
+            if (callback) callback({ success: false, error: 'File not found' });
+            return;
+        }
         
-        if (entry.owner !== agent_id && agent_id !== 'master-ui') return;
+        if (entry.owner !== agent_id && agent_id !== 'master-ui') {
+            if (callback) callback({ success: false, error: 'Access denied' });
+            return;
+        }
         
         delete s.files[payload.fileId];
         logEvent(`File deleted: ${entry.name} by ${agent_id}`);
@@ -175,6 +198,10 @@ function register(io, socket, ctx) {
                 });
             }
         });
+
+        if (callback) {
+            callback({ success: true });
+        }
     });
 }
 

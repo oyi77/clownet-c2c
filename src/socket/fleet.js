@@ -26,6 +26,22 @@ function register(io, socket, ctx) {
         emitTraffic(io, tenantId, { type: 'connect', agent_id, role });
     }
 
+    socket.on('agent_hello', (payload, ack) => {
+        if (!payload || typeof payload !== 'object') return;
+        if (!s.agents[agent_id]) return;
+
+        const capabilities = payload.capabilities && typeof payload.capabilities === 'object' ? payload.capabilities : {};
+        if (!s.agents[agent_id].specs) s.agents[agent_id].specs = {};
+        s.agents[agent_id].specs.capabilities = {
+            ...(s.agents[agent_id].specs.capabilities || {}),
+            ...capabilities,
+        };
+        s.agents[agent_id].last_seen = new Date().toISOString();
+        emitToTenant(io, tenantId, 'fleet_update', getFleetList(s));
+
+        if (typeof ack === 'function') ack({ ok: true });
+    });
+
     socket.on('report', (data) => {
         if (!data || typeof data !== 'object') return;
         if (s.agents[agent_id]) {

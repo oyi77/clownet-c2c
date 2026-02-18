@@ -155,7 +155,7 @@ function register(io, socket, ctx) {
     });
 
     socket.on('report_task_result', (payload) => {
-        if (!payload || !payload.orchId || !payload.taskIndex || payload.result === undefined) return;
+        if (!payload || !payload.orchId || payload.taskIndex === undefined || payload.taskIndex === null || payload.result === undefined) return;
         
         const entry = s.orchestrations[payload.orchId];
         if (!entry) return;
