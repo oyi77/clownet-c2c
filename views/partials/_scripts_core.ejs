@@ -197,13 +197,32 @@
 
     if (!panel || !toggle) return;
 
+    // Ensure panel is hidden on load
+    panel.classList.add('hidden');
+    panel.style.display = 'none';
+
     const setOpen = (open) => {
       panel.classList.toggle('hidden', !open);
+      panel.style.display = open ? 'flex' : 'none';
       toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     };
 
     toggle.addEventListener('click', () => {
-      setOpen(panel.classList.contains('hidden'));
+      setOpen(panel.classList.contains('hidden') || panel.style.display === 'none');
+    });
+
+    // Close on click outside
+    panel.addEventListener('click', (e) => {
+      if (e.target === panel) {
+        setOpen(false);
+      }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && panel.style.display !== 'none') {
+        setOpen(false);
+      }
     });
 
     if (closeButton) {

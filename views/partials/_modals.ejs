@@ -7,7 +7,7 @@
     <div class="toast-history-title">Error History</div>
     <div class="toast-history-actions">
       <button id="toast-history-clear" class="toast-history-btn" type="button">Clear</button>
-      <button id="toast-history-close" class="toast-history-btn" type="button" onclick="document.getElementById('toast-history-panel').classList.add('hidden'); document.getElementById('toast-history-toggle').setAttribute('aria-expanded', 'false');">Close</button>
+      <button id="toast-history-close" class="toast-history-btn" type="button" onclick="var p=document.getElementById('toast-history-panel');p.style.display='none';p.classList.add('hidden');document.getElementById('toast-history-toggle').setAttribute('aria-expanded','false');">Close</button>
     </div>
   </div>
   <div id="toast-history-list" class="toast-history-list"></div>
