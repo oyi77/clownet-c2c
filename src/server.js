@@ -11,6 +11,7 @@ const socketSetup = require('./socket');
 const healthRoutes = require('./routes/health');
 const dashboardRoutes = require('./routes/dashboard');
 const apiRoutes = require('./routes/api');
+const authRoutes = require('./routes/auth');
 
 // Template engine
 fastify.register(fastifyView, {
@@ -35,6 +36,7 @@ fastify.register(fastifyFormbody);
 healthRoutes.register(fastify);
 dashboardRoutes.register(fastify);
 apiRoutes.register(fastify);
+authRoutes.register(fastify);
 
 // Load persisted state
 persistence.loadState();
