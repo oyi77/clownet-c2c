@@ -1,5 +1,8 @@
 # Node.js Base
-FROM node:18-alpine
+FROM node:20-alpine
+
+# Install Python and build tools for native modules (node-pty)
+RUN apk add --no-cache python3 make g++
 
 # Environment
 ENV NODE_ENV=production
