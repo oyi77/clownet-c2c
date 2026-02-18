@@ -1,5 +1,5 @@
                 <!-- DOCS TAB -->
-                <section id="docs" class="tab-content h-full p-6 overflow-y-auto hidden">
+<section id="docs" class="tab-content h-full p-6 min-h-0 overflow-y-auto hidden">
                     <div class="max-w-4xl mx-auto space-y-8 pb-20">
                         <div class="bg-zinc-900/50 border border-zinc-800 p-8 rounded-lg terminal-glow">
                             <h2 class="text-green-500 text-2xl font-bold mb-6 tracking-tighter flex items-center gap-3">
@@ -20,16 +20,15 @@
                                                 <button onclick="copyToClipboard('<%= serverUrl %>')" class="text-[9px] bg-zinc-800 hover:bg-zinc-700 px-2 rounded">COPY</button>
                                             </div>
                                         </div>
+                                        <% if (isAuthenticated) { %>
                                         <div>
-                                            <div class="text-[9px] text-zinc-600 uppercase font-bold mb-1.5 tracking-wider">Access Token</div>
-                                            <div class="flex gap-2">
-                                                <code class="flex-1 text-[11px] text-red-400 font-mono bg-zinc-950 p-2 rounded border border-zinc-900 truncate"><%= secret %></code>
-                                                <button onclick="copyToClipboard('<%= secret %>')" class="text-[9px] bg-zinc-800 hover:bg-zinc-700 px-2 rounded">COPY</button>
+                                            <div class="text-[9px] text-zinc-600 uppercase font-bold mb-1.5 tracking-wider">Agent Connection Token</div>
+                                            <div class="bg-yellow-900/20 border border-yellow-800/50 p-3 rounded">
+                                                <code class="text-[10px] text-yellow-500 font-mono">Use server's CLAWNET_SECRET_KEY value</code>
                                             </div>
+                                            <p class="text-[9px] text-zinc-500 mt-1">Use this same token to connect additional agent clients to your relay.</p>
                                         </div>
-                                        <div class="text-[10px] text-zinc-500 leading-relaxed border-t border-zinc-800 pt-3">
-                                            Keep token secret. Rotate from Settings when needed. If rotated, restart relay and reconnect agents with the new token.
-                                        </div>
+                                        <% } %>
                                     </div>
                                 </div>
 
@@ -38,7 +37,7 @@
                                         <span class="w-1 h-1 bg-green-500 rounded-full"></span> 02_LLM_INSTRUCTIONS
                                     </h3>
                                     <div class="bg-black/60 p-5 rounded border border-zinc-800 space-y-4">
-                                        <p class="text-[11px] text-zinc-400 leading-relaxed">Complete LLM agent setup reference: see https://raw.githubusercontent.com/oyi77/clownet-c2c/refs/heads/master/LLM.md for detailed installation, configuration, and operation instructions. The server installation is: <code class="text-green-400 font-mono"><%= serverUrl %></code> and the key is: <code class="text-red-400 font-mono"><%= secret %></code>.</p>
+                                        <p class="text-[11px] text-zinc-400 leading-relaxed">Complete LLM agent setup reference: see https://raw.githubusercontent.com/oyi77/clownet-c2c/refs/heads/master/LLM.md for detailed installation, configuration, and operation instructions. The server installation is: <code class="text-green-400 font-mono"><%= serverUrl %></code>. Configure authentication via environment variables on your relay and agents.</p>
                                     </div>
                                 </div>
                             </div>

@@ -1,6 +1,17 @@
 <script>
 // --- MANAGEMENT FUNCTIONS ---
 
+// Utility to escape HTML special characters
+function escapeHtml(value) {
+  if (value == null) return '';
+  const str = String(value);
+  return str.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;');
+}
+
 // Load management data when tab is shown
 document.addEventListener('tab-shown', (e) => {
   if (e.detail.tabId === 'management') {
@@ -66,20 +77,20 @@ function renderOrchestrations(orchestrations) {
     
     return `
       <tr class="hover:bg-zinc-800/30 transition-colors">
-        <td class="p-3 font-mono text-zinc-300">${orch.name}</td>
-        <td class="p-3"><span class="text-[9px] font-bold ${statusClass}">${orch.status.toUpperCase()}</span></td>
+        <td class="p-3 font-mono text-zinc-300">${escapeHtml(orch.name)}</td>
+        <td class="p-3"><span class="text-[9px] font-bold ${statusClass}">${escapeHtml(String(orch.status || '').toUpperCase())}</span></td>
         <td class="p-3 text-zinc-400">${orch.agents.length}</td>
-        <td class="p-3 text-zinc-400">${orch.owner}</td>
+        <td class="p-3 text-zinc-400">${escapeHtml(orch.owner)}</td>
         <td class="p-3 text-zinc-600 text-[10px] font-mono">${new Date(orch.timestamp).toLocaleDateString()}</td>
         <td class="p-3">
           <div class="flex gap-1">
-            <button onclick="viewOrchestration('${orch.orchId}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] px-2 py-1 rounded">View</button>
+            <button onclick="viewOrchestration(${JSON.stringify(orch.orchId)})" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] px-2 py-1 rounded">View</button>
             ${orch.status === 'created' ? 
-              `<button onclick="startOrchestration('${orch.orchId}')" class="bg-green-600 hover:bg-green-500 text-black text-[9px] px-2 py-1 rounded">Start</button>` : 
+              `<button onclick="startOrchestration(${JSON.stringify(orch.orchId)})" class="bg-green-600 hover:bg-green-500 text-black text-[9px] px-2 py-1 rounded">Start</button>` : 
               ''
             }
             ${orch.status === 'running' ? 
-              `<button onclick="cancelOrchestration('${orch.orchId}')" class="bg-red-600 hover:bg-red-500 text-black text-[9px] px-2 py-1 rounded">Cancel</button>` : 
+              `<button onclick="cancelOrchestration(${JSON.stringify(orch.orchId)})" class="bg-red-600 hover:bg-red-500 text-black text-[9px] px-2 py-1 rounded">Cancel</button>` : 
               ''
             }
           </div>
@@ -99,15 +110,15 @@ function renderAgentConfigs(configs) {
   
   tbody.innerHTML = configs.map(config => `
     <tr class="hover:bg-zinc-800/30 transition-colors">
-      <td class="p-3 font-mono text-zinc-300">${config.name}</td>
-      <td class="p-3 text-zinc-400">v${config.version}</td>
-      <td class="p-3 text-zinc-400">${config.owner}</td>
+      <td class="p-3 font-mono text-zinc-300">${escapeHtml(config.name)}</td>
+      <td class="p-3 text-zinc-400">v${escapeHtml(String(config.version || ''))}</td>
+      <td class="p-3 text-zinc-400">${escapeHtml(config.owner)}</td>
       <td class="p-3 text-zinc-600 text-[10px] font-mono">${new Date(config.timestamp).toLocaleDateString()}</td>
       <td class="p-3">
         <div class="flex gap-1">
-          <button onclick="viewAgentConfig('${config.configId}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] px-2 py-1 rounded">View</button>
-          <button onclick="cloneAgentConfig('${config.configId}')" class="bg-blue-600 hover:bg-blue-500 text-black text-[9px] px-2 py-1 rounded">Clone</button>
-          <button onclick="deleteAgentConfig('${config.configId}')" class="bg-red-600 hover:bg-red-500 text-black text-[9px] px-2 py-1 rounded">Delete</button>
+          <button onclick="viewAgentConfig(${JSON.stringify(config.configId)})" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] px-2 py-1 rounded">View</button>
+          <button onclick="cloneAgentConfig(${JSON.stringify(config.configId)})" class="bg-blue-600 hover:bg-blue-500 text-black text-[9px] px-2 py-1 rounded">Clone</button>
+          <button onclick="deleteAgentConfig(${JSON.stringify(config.configId)})" class="bg-red-600 hover:bg-red-500 text-black text-[9px] px-2 py-1 rounded">Delete</button>
         </div>
       </td>
     </tr>
