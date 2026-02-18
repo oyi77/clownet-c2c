@@ -11,48 +11,79 @@
     });
   }
 
-  function handleFleetUpdate(agents) {
-    agentsCache = agents;
-    const grid = document.getElementById('fleet-grid');
-    agents.forEach(a => { agentCache[a.id] = a; });
-    updateTargetOptions(agents);
+  const FLEET_VIRTUALIZE_THRESHOLD = 80;
+  const FLEET_CARD_ROW_HEIGHT = 292;
+  const FLEET_OVERSCAN_ROWS = 2;
+  let fleetRenderRaf = null;
 
-    if (agents.length === 0) {
-      grid.innerHTML = '<div class="col-span-3 text-center py-20 text-zinc-600">NO AGENTS ONLINE</div>';
-    } else {
-      grid.innerHTML = agents.map(a => `
-      <div class="bg-zinc-900 border border-zinc-800 p-5 rounded terminal-glow relative group flex flex-col justify-between" data-agent-id="${a.id}">
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getFleetDom() {
+    return {
+      container: document.getElementById('fleet-scroll-container'),
+      grid: document.getElementById('fleet-grid'),
+      spacerTop: document.getElementById('fleet-virtual-spacer-top'),
+      spacerBottom: document.getElementById('fleet-virtual-spacer-bottom')
+    };
+  }
+
+  function getFleetColumnCount(container) {
+    const width = container ? container.clientWidth : window.innerWidth;
+    if (width >= 1024) return 3;
+    if (width >= 768) return 2;
+    return 1;
+  }
+
+  function renderFleetCards(agents) {
+    return agents.map(a => {
+      const specs = a.specs || {};
+      const safeAgentId = escapeHtml(a.id);
+      const safeRole = escapeHtml((a.role || 'unknown').toUpperCase());
+      const safeStatus = escapeHtml((a.status || 'offline').toUpperCase());
+      const safeLastSeen = escapeHtml(new Date(a.last_seen).toLocaleTimeString());
+      const safeVersion = escapeHtml(specs.version || '??');
+      const safeCpu = escapeHtml(specs.cpu_percent || 0);
+      const safeRam = escapeHtml(specs.ram_percent || 0);
+      return `
+      <div class="bg-zinc-900 border border-zinc-800 p-5 rounded terminal-glow relative group flex flex-col justify-between" data-agent-id="${safeAgentId}">
         <div>
           <div class="flex justify-between items-start mb-4">
             <div>
-              <h3 class="text-zinc-100 font-bold text-lg mb-1">${a.id}</h3>
-              <div class="text-[10px] text-zinc-500 tracking-widest font-mono">ROLE: <span class="text-zinc-300">${a.role.toUpperCase()}</span></div>
+              <h3 class="text-zinc-100 font-bold text-lg mb-1">${safeAgentId}</h3>
+              <div class="text-[10px] text-zinc-500 tracking-widest font-mono">ROLE: <span class="text-zinc-300">${safeRole}</span></div>
             </div>
             <div class="text-[10px] flex items-center gap-2 ${a.status === 'online' ? 'text-green-500' : 'text-red-500'}">
               <span class="w-2 h-2 rounded-full ${a.status === 'online' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}"></span>
-              ${a.status.toUpperCase()}
+              ${safeStatus}
             </div>
           </div>
           <div class="space-y-3">
             <div class="flex justify-between text-[10px] border-b border-zinc-800 pb-2">
               <span class="text-zinc-600">LAST_HEARTBEAT</span>
-              <span class="font-mono text-zinc-400">${new Date(a.last_seen).toLocaleTimeString()}</span>
+              <span class="font-mono text-zinc-400">${safeLastSeen}</span>
             </div>
             <div class="bg-black/40 p-2 rounded border border-zinc-800/50">
               <div class="text-[9px] text-zinc-600 mb-1 uppercase tracking-wider flex justify-between">
                 <span>Resources</span>
-                <span class="text-zinc-800 text-[8px]">v${a.specs.version || '??'}</span>
+                <span class="text-zinc-800 text-[8px]">v${safeVersion}</span>
               </div>
               <div class="grid grid-cols-2 gap-2 text-[10px] font-mono">
-                <div>CPU: <span class="text-zinc-300">${(a.specs && a.specs.cpu_percent) || 0}%</span></div>
-                <div>RAM: <span class="text-zinc-300">${(a.specs && a.specs.ram_percent) || 0}%</span></div>
+                <div>CPU: <span class="text-zinc-300">${safeCpu}</span></div>
+                <div>RAM: <span class="text-zinc-300">${safeRam}</span></div>
               </div>
             </div>
             ${(a.sessions && a.sessions.length > 0) ? `
               <div class="mt-2">
                 <div class="text-[9px] text-zinc-500 mb-1 uppercase tracking-wider">Sessions</div>
                 <div class="flex flex-wrap gap-1">
-                  ${a.sessions.map(s => `<span class="text-[9px] text-zinc-400 bg-zinc-950 border border-zinc-800 px-2 py-0.5 rounded truncate max-w-[100px]">${s.id || s}</span>`).join('')}
+                  ${a.sessions.map(s => `<span class="text-[9px] text-zinc-400 bg-zinc-950 border border-zinc-800 px-2 py-0.5 rounded truncate max-w-[100px]">${escapeHtml(s.id || s)}</span>`).join('')}
                 </div>
               </div>
             ` : ''}
@@ -64,18 +95,84 @@
           </button>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
+  }
 
-      document.querySelectorAll('.agent-actions').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const card = e.target.closest('[data-agent-id]');
-          if (!card) return;
-          const agentId = card.dataset.agentId;
-          if (!agentId) return;
-          openAgentModal(agentId);
-        });
+  function renderFleet(agents) {
+    const { container, grid, spacerTop, spacerBottom } = getFleetDom();
+    if (!grid || !spacerTop || !spacerBottom) return;
+
+    if (!agents || agents.length === 0) {
+      spacerTop.style.height = '0px';
+      spacerBottom.style.height = '0px';
+      grid.innerHTML = '<div class="col-span-3 text-center py-20 text-zinc-600">NO AGENTS ONLINE</div>';
+      return;
+    }
+
+    const shouldVirtualize = !!container && agents.length >= FLEET_VIRTUALIZE_THRESHOLD;
+    if (!shouldVirtualize) {
+      spacerTop.style.height = '0px';
+      spacerBottom.style.height = '0px';
+      grid.innerHTML = renderFleetCards(agents);
+      return;
+    }
+
+    const colCount = getFleetColumnCount(container);
+    const totalRows = Math.ceil(agents.length / colCount);
+    const viewportHeight = container.clientHeight || 1;
+    const scrollTop = container.scrollTop || 0;
+    const firstVisibleRow = Math.floor(scrollTop / FLEET_CARD_ROW_HEIGHT);
+    const startRow = Math.max(0, firstVisibleRow - FLEET_OVERSCAN_ROWS);
+    const visibleRowCount = Math.ceil(viewportHeight / FLEET_CARD_ROW_HEIGHT) + (FLEET_OVERSCAN_ROWS * 2);
+    const endRow = Math.min(totalRows, startRow + visibleRowCount);
+    const startIndex = startRow * colCount;
+    const endIndex = Math.min(agents.length, endRow * colCount);
+
+    spacerTop.style.height = `${startRow * FLEET_CARD_ROW_HEIGHT}px`;
+    spacerBottom.style.height = `${Math.max(0, (totalRows - endRow) * FLEET_CARD_ROW_HEIGHT)}px`;
+    grid.innerHTML = renderFleetCards(agents.slice(startIndex, endIndex));
+  }
+
+  function scheduleFleetRender() {
+    if (fleetRenderRaf !== null) return;
+    fleetRenderRaf = window.requestAnimationFrame(() => {
+      fleetRenderRaf = null;
+      renderFleet(agentsCache || []);
+    });
+  }
+
+  function setupFleetScrollHandlers() {
+    const { container, grid } = getFleetDom();
+
+    if (container && !container.dataset.virtualBound) {
+      container.dataset.virtualBound = '1';
+      container.addEventListener('scroll', scheduleFleetRender, { passive: true });
+    }
+
+    if (grid && !grid.dataset.actionDelegated) {
+      grid.dataset.actionDelegated = '1';
+      grid.addEventListener('click', (e) => {
+        const actionButton = e.target.closest('.agent-actions');
+        if (!actionButton) return;
+        const card = actionButton.closest('[data-agent-id]');
+        if (!card || !card.dataset.agentId) return;
+        openAgentModal(card.dataset.agentId);
       });
     }
+
+    if (!window.__fleetVirtualResizeBound) {
+      window.__fleetVirtualResizeBound = true;
+      window.addEventListener('resize', scheduleFleetRender);
+    }
+  }
+
+  function handleFleetUpdate(agents) {
+    agentsCache = agents;
+    agents.forEach(a => { agentCache[a.id] = a; });
+    setupFleetScrollHandlers();
+    renderFleet(agents);
+    updateTargetOptions(agents);
 
     const roomList = document.getElementById('room-list');
     let roomsHtml = `<button onclick="selectRoom('all')" class="chat-room ${currentRoom === 'all' ? 'active' : ''} w-full text-left px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-zinc-800/50"># BROADCAST_ALL</button>`;
@@ -85,13 +182,15 @@
         // Escape single quotes in agent ID for the onclick attribute
         const escapedId = a.id.replace(/'/g, "\\'");
         roomsHtml += `<button onclick="selectRoom('${escapedId}')" class="chat-room ${currentRoom === a.id ? 'active' : ''} w-full text-left px-4 py-3 text-xs text-zinc-400 hover:bg-zinc-800 border-b border-zinc-800/50 flex justify-between">
-        <span>@ ${a.id}</span>
+        <span>@ ${escapeHtml(a.id)}</span>
         <span class="w-1.5 h-1.5 rounded-full ${a.status === 'online' ? 'bg-green-500' : 'bg-zinc-600'}"></span>
       </button>`;
       }
     });
     roomList.innerHTML = roomsHtml;
   }
+
+  setupFleetScrollHandlers();
 
   function updateTargetOptions(agents) {
     const targets = [document.getElementById('ops-target')].filter(Boolean);
@@ -108,88 +207,7 @@
     });
   }
 
-  async function approveClient(agentId) {
-    const ok = await showConfirm('APPROVE AGENT', `Are you sure you want to approve agent ${agentId}?`);
-    if (!ok) return;
-    try {
-      const res = await fetch('/api/client/approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId })
-      });
-      const data = await res.json();
-      if (data.success) {
-        handlePendingClientsUpdate(data.pendingClients);
-        showToast(`Client ${agentId} approved successfully.`, 'success');
-      } else {
-        showToast('Failed to approve client.', 'error');
-      }
-    } catch (e) {
-      console.error(e);
-      showToast('Network error while approving client.', 'error');
-    }
-  }
+  function handlePendingClientsUpdate() {}
 
-  async function denyClient(agentId) {
-    const ok = await showConfirm('DENY AGENT', `Are you sure you want to deny agent ${agentId}?`);
-    if (!ok) return;
-    try {
-      const res = await fetch('/api/client/deny', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId })
-      });
-      const data = await res.json();
-      if (data.success) {
-        handlePendingClientsUpdate(data.pendingClients);
-        showToast(`Client ${agentId} denied.`, 'warning');
-      } else {
-        showToast('Failed to deny client.', 'error');
-      }
-    } catch (e) {
-      console.error(e);
-      showToast('Network error while denying client.', 'error');
-    }
-  }
-
-  function handlePendingClientsUpdate(pendingClients) {
-    const section = document.getElementById('pending-clients-section');
-    const list = document.getElementById('pending-clients-list');
-    if (!section || !list) return;
-
-    if (pendingClients && pendingClients.length > 0) {
-      section.classList.remove('hidden');
-      list.innerHTML = pendingClients.map(c => `
-      <div class="flex justify-between items-center bg-black/40 p-3 rounded border border-zinc-800">
-        <span class="text-xs font-mono text-zinc-300">${c.agentId}</span>
-        <div class="space-x-2">
-          <button onclick="approveClient('${c.agentId}')" class="bg-green-600 hover:bg-green-500 text-black text-[9px] font-bold px-2 py-1 rounded uppercase">Approve</button>
-          <button onclick="denyClient('${c.agentId}')" class="bg-red-600 hover:bg-red-500 text-black text-[9px] font-bold px-2 py-1 rounded uppercase">Deny</button>
-        </div>
-      </div>
-    `).join('');
-    } else {
-      section.classList.add('hidden');
-      list.innerHTML = '';
-    }
-  }
-
-  function handleConnectionEventsUpdate(events) {
-    const list = document.getElementById('connection-events-list');
-    if (!list) return;
-
-    if (events && events.length > 0) {
-      list.innerHTML = events.slice().reverse().slice(0, 20).map(e => `
-      <div class="flex justify-between items-center bg-black/40 p-2 rounded border border-zinc-800/50">
-        <span class="text-[10px] font-mono ${e.type === 'connect' ? 'text-green-500' : 'text-red-500'}">
-          ${e.type === 'connect' ? '[CONNECTED]' : '[DISCONNECTED]'}
-        </span>
-        <span class="text-[10px] text-zinc-400 font-mono">${e.agentId}</span>
-        <span class="text-[9px] text-zinc-600">${new Date(e.timestamp).toLocaleTimeString()}</span>
-      </div>
-    `).join('');
-    } else {
-      list.innerHTML = '<div class="text-[10px] text-zinc-600 italic text-center p-2">No recent connection events</div>';
-    }
-  }
+  function handleConnectionEventsUpdate() {}
 </script>

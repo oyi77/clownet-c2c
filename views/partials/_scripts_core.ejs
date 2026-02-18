@@ -8,20 +8,351 @@
   const modalRoleApply = document.getElementById('agent-modal-role-apply');
 
   // --- Toast Notification System ---
-  function showToast(message, type = 'info', duration = 4000) {
+  const TOAST_HISTORY_STORAGE_KEY = 'clawnet_error_toast_history_v1';
+  const TOAST_HISTORY_LIMIT = 40;
+  const TOAST_MAX_TEXT_LENGTH = 500;
+  const TOAST_DETAILS_MAX_LENGTH = 1200;
+  const toastHistory = [];
+
+  function parseToastArgs(type, duration, options) {
+    let normalizedType = typeof type === 'string' ? type : 'info';
+    let normalizedDuration = typeof duration === 'number' ? duration : 4000;
+    let normalizedOptions = options || {};
+
+    if (duration && typeof duration === 'object') {
+      normalizedOptions = duration;
+      normalizedDuration = typeof normalizedOptions.duration === 'number' ? normalizedOptions.duration : 4000;
+    }
+
+    if (type && typeof type === 'object') {
+      normalizedOptions = type;
+      normalizedType = typeof normalizedOptions.type === 'string' ? normalizedOptions.type : 'info';
+      normalizedDuration = typeof normalizedOptions.duration === 'number' ? normalizedOptions.duration : normalizedDuration;
+    }
+
+    if (!['success', 'error', 'info', 'warning'].includes(normalizedType)) {
+      normalizedType = 'info';
+    }
+
+    if (!Number.isFinite(normalizedDuration) || normalizedDuration < 0) {
+      normalizedDuration = 4000;
+    }
+
+    return { normalizedType, normalizedDuration, normalizedOptions };
+  }
+
+  function detectErrorCategory(message, explicitCategory) {
+    if (explicitCategory && ['validation', 'network', 'server', 'auth'].includes(explicitCategory)) {
+      return explicitCategory;
+    }
+
+    const text = String(message || '').toLowerCase();
+    if (/unauthori|auth|token|forbidden|credential|access denied/.test(text)) return 'auth';
+    if (/network|timeout|offline|socket|connection|fetch/.test(text)) return 'network';
+    if (/invalid|required|missing|format|json/.test(text)) return 'validation';
+    if (/server|500|internal|gateway|upstream|failed to/.test(text)) return 'server';
+    return 'server';
+  }
+
+  function containsSensitiveContent(text) {
+    if (!text) return false;
+    const lowered = String(text).toLowerCase();
+    return /password|secret|api[_-]?key|authorization|bearer\s+[a-z0-9._-]+|token[:=]|private[_-]?key|session[_-]?id/.test(lowered);
+  }
+
+  function normalizeToastText(value, maxLength) {
+    const text = value == null ? '' : String(value).trim();
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, maxLength)}...`;
+  }
+
+  function sanitizeForPersistence(payload) {
+    const safeMessage = normalizeToastText(payload.message, TOAST_MAX_TEXT_LENGTH);
+    const safeDetails = normalizeToastText(payload.details, TOAST_DETAILS_MAX_LENGTH);
+    const combinedText = `${safeMessage}\n${safeDetails}`;
+
+    if (containsSensitiveContent(combinedText)) {
+      return null;
+    }
+
+    return {
+      message: safeMessage,
+      details: safeDetails,
+      type: payload.type,
+      category: payload.category,
+      retryable: Boolean(payload.retryable),
+      timestamp: payload.timestamp || Date.now()
+    };
+  }
+
+  function loadToastHistory() {
+    toastHistory.length = 0;
+    try {
+      const raw = localStorage.getItem(TOAST_HISTORY_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      parsed.slice(0, TOAST_HISTORY_LIMIT).forEach((item) => {
+        const sanitized = sanitizeForPersistence(item);
+        if (sanitized) toastHistory.push(sanitized);
+      });
+    } catch (err) {
+      console.warn('Unable to read toast history:', err);
+    }
+  }
+
+  function saveToastHistory() {
+    try {
+      localStorage.setItem(TOAST_HISTORY_STORAGE_KEY, JSON.stringify(toastHistory.slice(0, TOAST_HISTORY_LIMIT)));
+    } catch (err) {
+      console.warn('Unable to persist toast history:', err);
+    }
+  }
+
+  function addToastHistoryItem(payload) {
+    const sanitized = sanitizeForPersistence(payload);
+    if (!sanitized) return;
+    toastHistory.unshift(sanitized);
+    if (toastHistory.length > TOAST_HISTORY_LIMIT) {
+      toastHistory.length = TOAST_HISTORY_LIMIT;
+    }
+    saveToastHistory();
+    renderToastHistory();
+  }
+
+  function formatToastTimestamp(timestamp) {
+    try {
+      return new Date(timestamp).toLocaleString();
+    } catch (err) {
+      return 'Unknown';
+    }
+  }
+
+  function renderToastHistory() {
+    const list = document.getElementById('toast-history-list');
+    if (!list) return;
+
+    list.innerHTML = '';
+
+    if (toastHistory.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'toast-history-empty';
+      empty.textContent = 'No persisted errors.';
+      list.appendChild(empty);
+      return;
+    }
+
+    toastHistory.forEach((entry) => {
+      const item = document.createElement('div');
+      item.className = 'toast-history-item';
+
+      const head = document.createElement('div');
+      head.className = 'toast-history-item-head';
+
+      const title = document.createElement('div');
+      title.className = 'toast-history-item-title';
+      title.textContent = `${entry.type}${entry.category ? ` / ${entry.category}` : ''}`;
+
+      const time = document.createElement('div');
+      time.className = 'toast-history-time';
+      time.textContent = formatToastTimestamp(entry.timestamp);
+
+      head.appendChild(title);
+      head.appendChild(time);
+      item.appendChild(head);
+
+      const message = document.createElement('div');
+      message.className = 'toast-history-message';
+      message.textContent = entry.message || '';
+      item.appendChild(message);
+
+      if (entry.details) {
+        const detailsToggle = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.className = 'toast-history-time';
+        summary.textContent = 'Show details';
+        detailsToggle.appendChild(summary);
+
+        const detailsBody = document.createElement('pre');
+        detailsBody.className = 'toast-history-message';
+        detailsBody.textContent = entry.details;
+        detailsBody.style.marginTop = '6px';
+        detailsBody.style.whiteSpace = 'pre-wrap';
+        detailsBody.style.fontFamily = 'inherit';
+        detailsToggle.appendChild(detailsBody);
+
+        item.appendChild(detailsToggle);
+      }
+
+      list.appendChild(item);
+    });
+  }
+
+  function setupToastHistoryUi() {
+    const panel = document.getElementById('toast-history-panel');
+    const toggle = document.getElementById('toast-history-toggle');
+    const closeButton = document.getElementById('toast-history-close');
+    const clearButton = document.getElementById('toast-history-clear');
+
+    if (!panel || !toggle) return;
+
+    const setOpen = (open) => {
+      panel.classList.toggle('hidden', !open);
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+
+    toggle.addEventListener('click', () => {
+      setOpen(panel.classList.contains('hidden'));
+    });
+
+    if (closeButton) {
+      closeButton.addEventListener('click', () => setOpen(false));
+    }
+
+    if (clearButton) {
+      clearButton.addEventListener('click', () => {
+        toastHistory.length = 0;
+        saveToastHistory();
+        renderToastHistory();
+      });
+    }
+
+    renderToastHistory();
+  }
+
+  function removeToast(toast) {
+    toast.style.animation = 'slideOut 0.3s ease-in forwards';
+    setTimeout(() => toast.remove(), 300);
+  }
+
+  function showToast(message, type = 'info', duration = 4000, options = {}) {
     const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const parsed = parseToastArgs(type, duration, options);
+    const toastMessage = normalizeToastText(message, TOAST_MAX_TEXT_LENGTH) || 'No message provided';
+    const details = normalizeToastText(parsed.normalizedOptions.details, TOAST_DETAILS_MAX_LENGTH);
+    const retryCallback = typeof parsed.normalizedOptions.onRetry === 'function' ? parsed.normalizedOptions.onRetry : null;
+    const shouldPersist = parsed.normalizedOptions.persist !== false;
+    const category = parsed.normalizedType === 'error'
+      ? detectErrorCategory(toastMessage, parsed.normalizedOptions.category)
+      : '';
+
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-    <span class="font-bold">${type.toUpperCase()}</span>
-    <span>${message}</span>
-  `;
+    toast.className = `toast ${parsed.normalizedType}`;
+    if (category) {
+      toast.dataset.category = category;
+    }
+
+    const head = document.createElement('div');
+    head.className = 'toast-head';
+
+    const titleWrap = document.createElement('div');
+    titleWrap.className = 'toast-title-wrap';
+
+    const title = document.createElement('span');
+    title.className = 'toast-title';
+    title.textContent = parsed.normalizedType.toUpperCase();
+    titleWrap.appendChild(title);
+
+    if (category) {
+      const categoryBadge = document.createElement('span');
+      categoryBadge.className = 'toast-category';
+      categoryBadge.textContent = category;
+      titleWrap.appendChild(categoryBadge);
+    }
+
+    const closeButton = document.createElement('button');
+    closeButton.className = 'toast-close';
+    closeButton.type = 'button';
+    closeButton.setAttribute('aria-label', 'Close');
+    closeButton.textContent = 'x';
+    closeButton.addEventListener('click', () => removeToast(toast));
+
+    head.appendChild(titleWrap);
+    head.appendChild(closeButton);
+    toast.appendChild(head);
+
+    const messageNode = document.createElement('div');
+    messageNode.className = 'toast-message';
+    messageNode.textContent = toastMessage;
+    toast.appendChild(messageNode);
+
+    let detailsNode = null;
+    if (details) {
+      const footer = document.createElement('div');
+      footer.className = 'toast-footer';
+
+      const detailsButton = document.createElement('button');
+      detailsButton.className = 'toast-btn';
+      detailsButton.type = 'button';
+      detailsButton.textContent = 'Details';
+      detailsNode = document.createElement('div');
+      detailsNode.className = 'toast-details hidden';
+      detailsNode.textContent = details;
+      detailsButton.addEventListener('click', () => {
+        detailsNode.classList.toggle('hidden');
+        detailsButton.textContent = detailsNode.classList.contains('hidden') ? 'Details' : 'Hide Details';
+      });
+
+      footer.appendChild(detailsButton);
+
+      if (retryCallback) {
+        const retryButton = document.createElement('button');
+        retryButton.className = 'toast-btn retry';
+        retryButton.type = 'button';
+        retryButton.textContent = parsed.normalizedOptions.retryText || 'Retry';
+        retryButton.addEventListener('click', async () => {
+          try {
+            await retryCallback();
+            removeToast(toast);
+          } catch (err) {
+            showToast('Retry failed', 'error', { details: err && err.message ? err.message : String(err || 'Unknown error'), category: 'network' });
+          }
+        });
+        footer.appendChild(retryButton);
+      }
+
+      toast.appendChild(footer);
+      toast.appendChild(detailsNode);
+    } else if (retryCallback) {
+      const footer = document.createElement('div');
+      footer.className = 'toast-footer';
+      const retryButton = document.createElement('button');
+      retryButton.className = 'toast-btn retry';
+      retryButton.type = 'button';
+      retryButton.textContent = parsed.normalizedOptions.retryText || 'Retry';
+      retryButton.addEventListener('click', async () => {
+        try {
+          await retryCallback();
+          removeToast(toast);
+        } catch (err) {
+          showToast('Retry failed', 'error', { details: err && err.message ? err.message : String(err || 'Unknown error'), category: 'network' });
+        }
+      });
+      footer.appendChild(retryButton);
+      toast.appendChild(footer);
+    }
+
     container.appendChild(toast);
 
-    setTimeout(() => {
-      toast.style.animation = 'slideOut 0.3s ease-in forwards';
-      setTimeout(() => toast.remove(), 300);
-    }, duration);
+    if (shouldPersist && parsed.normalizedType === 'error') {
+      addToastHistoryItem({
+        message: toastMessage,
+        details,
+        type: parsed.normalizedType,
+        category,
+        retryable: Boolean(retryCallback),
+        timestamp: Date.now()
+      });
+    }
+
+    if (parsed.normalizedDuration > 0) {
+      setTimeout(() => {
+        if (toast.isConnected) removeToast(toast);
+      }, parsed.normalizedDuration);
+    }
   }
 
   let currentRoom = 'all';
@@ -56,6 +387,9 @@
 
   // Show default tab on load
   document.addEventListener('DOMContentLoaded', () => {
+    loadToastHistory();
+    setupToastHistoryUi();
+
     // Check for a tab hash in the URL (e.g., #ops)
     const urlHash = window.location.hash.substring(1);
     if (urlHash && document.getElementById(urlHash)) {
@@ -111,8 +445,7 @@
     socket = io({
       auth: { token: authToken, agent_id: 'master-ui', role: 'master' },
       transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 10
+      reconnection: true
     });
   }
 
@@ -166,7 +499,7 @@
         const response = await fetch('/api/auth/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accessCode: code })
+          body: JSON.stringify({ secret: code })
         });
 
         if (response.ok) {
@@ -275,3 +608,4 @@
       };
     });
   }
+</script>

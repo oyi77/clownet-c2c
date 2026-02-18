@@ -13,23 +13,62 @@ function renderOps(tasks) {
     body.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-zinc-600 text-xs">NO TASKS</td></tr>';
     return;
   }
-  body.innerHTML = tasks.slice().reverse().map(t => {
+  body.textContent = '';
+  tasks.slice().reverse().forEach((t) => {
     const status = (t.status || 'UNKNOWN').toUpperCase();
     const statusClass = status === 'SUCCESS' ? 'text-green-500' : status === 'FAIL' ? 'text-red-500' : 'text-zinc-500';
-    const output = t.result && t.result.stdout ? t.result.stdout.substring(0, 60) : (typeof t.result === 'string' ? t.result.substring(0, 60) : '');
-    const approvalBtn = status === 'PENDING_APPROVAL' ? `<button onclick="approveTask('${t.id}')" class="bg-green-600 hover:bg-green-500 text-black text-[9px] font-bold px-2 py-1 rounded uppercase">Approve</button>` : '';
-    return `
-      <tr class="border-b border-zinc-800/50">
-        <td class="p-4 font-mono text-zinc-600">#${t.id.substring(0, 8)}</td>
-        <td class="p-4 font-bold text-zinc-300">${t.agent_id}</td>
-        <td class="p-4 font-mono text-zinc-500">${t.cmd}</td>
-        <td class="p-4"><span class="text-[9px] font-bold ${statusClass}">${status}</span></td>
-        <td class="p-4 text-[10px] text-zinc-500 font-mono">${output}</td>
-        <td class="p-4">${approvalBtn}</td>
-        <td class="p-4"><button onclick="showTaskOutput('${t.id}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold px-2 py-1 rounded">Log</button></td>
-      </tr>
-    `;
-  }).join('');
+    const output = t.result && t.result.stdout
+      ? t.result.stdout.substring(0, 60)
+      : (typeof t.result === 'string' ? t.result.substring(0, 60) : '');
+    const taskId = String(t.id || '');
+
+    const tr = document.createElement('tr');
+    tr.className = 'border-b border-zinc-800/50';
+
+    const idTd = document.createElement('td');
+    idTd.className = 'p-4 font-mono text-zinc-600';
+    idTd.textContent = `#${taskId.substring(0, 8)}`;
+
+    const agentTd = document.createElement('td');
+    agentTd.className = 'p-4 font-bold text-zinc-300';
+    agentTd.textContent = String(t.agent_id || '');
+
+    const cmdTd = document.createElement('td');
+    cmdTd.className = 'p-4 font-mono text-zinc-500';
+    cmdTd.textContent = String(t.cmd || '');
+
+    const statusTd = document.createElement('td');
+    statusTd.className = 'p-4';
+    const statusSpan = document.createElement('span');
+    statusSpan.className = `text-[9px] font-bold ${statusClass}`;
+    statusSpan.textContent = status;
+    statusTd.appendChild(statusSpan);
+
+    const outputTd = document.createElement('td');
+    outputTd.className = 'p-4 text-[10px] text-zinc-500 font-mono';
+    outputTd.textContent = output;
+
+    const approvalTd = document.createElement('td');
+    approvalTd.className = 'p-4';
+    if (status === 'PENDING_APPROVAL') {
+      const approveButton = document.createElement('button');
+      approveButton.className = 'bg-green-600 hover:bg-green-500 text-black text-[9px] font-bold px-2 py-1 rounded uppercase';
+      approveButton.textContent = 'Approve';
+      approveButton.addEventListener('click', () => approveTask(taskId));
+      approvalTd.appendChild(approveButton);
+    }
+
+    const logTd = document.createElement('td');
+    logTd.className = 'p-4';
+    const logButton = document.createElement('button');
+    logButton.className = 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold px-2 py-1 rounded';
+    logButton.textContent = 'Log';
+    logButton.addEventListener('click', () => showTaskOutput(taskId));
+    logTd.appendChild(logButton);
+
+    tr.append(idTd, agentTd, cmdTd, statusTd, outputTd, approvalTd, logTd);
+    body.appendChild(tr);
+  });
 }
 
 function approveTask(taskId) {
@@ -44,16 +83,37 @@ function refreshOps() {
     .then(data => {
       const grid = document.getElementById('templates-grid');
       if (data.templates && data.templates.length > 0) {
-        grid.innerHTML = data.templates.map(t => `
-          <div class="bg-black/40 border border-zinc-800 p-3 rounded hover:border-zinc-700 transition-colors group">
-            <div class="flex justify-between items-start mb-2">
-              <div class="font-bold text-xs text-zinc-200">${t.name}</div>
-              <button onclick="deleteTemplate('${t.id}')" class="text-[10px] text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
-            </div>
-            <div class="text-[10px] text-zinc-500 font-mono truncate mb-3">${t.command}</div>
-            <button onclick="useTemplate('${t.command.replace(/'/g, "\\'")}')" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] py-1 rounded uppercase transition-colors">Use Template</button>
-          </div>
-        `).join('');
+        grid.textContent = '';
+        data.templates.forEach((t) => {
+          const card = document.createElement('div');
+          card.className = 'bg-black/40 border border-zinc-800 p-3 rounded hover:border-zinc-700 transition-colors group';
+
+          const header = document.createElement('div');
+          header.className = 'flex justify-between items-start mb-2';
+
+          const name = document.createElement('div');
+          name.className = 'font-bold text-xs text-zinc-200';
+          name.textContent = String(t.name || '');
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'text-[10px] text-red-500 opacity-0 group-hover:opacity-100 transition-opacity';
+          deleteBtn.textContent = '✕';
+          deleteBtn.addEventListener('click', () => deleteTemplate(t.id));
+
+          header.append(name, deleteBtn);
+
+          const command = document.createElement('div');
+          command.className = 'text-[10px] text-zinc-500 font-mono truncate mb-3';
+          command.textContent = String(t.command || '');
+
+          const useBtn = document.createElement('button');
+          useBtn.className = 'w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] py-1 rounded uppercase transition-colors';
+          useBtn.textContent = 'Use Template';
+          useBtn.addEventListener('click', () => useTemplate(String(t.command || '')));
+
+          card.append(header, command, useBtn);
+          grid.appendChild(card);
+        });
       } else {
         grid.innerHTML = '<div class="col-span-full text-center py-4 text-zinc-700 text-[10px] italic border border-dashed border-zinc-800 rounded">NO_TEMPLATES_DEFINED</div>';
       }

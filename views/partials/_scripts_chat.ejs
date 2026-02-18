@@ -108,18 +108,21 @@
     step();
   }
 
+  const CHAT_STICKY_THRESHOLD_PX = 56;
+
+  function isNearBottom(box, thresholdPx = CHAT_STICKY_THRESHOLD_PX) {
+    if (!box) return true;
+    const distance = box.scrollHeight - (box.scrollTop + box.clientHeight);
+    return distance <= thresholdPx;
+  }
+
   function addLog(sender, text, isMe, options = {}) {
     const box = document.getElementById('chat-box');
     if (!box) return;
-
-    const msgId = options.id || 'temp-' + Date.now();
-    const isPending = options.status === 'pending';
+    const stickToBottom = isNearBottom(box);
 
     const line = document.createElement('div');
-    line.className = `flex gap-4 message-in ${isPending ? 'opacity-50 pending-message' : ''}`;
-    line.dataset.msgId = msgId;
-    if (isPending) line.dataset.status = 'pending';
-    if (options.id) line.dataset.localId = options.id;
+    line.className = 'flex gap-4 message-in';
 
     const time = document.createElement('span');
     time.className = 'text-zinc-700 min-w-[60px] text-[10px] font-mono pt-1';
@@ -132,51 +135,33 @@
     const message = document.createElement('div');
     message.className = 'text-zinc-300 flex-1 break-words text-xs leading-relaxed whitespace-pre-wrap';
 
-    // Add status indicator for pending messages
-    if (isPending) {
-      const statusIndicator = document.createElement('span');
-      statusIndicator.className = 'ml-2 text-zinc-600 text-[8px] status-indicator';
-      statusIndicator.innerHTML = '◐'; // Pending symbol
-      statusIndicator.title = 'Sending...';
-      message.appendChild(statusIndicator);
-    }
-
     line.appendChild(time);
     line.appendChild(name);
     line.appendChild(message);
     box.appendChild(line);
 
-    if (options.animate !== false && (text || '').length <= 800 && !isPending) {
-      typeText(message, text, { onUpdate: () => { box.scrollTop = box.scrollHeight; } });
+    if (options.animate !== false && (text || '').length <= 800) {
+      typeText(message, text, { onUpdate: () => { if (stickToBottom) box.scrollTop = box.scrollHeight; } });
     } else {
       message.textContent = text || '';
     }
-    requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
+    if (stickToBottom) requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
   }
 
   function handleChatMessage(msg) {
     if (!msg || !msg.msg) return;
     const key = getMessageKey(msg);
 
-    if (msg.from === 'master-ui') {
-      let matchedPending = msg.localId ? document.querySelector(`.pending-message[data-local-id="${msg.localId}"]`) : null;
-      if (!matchedPending) matchedPending = document.querySelector('.pending-message');
+    if (!rememberMessage(key)) return;
 
-      if (matchedPending) {
-        matchedPending.classList.remove('opacity-50', 'pending-message');
-        matchedPending.dataset.status = 'sent';
-        const statusIndicator = matchedPending.querySelector('.status-indicator');
-        if (statusIndicator) {
-          statusIndicator.innerHTML = '✓';
-          statusIndicator.className = 'ml-2 text-green-500 text-[8px] status-indicator';
-          statusIndicator.title = 'Sent';
-          setTimeout(() => { if (statusIndicator) { statusIndicator.style.opacity = '0'; statusIndicator.style.transition = 'opacity 0.5s'; } }, 2000);
-        }
-        return;
+    if (typeof showToast === 'function') {
+      const text = msg.msg || '';
+      if (msg.from === 'server' && text.startsWith('ERROR:')) {
+        showToast('Server error', 'error', 8000, { details: text, category: 'server' });
+      } else if (text.startsWith('CLIENT_HANDLER_ERROR:')) {
+        showToast('Client error', 'error', 8000, { details: `${msg.from}: ${text}`, category: 'server' });
       }
     }
-
-    if (!rememberMessage(key)) return;
 
     const room = msg.to === 'all' ? 'all' : (msg.to && msg.to.startsWith('#') ? msg.to : (msg.from === 'master-ui' ? msg.to : msg.from));
     if (!chatHistory[room]) chatHistory[room] = [];
@@ -197,17 +182,37 @@
   function updateMemberList(members) {
     const list = document.getElementById('member-list');
     if (!list) return;
+    list.textContent = '';
     if (!members || members.length === 0) {
-      list.innerHTML = '<div class="text-[10px] text-zinc-700 italic text-center mt-4">No members online</div>';
+      const empty = document.createElement('div');
+      empty.className = 'text-[10px] text-zinc-700 italic text-center mt-4';
+      empty.textContent = 'No members online';
+      list.appendChild(empty);
       return;
     }
-    list.innerHTML = members.map(m => `
-    <div class="flex items-center gap-2 px-2 py-1 member-item">
-      <span class="w-1.5 h-1.5 rounded-full ${m.status === 'online' ? 'bg-green-500' : 'bg-zinc-600'}"></span>
-      <span class="text-[11px] ${m.id === 'master-ui' ? 'text-blue-400 font-bold' : 'text-zinc-400'}">${m.id}</span>
-      <span class="text-[8px] text-zinc-700 uppercase font-mono ml-auto">${m.role}</span>
-    </div>
-  `).join('');
+
+    members.forEach(m => {
+      const row = document.createElement('div');
+      row.className = 'flex items-center gap-2 px-2 py-1 member-item';
+
+      const statusDot = document.createElement('span');
+      const statusColor = m && m.status === 'online' ? 'bg-green-500' : 'bg-zinc-600';
+      statusDot.className = `w-1.5 h-1.5 rounded-full ${statusColor}`;
+
+      const id = document.createElement('span');
+      const idClass = m && m.id === 'master-ui' ? 'text-blue-400 font-bold' : 'text-zinc-400';
+      id.className = `text-[11px] ${idClass}`;
+      id.textContent = (m && m.id) ? m.id : '';
+
+      const role = document.createElement('span');
+      role.className = 'text-[8px] text-zinc-700 uppercase font-mono ml-auto';
+      role.textContent = (m && m.role) ? m.role : '';
+
+      row.appendChild(statusDot);
+      row.appendChild(id);
+      row.appendChild(role);
+      list.appendChild(row);
+    });
   }
 
   function selectRoom(target) {
@@ -281,7 +286,7 @@
   }
 
   document.getElementById('chat-box').addEventListener('scroll', (e) => {
-    if (e.target.scrollTop === 0 && chatOffset < (chatHistory[currentRoom] || []).length) {
+    if (e.target.scrollTop <= 1 && chatOffset < (chatHistory[currentRoom] || []).length) {
       renderChatBatch(currentRoom);
     }
   });
@@ -312,7 +317,25 @@
     const div = document.createElement('div');
     const colorClass = entry.status === 'blocked' ? 'text-red-500' : (entry.status === 'flagged' ? 'text-yellow-500' : 'text-zinc-500');
     div.className = `${colorClass} flex gap-2`;
-    div.innerHTML = `<span>[${new Date().toLocaleTimeString()}]</span> <span class="font-bold">${entry.agent_id}</span> <span>${entry.cmd}</span> <span class="italic">(${entry.status})</span>`;
+
+    const time = document.createElement('span');
+    time.textContent = `[${new Date().toLocaleTimeString()}]`;
+
+    const agent = document.createElement('span');
+    agent.className = 'font-bold';
+    agent.textContent = entry && entry.agent_id ? entry.agent_id : '';
+
+    const cmd = document.createElement('span');
+    cmd.textContent = entry && entry.cmd ? entry.cmd : '';
+
+    const status = document.createElement('span');
+    status.className = 'italic';
+    status.textContent = `(${entry && entry.status ? entry.status : ''})`;
+
+    div.appendChild(time);
+    div.appendChild(agent);
+    div.appendChild(cmd);
+    div.appendChild(status);
 
     lines.prepend(div);
     if (lines.children.length > 50) lines.lastChild.remove();
@@ -371,7 +394,7 @@
         } else {
           const msgId = `local-${++localMessageCounter}`;
           socket.emit('chat', { to: currentRoom, msg: msg, localId: msgId });
-          addLog('YOU', msg, true, { id: msgId, status: 'pending', animate: false });
+          addLog('YOU', msg, true, { animate: false });
 
           if (!chatHistory[currentRoom]) chatHistory[currentRoom] = [];
           chatHistory[currentRoom].push({

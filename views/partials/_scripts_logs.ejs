@@ -1,42 +1,98 @@
 <script>
-// --- LOGS FUNCTIONS ---
+let logsAutoScrollEnabled = true;
+
+function readLogScrollState(el) {
+  if (!el) return { top: 0 };
+  return { top: el.scrollTop };
+}
+
+function applyLogScrollState(el, state) {
+  if (!el) return;
+  if (logsAutoScrollEnabled) {
+    el.scrollTop = el.scrollHeight;
+    return;
+  }
+  const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
+  const previousTop = state && Number.isFinite(state.top) ? state.top : 0;
+  el.scrollTop = Math.min(Math.max(previousTop, 0), maxTop);
+}
 
 function refreshLogs() {
   const serverSearch = document.getElementById('server-logs-search')?.value || '';
   const taskSearch = document.getElementById('task-logs-search')?.value || '';
+  const serverLogsEl = document.getElementById('server-logs');
+  const taskLogsEl = document.getElementById('task-logs');
+  const serverState = readLogScrollState(serverLogsEl);
+  const taskState = readLogScrollState(taskLogsEl);
 
-  // Server Logs
   fetch(`/api/logs/server?search=${encodeURIComponent(serverSearch)}`)
     .then(res => res.json())
     .then(data => {
-      document.getElementById('server-logs').innerText = (data.lines || []).join('\n');
+      if (!serverLogsEl) return;
+      serverLogsEl.innerText = (data.lines || []).join('\n');
+      applyLogScrollState(serverLogsEl, serverState);
     })
     .catch(err => console.error('Failed to fetch server logs:', err));
 
-  // Task Logs
   fetch(`/api/logs/tasks?search=${encodeURIComponent(taskSearch)}`)
     .then(res => res.json())
     .then(data => {
-      const logsDiv = document.getElementById('task-logs');
-      logsDiv.innerHTML = (data.tasks || []).map(t => `
-        <div class="mb-2 pb-2 border-b border-zinc-800/30 last:border-0">
-          <div class="flex justify-between text-zinc-500 mb-1">
-            <span class="font-bold text-zinc-400">#${t.id.substring(0, 8)}</span>
-            <span>${new Date(t.created_at || t.timestamp).toLocaleString()}</span>
-          </div>
-          <div class="text-zinc-300 mb-1">> ${t.cmd}</div>
-          <div class="text-[10px] text-zinc-600 font-mono truncate">Result: ${typeof t.result === 'object' ? JSON.stringify(t.result) : t.result || 'Pending'}</div>
-        </div>
-      `).join('');
+      if (!taskLogsEl) return;
+      taskLogsEl.innerHTML = '';
+      (data.tasks || []).forEach(t => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'mb-2 pb-2 border-b border-zinc-800/30 last:border-0';
+
+        const headerEl = document.createElement('div');
+        headerEl.className = 'flex justify-between text-zinc-500 mb-1';
+
+        const idEl = document.createElement('span');
+        idEl.className = 'font-bold text-zinc-400';
+        idEl.textContent = `#${String(t.id || '').substring(0, 8)}`;
+
+        const timeEl = document.createElement('span');
+        timeEl.textContent = new Date(t.created_at || t.timestamp).toLocaleString();
+
+        headerEl.appendChild(idEl);
+        headerEl.appendChild(timeEl);
+
+        const cmdEl = document.createElement('div');
+        cmdEl.className = 'text-zinc-300 mb-1';
+        cmdEl.textContent = `> ${String(t.cmd)}`;
+
+        const resultEl = document.createElement('div');
+        resultEl.className = 'text-[10px] text-zinc-600 font-mono truncate';
+        const resultValue = typeof t.result === 'object' ? JSON.stringify(t.result) : t.result || 'Pending';
+        resultEl.textContent = `Result: ${resultValue}`;
+
+        rowEl.appendChild(headerEl);
+        rowEl.appendChild(cmdEl);
+        rowEl.appendChild(resultEl);
+        taskLogsEl.appendChild(rowEl);
+      });
+      applyLogScrollState(taskLogsEl, taskState);
     })
     .catch(err => console.error('Failed to fetch task logs:', err));
 }
 
-// Logs Search Handlers
 function setupLogsSearch() {
   const serverSearch = document.getElementById('server-logs-search');
   const taskSearch = document.getElementById('task-logs-search');
-  let serverTimeout, taskTimeout;
+  const autoToggle = document.getElementById('logs-autoscroll-toggle');
+  let serverTimeout;
+  let taskTimeout;
+
+  logsAutoScrollEnabled = autoToggle ? autoToggle.checked : true;
+
+  if (autoToggle) {
+    autoToggle.addEventListener('change', (event) => {
+      logsAutoScrollEnabled = Boolean(event.target.checked);
+      if (logsAutoScrollEnabled) {
+        applyLogScrollState(document.getElementById('server-logs'), { top: 0 });
+        applyLogScrollState(document.getElementById('task-logs'), { top: 0 });
+      }
+    });
+  }
 
   if (serverSearch) {
     serverSearch.addEventListener('input', () => {
@@ -52,16 +108,13 @@ function setupLogsSearch() {
     });
   }
 
-  // Refresh buttons
   document.getElementById('logs-refresh')?.addEventListener('click', refreshLogs);
   document.getElementById('task-logs-refresh')?.addEventListener('click', refreshLogs);
 
-  // Initial load
   if (document.getElementById('logs') && !document.getElementById('logs').classList.contains('hidden')) {
     refreshLogs();
   }
 }
 
-// Setup logs search on load
 setupLogsSearch();
 </script>
