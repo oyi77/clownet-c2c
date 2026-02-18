@@ -1,10 +1,14 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const config = require('../config');
-const state = require('../state');
 
-// In-memory store for invalidated tokens (token -> expiry timestamp)
+// In-memory store for invalidated tokens (tokenHash -> expiry timestamp)
 // Tokens are added here on logout and checked during verification
 const invalidatedTokens = new Map();
+
+function hashToken(token) {
+    return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 /**
  * Generate a JWT token with 24h expiry
@@ -25,14 +29,16 @@ function generateToken(payload) {
  */
 function verifyToken(token) {
     try {
+        const tokenHash = hashToken(token);
+
         // Check if token has been invalidated
-        if (invalidatedTokens.has(token)) {
-            const invalidUntil = invalidatedTokens.get(token);
+        if (invalidatedTokens.has(tokenHash)) {
+            const invalidUntil = invalidatedTokens.get(tokenHash);
             if (Date.now() < invalidUntil) {
                 return null; // Token is invalidated
             }
             // Cleanup expired invalidation record
-            invalidatedTokens.delete(token);
+            invalidatedTokens.delete(tokenHash);
         }
 
         const decoded = jwt.verify(token, config.SECRET_KEY);
@@ -47,20 +53,22 @@ function verifyToken(token) {
  * @param {string} token - Token to invalidate
  */
 function invalidateToken(token) {
+    const tokenHash = hashToken(token);
+
     try {
         // Decode without verification to get expiry
         const decoded = jwt.decode(token);
         if (decoded && decoded.exp) {
             // Store until natural expiry + 1 hour grace period
             const invalidUntil = (decoded.exp * 1000) + (60 * 60 * 1000);
-            invalidatedTokens.set(token, invalidUntil);
+            invalidatedTokens.set(tokenHash, invalidUntil);
         } else {
             // If no expiry, invalidate for 24 hours
-            invalidatedTokens.set(token, Date.now() + 24 * 60 * 60 * 1000);
+            invalidatedTokens.set(tokenHash, Date.now() + 24 * 60 * 60 * 1000);
         }
     } catch (err) {
         // If decode fails, invalidate for 24 hours anyway
-        invalidatedTokens.set(token, Date.now() + 24 * 60 * 60 * 1000);
+        invalidatedTokens.set(tokenHash, Date.now() + 24 * 60 * 60 * 1000);
     }
 }
 
@@ -113,9 +121,9 @@ function dashboardAuthMiddleware(req, reply, done) {
 // Cleanup expired invalidation entries periodically
 setInterval(() => {
     const now = Date.now();
-    for (const [token, invalidUntil] of invalidatedTokens) {
+    for (const [tokenHash, invalidUntil] of invalidatedTokens) {
         if (now >= invalidUntil) {
-            invalidatedTokens.delete(token);
+            invalidatedTokens.delete(tokenHash);
         }
     }
 }, 60 * 60 * 1000); // Run every hour
