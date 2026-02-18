@@ -127,28 +127,58 @@ function showAgentLogs(agentId) {
   if (agentTasks.length === 0) {
     logsBox.innerHTML = '<div class="text-zinc-600 text-[10px] italic">No task logs for this agent.</div>';
   } else {
-    logsBox.innerHTML = agentTasks.map(t => {
+    logsBox.textContent = '';
+
+    agentTasks.forEach(t => {
       const status = (t.status || 'UNKNOWN').toUpperCase();
       const statusClass = status === 'SUCCESS' ? 'text-green-500' : status === 'FAIL' ? 'text-red-500' : 'text-zinc-500';
       const output = t.result && t.result.stdout ? t.result.stdout.substring(0, 200) : (typeof t.result === 'string' ? t.result.substring(0, 200) : '');
-      return `
-        <div class="border-b border-zinc-800/50 py-2">
-          <div class="flex gap-2 text-[10px] mb-1">
-            <span class="text-zinc-500">${(() => {
-  try {
-    return t.ts ? new Date(t.ts).toLocaleTimeString() : 'N/A';
-  } catch (e) {
-    return 'Invalid Date';
-  }
-})()}</span>
-            <span class="${statusClass} font-bold">${status}</span>
-            <span class="text-zinc-600 font-mono">#${t.id.substring(0, 8)}</span>
-          </div>
-          <div class="text-zinc-400 text-[10px] font-mono bg-black/30 rounded p-2">${t.cmd}</div>
-          ${output ? `<div class="text-zinc-500 text-[10px] font-mono mt-1 whitespace-pre-wrap">${output}</div>` : ''}
-        </div>
-      `;
-    }).join('');
+
+      let timeText = 'N/A';
+      try {
+        timeText = t.ts ? new Date(t.ts).toLocaleTimeString() : 'N/A';
+      } catch (e) {
+        timeText = 'Invalid Date';
+      }
+
+      const row = document.createElement('div');
+      row.className = 'border-b border-zinc-800/50 py-2';
+
+      const meta = document.createElement('div');
+      meta.className = 'flex gap-2 text-[10px] mb-1';
+
+      const timeEl = document.createElement('span');
+      timeEl.className = 'text-zinc-500';
+      timeEl.textContent = timeText;
+
+      const statusEl = document.createElement('span');
+      statusEl.className = `${statusClass} font-bold`;
+      statusEl.textContent = status;
+
+      const idEl = document.createElement('span');
+      idEl.className = 'text-zinc-600 font-mono';
+      idEl.textContent = '#' + String(t.id || '').substring(0, 8);
+
+      meta.appendChild(timeEl);
+      meta.appendChild(statusEl);
+      meta.appendChild(idEl);
+
+      const cmdEl = document.createElement('div');
+      cmdEl.className = 'text-zinc-400 text-[10px] font-mono bg-black/30 rounded p-2';
+      cmdEl.textContent = t.cmd || '';
+
+      row.appendChild(meta);
+      row.appendChild(cmdEl);
+
+      if (output) {
+        const outputEl = document.createElement('div');
+        outputEl.className = 'text-zinc-500 text-[10px] font-mono mt-1 whitespace-pre-wrap';
+        outputEl.textContent = output;
+        row.appendChild(outputEl);
+      }
+
+      logsBox.appendChild(row);
+    });
   }
 
   agentLogsModal.classList.remove('hidden');

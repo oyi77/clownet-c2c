@@ -1,5 +1,17 @@
 <!-- Toast Container -->
 <div id="toast-container" class="toast-container"></div>
+<button id="toast-history-toggle" class="toast-history-toggle" type="button" aria-controls="toast-history-panel"
+  aria-expanded="false">Error History</button>
+<div id="toast-history-panel" class="toast-history-panel hidden" role="dialog" aria-label="Error toast history">
+  <div class="toast-history-header">
+    <div class="toast-history-title">Error History</div>
+    <div class="toast-history-actions">
+      <button id="toast-history-clear" class="toast-history-btn" type="button">Clear</button>
+      <button id="toast-history-close" class="toast-history-btn" type="button">Close</button>
+    </div>
+  </div>
+  <div id="toast-history-list" class="toast-history-list"></div>
+</div>
 
 <!-- TASK OUTPUT MODAL -->
 <div id="task-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4">
